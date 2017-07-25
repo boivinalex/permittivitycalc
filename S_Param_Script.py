@@ -635,21 +635,21 @@ class AirlineData:
 #                            corr_Tmatrix_phase[1,0])/corr_Tmatrix_phase[1,1]],\
 #                            [1/corr_Tmatrix_phase[1,1],-corr_Tmatrix_phase[1,0]/\
 #                            corr_Tmatrix_phase[1,1]]])
-            corr_matrix = np.matrix([[corr_Tmatrix[0,1]/\
-                            corr_Tmatrix[1,1],(corr_Tmatrix[0,0]*\
-                            corr_Tmatrix[1,1]-corr_Tmatrix[0,1]*\
-                            corr_Tmatrix[1,0])/corr_Tmatrix[1,1]],\
-                            [1/corr_Tmatrix[1,1],-corr_Tmatrix[1,0]/\
-                            corr_Tmatrix[1,1]]])
+        corr_matrix = np.matrix([[corr_Tmatrix[0,1]/\
+                        corr_Tmatrix[1,1],(corr_Tmatrix[0,0]*\
+                        corr_Tmatrix[1,1]-corr_Tmatrix[0,1]*\
+                        corr_Tmatrix[1,0])/corr_Tmatrix[1,1]],\
+                        [1/corr_Tmatrix[1,1],-corr_Tmatrix[1,0]/\
+                        corr_Tmatrix[1,1]]])
             # Save as new S-param variables
-            corr_s11[0][n] = corr_matrix[0,0].real
-            corr_s12[0][n] = corr_matrix[0,1].real
-            corr_s21[0][n] = corr_matrix[1,0].real
-            corr_s22[0][n] = corr_matrix[1,1].real
-            corr_s11[1][n] = corr_matrix[0,0].imag
-            corr_s12[1][n] = corr_matrix[0,1].imag
-            corr_s21[1][n] = corr_matrix[1,0].imag
-            corr_s22[1][n] = corr_matrix[1,1].imag
+        corr_s11[0][n] = corr_matrix[0,0].real
+        corr_s12[0][n] = corr_matrix[0,1].real
+        corr_s21[0][n] = corr_matrix[1,0].real
+        corr_s22[0][n] = corr_matrix[1,1].real
+        corr_s11[1][n] = corr_matrix[0,0].imag
+        corr_s12[1][n] = corr_matrix[0,1].imag
+        corr_s21[1][n] = corr_matrix[1,0].imag
+        corr_s22[1][n] = corr_matrix[1,1].imag
 #        corr_s11[1] = self.s11[1]
 #        corr_s21[1] = self.s21[1]
 #        corr_s12[1] = self.s12[1]
@@ -850,7 +850,8 @@ def perm_compare(classlist,allplots=False):
 #%% MAIN
 def main():
     global test
-    test = AirlineData(*get_METAS_data(airline='GAL'),name='SOLT',bulk_density=2.0)
+    test = AirlineData(*get_METAS_data(airline='GAL'),name='SOLT',\
+                       bulk_density=2.0,corr=False)
     #test2 = AirlineData(*get_METAS_data(),name='TRM')
     #classlist = [test,test2]
     #perm_compare(classlist)

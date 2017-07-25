@@ -19,6 +19,7 @@ Created on Wed Jul  5 12:16:27 2017
 @author: alex
 
 Version History (all previous versions based in MATLAB):
+    Tue Jul 25 2017 - All version tracking now done with Git
     Wed Jul 19 2017 - Python script Ver. 2.0, Permittivity Calc Ver. 5.0
         - Scirpt re-wrote to enclose data in a Class including both raw and \
             corrected S-parameter data and calculated permittivity data.

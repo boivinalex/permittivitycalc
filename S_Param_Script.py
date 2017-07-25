@@ -81,7 +81,7 @@ class AirlineData:
     
     freq (array): Frequency points.
     
-    s11, s21, s12, s22 (array): Complex S-Parameters.
+    s11, s21, s12, s22 (array): Mag and Phase S-Parameters.
     
     *_dielec (array): Real part of the permittivity. Can be avg_dielec, \
         forward_dielec, or reverse_dielec for average, forward, or \
@@ -459,15 +459,7 @@ class AirlineData:
         sw22_phase = sw22[1]
         sw21_phase = sw21[1]
         sw12_phase = sw12[1]
-        global sw11_complex
-#        sw11_complex = unp.nominal_values(sw11_mag) + \
-#                    1j*unp.nominal_values(sw11_phase)
-#        sw22_complex = unp.nominal_values(sw22_mag) + \
-#                    1j*unp.nominal_values(sw22_phase)
-#        sw21_complex = unp.nominal_values(sw21_mag) + \
-#                    1j*unp.nominal_values(sw21_phase)
-#        sw12_complex = unp.nominal_values(sw12_mag) + \
-#                    1j*unp.nominal_values(sw12_phase)
+        # Cast to complex and unwarp phase
         sw11_complex = 1j*(unp.nominal_values(sw11_mag)*\
                            np.sin(np.unwrap(np.radians(unp.nominal_values(sw11_phase))))); \
         sw11_complex += unp.nominal_values(sw11_mag)*\
@@ -484,6 +476,7 @@ class AirlineData:
                            np.sin(np.unwrap(np.radians(unp.nominal_values(sw12_phase))))); \
         sw12_complex += unp.nominal_values(sw12_mag)*\
                             np.cos(np.unwrap(np.radians(unp.nominal_values(sw12_phase))))
+
         # Split measured S-parameters into mag and phase
         sm11_mag = self.s11[0]
         sm22_mag = self.s22[0]
@@ -493,14 +486,7 @@ class AirlineData:
         sm22_phase = self.s22[1]
         sm21_phase = self.s21[1]
         sm12_phase = self.s12[1]
-#        sm11_complex = unp.nominal_values(sm11_mag) + \
-#                    1j*unp.nominal_values(sm11_phase)
-#        sm22_complex = unp.nominal_values(sm22_mag) + \
-#                    1j*unp.nominal_values(sm22_phase)
-#        sm21_complex = unp.nominal_values(sm21_mag) + \
-#                    1j*unp.nominal_values(sm21_phase)
-#        sm12_complex = unp.nominal_values(sm12_mag) + \
-#                    1j*unp.nominal_values(sm12_phase)
+        # Cast to complex and unwarp phase
         sm11_complex = 1j*(unp.nominal_values(sm11_mag)*\
                            np.sin(np.unwrap(np.radians(unp.nominal_values(sm11_phase))))); \
         sm11_complex += unp.nominal_values(sm11_mag)*\
@@ -517,6 +503,7 @@ class AirlineData:
                            np.sin(np.unwrap(np.radians(unp.nominal_values(sm12_phase))))); \
         sm12_complex += unp.nominal_values(sm12_mag)*\
                             np.cos(np.unwrap(np.radians(unp.nominal_values(sm12_phase))))
+                            
         # Check for equal length and same frequency points
         #   In the future, consider interpolation in some cases
         # np.allclose retunrs True if equal within a low tolerance
@@ -526,135 +513,55 @@ class AirlineData:
             global washer_check
             washer_check = wfreq
             raise Exception('Measurement must have same 601 frequency points')
+        
+        ## De-embed
         # Convert to T-parameters
         # Washers
-#        tw11_mag_left = -(sw11_mag*sw22_mag-sw12_mag*sw21_mag)/sw21_mag
-#        tw22_mag_left = 1/sw21_mag
-#        tw21_mag_left = -sw22_mag/sw21_mag
-#        tw12_mag_left = sw11_mag/sw21_mag
-#        tw11_phase_left = -(sw11_phase*sw22_phase-sw12_phase*sw21_phase)/sw21_phase
-#        tw22_phase_left = 1/sw21_phase
-#        tw21_phase_left = -sw22_phase/sw21_phase
-#        tw12_phase_left = sw11_phase/sw21_phase
         tw11_left = -(sw11_complex*sw22_complex-sw12_complex*\
                           sw21_complex)/sw21_complex
-        tw22_left = 1/sw21_complex
-        tw21_left = -sw22_complex/sw21_complex
         tw12_left = sw11_complex/sw21_complex
-        # Washers are symetrical so right and left matrices are the same
-#        tw11_mag_right = tw11_mag_left
-#        tw22_mag_right = tw22_mag_left
-#        tw21_mag_right = tw21_mag_left
-#        tw12_mag_right = tw21_mag_left
-#        tw11_phase_right = tw11_phase_left
-#        tw22_phase_right = tw22_phase_left
-#        tw21_phase_right = tw21_phase_left
-#        tw12_phase_right = tw12_phase_left
-#        tw11_right = tw11_left
-#        tw22_right = tw22_left
-#        tw21_right = tw21_left
-#        tw12_right = tw21_left
+        tw21_left = -sw22_complex/sw21_complex
+        tw22_left = 1/sw21_complex
         # Measured
-#        tm11_mag = -(sm11_mag*sm22_mag-sm12_mag*sm21_mag)/sm21_mag
-#        tm22_mag = 1/sm21_mag
-#        tm21_mag = -sm22_mag/sm21_mag
-#        tm12_mag = sm11_mag/sm21_mag
-#        tm11_phase = -(sm11_phase*sm22_phase-sm12_phase*sm21_phase)/sm21_phase
-#        tm22_phase = 1/sm21_phase
-#        tm21_phase = -sm22_phase/sm21_phase
-#        tm12_phase = sm11_phase/sm21_phase
         tm11 = -(sm11_complex*sm22_complex-sm12_complex*\
                  sm21_complex)/sm21_complex
-        tm22 = 1/sm21_complex
-        tm21 = -sm22_complex/sm21_complex
         tm12 = sm11_complex/sm21_complex
-        
-        left_matrix = np.array([[tw11_left,tw12_left],\
-                                      [tw21_left,tw22_left]])
-    
-        right_matrix = left_matrix
-    
-        meas_matrix = np.array([[tm11,tm12],\
-                                      [tm21,tm22]])
-    
-        corr_Tmatrix = left_matrix.I*meas_matrix*right_matrix.I
-
-        ## De-embed
-        # Allocate arrays
-#        corr_s11 = unp.uarray([np.zeros(len(sm11_mag)),np.zeros(len(sm11_mag))]\
-#                              ,[np.zeros(len(sm11_mag)),np.zeros(len(sm11_mag))])
-#        corr_s22 = unp.uarray([np.zeros(len(sm11_mag)),np.zeros(len(sm11_mag))],\
-#                              [np.zeros(len(sm11_mag)),np.zeros(len(sm11_mag))])
-#        corr_s21 = unp.uarray([np.zeros(len(sm11_mag)),np.zeros(len(sm11_mag))],\
-#                              [np.zeros(len(sm11_mag)),np.zeros(len(sm11_mag))])
-#        corr_s12 = unp.uarray([np.zeros(len(sm11_mag)),np.zeros(len(sm11_mag))],\
-#                              [np.zeros(len(sm11_mag)),np.zeros(len(sm11_mag))])
-#        corr_s11 = np.zeros([len(sm11_mag),len(sm11_mag)])
-#        corr_s22 = np.zeros([len(sm11_mag),len(sm11_mag)])
-#        corr_s21 = np.zeros([len(sm11_mag),len(sm11_mag)])
-#        corr_s12 = np.zeros([len(sm11_mag),len(sm11_mag)])
-        # Make the matrices and de-embed
-#        for n in range(0,len(sm11_mag)):
-            # This is a for loop because I couldn't make a matrix of arrays
-            # Mag
-#            left_matrix_mag = unp.matrix([[tw11_mag_left[n],tw12_mag_left[n]],\
-#                                          [tw21_mag_left[n],tw22_mag_left[n]]])
-#            right_matrix_mag = unp.matrix([[tw11_mag_right[n],tw12_mag_right[n]],\
-#                                           [tw21_mag_right[n],tw22_mag_right[n]]])
-#            meas_matrix_mag = unp.matrix([[tm11_mag[n],tm12_mag[n]],\
-#                                          [tm21_mag[n],tm22_mag[n]]])
-            # Phase
-#            global left_matrix_phase
-#            global right_matrix_phase
-#            global meas_matrix_phase
-#            left_matrix_phase = unp.matrix([[tw11_phase_left[n],tw12_phase_left[n]],\
-#                                            [tw21_phase_left[n],tw22_phase_left[n]]])
-#            right_matrix_phase = unp.matrix([[tw11_phase_right[n],tw12_phase_right[n]],\
-#                                            [tw21_phase_right[n],tw22_phase_right[n]]])
-#            meas_matrix_phase = unp.matrix([[tm11_phase[n],tm12_phase[n]],\
-#                                            [tm21_phase[n],tm22_phase[n]]])
-#            left_matrix = np.matrix([[tw11_left[n],tw12_left[n]],\
-#                                          [tw21_left[n],tw22_left[n]]])
-#            right_matrix = np.matrix([[tw11_right[n],tw12_right[n]],\
-#                                           [tw21_right[n],tw22_right[n]]])
-#            meas_matrix = np.matrix([[tm11[n],tm12[n]],\
-#                                          [tm21[n],tm22[n]]])
-            # De-embedding step
-#            corr_Tmatrix_mag = left_matrix_mag.I*meas_matrix_mag*right_matrix_mag.I
-#            corr_Tmatrix_phase = left_matrix_phase.I*meas_matrix_phase*right_matrix_phase.I
-#            corr_Tmatrix = left_matrix.I*meas_matrix*right_matrix.I
-            # Re-covert to S-parameters
-#            corr_matrix_mag = unp.matrix([[corr_Tmatrix_mag[0,1]/\
-#                            corr_Tmatrix_mag[1,1],(corr_Tmatrix_mag[0,0]*\
-#                            corr_Tmatrix_mag[1,1]-corr_Tmatrix_mag[0,1]*\
-#                            corr_Tmatrix_mag[1,0])/corr_Tmatrix_mag[1,1]],\
-#                            [1/corr_Tmatrix_mag[1,1],-corr_Tmatrix_mag[1,0]/\
-#                            corr_Tmatrix_mag[1,1]]])
-#            corr_matrix_phase = unp.matrix([[corr_Tmatrix_phase[0,1]/\
-#                            corr_Tmatrix_phase[1,1],(corr_Tmatrix_phase[0,0]*\
-#                            corr_Tmatrix_phase[1,1]-corr_Tmatrix_phase[0,1]*\
-#                            corr_Tmatrix_phase[1,0])/corr_Tmatrix_phase[1,1]],\
-#                            [1/corr_Tmatrix_phase[1,1],-corr_Tmatrix_phase[1,0]/\
-#                            corr_Tmatrix_phase[1,1]]])
-        corr_matrix = np.matrix([[corr_Tmatrix[0,1]/\
-                        corr_Tmatrix[1,1],(corr_Tmatrix[0,0]*\
-                        corr_Tmatrix[1,1]-corr_Tmatrix[0,1]*\
-                        corr_Tmatrix[1,0])/corr_Tmatrix[1,1]],\
-                        [1/corr_Tmatrix[1,1],-corr_Tmatrix[1,0]/\
-                        corr_Tmatrix[1,1]]])
-            # Save as new S-param variables
-        corr_s11[0][n] = corr_matrix[0,0].real
-        corr_s12[0][n] = corr_matrix[0,1].real
-        corr_s21[0][n] = corr_matrix[1,0].real
-        corr_s22[0][n] = corr_matrix[1,1].real
-        corr_s11[1][n] = corr_matrix[0,0].imag
-        corr_s12[1][n] = corr_matrix[0,1].imag
-        corr_s21[1][n] = corr_matrix[1,0].imag
-        corr_s22[1][n] = corr_matrix[1,1].imag
-#        corr_s11[1] = self.s11[1]
-#        corr_s21[1] = self.s21[1]
-#        corr_s12[1] = self.s12[1]
-#        corr_s22[1] = self.s22[1]
+        tm21 = -sm22_complex/sm21_complex
+        tm22 = 1/sm21_complex
+        # Make matrices
+        left_matrix = np.dstack([tw11_left,tw12_left,tw21_left,\
+                                 tw22_left]).reshape(len(sw11_complex),2,2)
+        right_matrix = left_matrix  # Washers are symetrical
+        meas_matrix = np.dstack([tm11,tm12,tm21,\
+                                 tm22]).reshape(len(sm11_complex),2,2)
+        # Perform de-embeding
+        corr_Tmatrix = np.matmul(np.linalg.inv(left_matrix),meas_matrix)
+        corr_Tmatrix = np.matmul(corr_Tmatrix,np.linalg.inv(right_matrix))
+        # Re-convert to S-parameters
+        corr_s11_complex = corr_Tmatrix[:,0,1]/corr_Tmatrix[:,1,1]
+        corr_s12_complex = (corr_Tmatrix[:,0,0]*corr_Tmatrix[:,1,1]-\
+                    corr_Tmatrix[:,0,1]*corr_Tmatrix[:,1,0])/corr_Tmatrix[:,1,1]
+        corr_s21_complex = 1/corr_Tmatrix[:,1,1]
+        corr_s22_complex = -corr_Tmatrix[:,1,0]/corr_Tmatrix[:,1,1]
+        # Re-cast to mag and phase
+        # Use arctan2 to compute phase since it keeps track of signs (wraps)
+        corr_s11_phase = np.arctan2(corr_s11_complex.imag,corr_s11_complex.real)
+        corr_s12_phase = np.arctan2(corr_s12_complex.imag,corr_s12_complex.real)
+        corr_s21_phase = np.arctan2(corr_s21_complex.imag,corr_s21_complex.real)
+        corr_s22_phase = np.arctan2(corr_s22_complex.imag,corr_s22_complex.real)
+        # Final corrected arrays
+        corr_s11 = np.array([np.sqrt(corr_s11_complex.real**2 + \
+                                     corr_s11_complex.imag**2),\
+                                     corr_s11_phase*(180/np.pi)])
+        corr_s12 = np.array([np.sqrt(corr_s12_complex.real**2 + \
+                                     corr_s12_complex.imag**2),\
+                                     corr_s12_phase*(180/np.pi)])
+        corr_s21 = np.array([np.sqrt(corr_s21_complex.real**2 + \
+                                     corr_s21_complex.imag**2),\
+                                     corr_s21_phase*(180/np.pi)])
+        corr_s22 = np.array([np.sqrt(corr_s22_complex.real**2 + \
+                                     corr_s22_complex.imag**2),\
+                                     corr_s22_phase*(180/np.pi)])
             
         return corr_s11, corr_s21, corr_s12, corr_s22
         
@@ -675,7 +582,7 @@ class AirlineData:
         if corr and default_setting:
             avg_dielec = self.corr_avg_dielec
             avg_lossfac = self.corr_avg_lossfac
-            avg_losstan = self.corr_avg_dielec
+            avg_losstan = self.corr_avg_losstan
         elif corr and not default_setting:
             raise Exception('default_setting must be True if using corrected data')
         else:
@@ -852,7 +759,7 @@ def perm_compare(classlist,allplots=False):
 def main():
     global test
     test = AirlineData(*get_METAS_data(airline='GAL'),name='SOLT',\
-                       bulk_density=2.0,corr=False)
+                       bulk_density=2.0)
     #test2 = AirlineData(*get_METAS_data(),name='TRM')
     #classlist = [test,test2]
     #perm_compare(classlist)

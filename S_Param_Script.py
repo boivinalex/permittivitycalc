@@ -57,6 +57,8 @@ import uncertainties
 from uncertainties import unumpy as unp
 # Plotting
 import permittivity_plot as pplot
+# Make relative path
+import os
 
 #%% GLOBAL VARIABLES
 E_0 = 8.854187817620*10**-12 #Permittivity of vacuum (F/m) 
@@ -65,6 +67,7 @@ C = (1)*1/np.sqrt(E_0*U_0) #Speed of light (m/s)
 E_R_AIR = 1.00058986 #Dielectric Constant of Air (STP @ 0.9 MHz) 
 C_R_AIR = C / E_R_AIR #Speed of light in air
 LAM_C = float('inf') #Cut-off wavelength = infinity
+DATAPATH = os.path.dirname(__file__) + '/data/'
 
 #%% CLASSES
 class AirlineData:
@@ -436,15 +439,15 @@ class AirlineData:
         """
         # Get washer S-parameters and split into mag and phase
         # Unpickle files produced by avg_sparam.py
-        with open('s11avg.p', 'rb') as f:
+        with open(DATAPATH + 's11avg.p', 'rb') as f:
             sw11 = pickle.load(f)
-        with open('s22avg.p', 'rb') as f:
+        with open(DATAPATH + 's22avg.p', 'rb') as f:
             sw22 = pickle.load(f)
-        with open('s21avg.p', 'rb') as f:
+        with open(DATAPATH + 's21avg.p', 'rb') as f:
             sw21 = pickle.load(f)
-        with open('s12avg.p', 'rb') as f:
+        with open(DATAPATH + 's12avg.p', 'rb') as f:
             sw12 = pickle.load(f)
-        with open('washer_freq.p', 'rb') as f:
+        with open(DATAPATH + 'washer_freq.p', 'rb') as f:
             wfreq = pickle.load(f)
         # Split washer sparams into mag and phase since uncertainties package 
         #   does not support complex numbers

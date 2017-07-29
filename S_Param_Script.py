@@ -761,12 +761,13 @@ def perm_compare(classlist,allplots=False):
 #%% MAIN
 def main():
     global test
-    test = AirlineData(*get_METAS_data(airline='GAL'),name='SOLT',\
-                       bulk_density=2.0)
+    test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
+                        '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
+                         name='SOLT',date='2017/04/07')
+    ## Multiple file example:
     #test2 = AirlineData(*get_METAS_data(),name='TRM')
     #classlist = [test,test2]
     #perm_compare(classlist)
     
 if __name__ == '__main__':
     main()
-#test = AirlineData(*get_METAS_data())

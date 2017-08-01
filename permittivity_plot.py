@@ -8,14 +8,20 @@ Created on Thu Jun 22 14:24:19 2017
 import numpy as np
 from uncertainties import unumpy as unp
 import matplotlib.pyplot as plt
+import os
+import datetime
 
 plt.style.use("ggplot")
 
-        
+#%% GLOBAL VARIABLES
+DATAPATH = os.path.dirname(__file__) + '/figures/'
+DATE = str(datetime.date.today())
+
+#%% FUNCTIONS
 def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
               plot_title=None, ylabel=None, xlabel=None, spacing=None, \
               buffer=None, normalize_density=False, xlim=None, \
-              ylim=None, figure_size=(12,9)):
+              ylim=None, figure_size=(12,9),publish=False):
     """
     Takes input from S_Param_Script_V5 and plots calculated permittivity. Can \
     handle multiple data sets. Plots uncertainty countour if plotting single \
@@ -34,7 +40,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     legend_label (list of str): Plot legend label. Each dataset much have it's \
         own label. Stings must be in a list.
         
-    name (str): For use with plot_type='c'. Currently does nothing.
+    name (str): For use with publish=True. Used in file name of saved figure. 
     
     plot_title (str): For use with plot_type='c'. Title of the plot.
     
@@ -56,6 +62,8 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     ylim (tuples, float): Manually set y-axis limits. Currently not implemented.
     
     figure_size (tuple, int): Set the matplotlib figsize. Default: (12,9).
+    
+    publish (bool): If True save figure as .eps file. Default: False
     """
     
     # Check plot_type
@@ -168,6 +176,15 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
             ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
                     label=legend_label[n])
     plt.legend()
+    if publish:
+        # Check for directory
+        if not os.path.exists(DATAPATH):
+            os.makedirs(DATAPATH)
+        # Make file name    
+        savename = name.replace(' ','-') + '_' + plot_title.replace(' ','-') \
+            + '_' + DATE + '.eps'
+        # Save figure to .eps file
+        plt.savefig(DATAPATH+savename,dpi=300,format='eps',pad_inches=0)
     
 def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
     """

@@ -568,7 +568,7 @@ class AirlineData:
             
         return corr_s11, corr_s21, corr_s12, corr_s22
         
-    def draw_plots(self,default_setting=True,corr=False):
+    def draw_plots(self,default_setting=True,corr=False,publish=False):
         """
         Plots permittivity data using make_plot from permittivity_plot_V1.
         
@@ -580,6 +580,10 @@ class AirlineData:
             loss factor and loss tangent. If false prompts user to determine \
             wether to plot, average, forward, reverse, or both s-parameter \
             results. Default: True
+        
+        corr (bool): If True, use corrected sparam data. Default: False
+        
+        publish (bool): If True, save figures.
         """
         # Check if using corrected data
         if corr and default_setting:
@@ -624,6 +628,9 @@ class AirlineData:
                 y2 = [self.forward_lossfac,self.reverse_lossfac]
                 y3 = [self.forward_losstan,self.reverse_losstan]
                 kwargs = {"legend_label":['Forward','Reverse']}
+        if publish:
+            kwargs['publish'] = True
+            kwargs['name'] = self.name
         pplot.make_plot(x,y1,'d',**kwargs)
         pplot.make_plot(x,y2,'lf',**kwargs)
         pplot.make_plot(x,y3,'lt',**kwargs)
@@ -763,7 +770,7 @@ def main():
     global test
     test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
                         '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
-                         name='SOLT',date='2017/04/07')
+                         name='Alumina Vac 2.5hrs',date='2017/04/07')
     ## Multiple file example:
     #test2 = AirlineData(*get_METAS_data(),name='TRM')
     #classlist = [test,test2]

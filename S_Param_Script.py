@@ -139,12 +139,14 @@ class AirlineData:
         self.temperature = temperature
         self.name = name
         self.date = date
+        self.corr = corr
         
     def __repr__(self):
         rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \
                 (self.airline_name,self.file) + \
-                'bulk_density=%r,temperature=%r,name=%r,date=%r)' % \
-                (self.bulk_density,self.temperature,self.name,self.date)
+                'bulk_density=%r,temperature=%r,name=%r,date=%r,corr=%r)' % \
+                (self.bulk_density,self.temperature,self.name,self.date,\
+                 self.corr)
         return rep
         
     def __str__(self):

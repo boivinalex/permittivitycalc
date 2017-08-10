@@ -113,11 +113,12 @@ class AirlineData:
     corr (bool): (Optional) If True, also correct S-parameter data and \
         produce corr_* arrays. Default = True.
     """
-    def __init__(self,L,airline,dataArray,file,bulk_density=None,\
-                 temperature=None,name=None,date=None,corr=True):
+    def __init__(self,L,airline,dataArray,file,corr=True,bulk_density=None,\
+                 temperature=None,name=None,date=None):
         self.L = L
         self.airline_name = airline
         self.file = file
+        self.corr = corr
         # Unpack data into arrays
         self.freq, self.s11, self.s21, self.s12, self.s22 = \
             self._unpack(dataArray)
@@ -128,18 +129,19 @@ class AirlineData:
             self._permittivity_calc('f')
         self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan = \
             self._permittivity_calc('r')
-        # Calculate corrected permittivity
-        if corr and not np.isnan(unp.nominal_values(self.avg_dielec)).any():    #Check for nan
-            self.corr_s11, self.corr_s21, self.corr_s12, self.corr_s22 = \
-                self._de_embed()
-            self.corr_avg_dielec, self.corr_avg_lossfac, self.corr_avg_losstan = \
-                self._permittivity_calc('a',True)
+        # Calculate corrected permittivity if array length is 601 only
+        # Also check for NaNs and don't run if any
+        if corr and len(self.freq) == 601:
+            if not np.isnan(unp.nominal_values(self.avg_dielec)).any():
+                self.corr_s11, self.corr_s21, self.corr_s12, self.corr_s22 = \
+                    self._de_embed()
+                self.corr_avg_dielec, self.corr_avg_lossfac, \
+                    self.corr_avg_losstan = self._permittivity_calc('a',True)
         # Optional attributes
         self.bulk_density = bulk_density
         self.temperature = temperature
         self.name = name
         self.date = date
-        self.corr = corr
         
     def __repr__(self):
         rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \

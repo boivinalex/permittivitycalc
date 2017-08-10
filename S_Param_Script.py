@@ -3,6 +3,8 @@
 Complex Permittivity Determination using New Non-Iterative Method from \
 S-Parameters
 
+## To run wtih default settings use "var_name = run_default()" ##
+
 Alexandre Boivin
 University of Toronto Department of Earth Sciences, Solar System Exploration \
 Group
@@ -764,17 +766,28 @@ def perm_compare(classlist,allplots=False):
     else:
         pplot.make_plot(freq,dielec,'d',**kwargs)
         pplot.make_plot(freq,losstan,'lt',**kwargs)
+        
+def run_default():
+    """
+    Run AirlineData on get_METAS_data with all the prompts and return the \
+        instance.
+    """
+    return AirlineData(*get_METAS_data())
                 
 #%% MAIN
 def main():
-    global test
-    test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
-                        '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
-                         name='Alumina Vac 2.5hrs',date='2017/04/07')
+    ## Single file example:
+    #global test
+    #test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
+    #                    '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
+    #                     name='Alumina Vac 2.5hrs',date='2017/04/07')
+    
     ## Multiple file example:
     #test2 = AirlineData(*get_METAS_data(),name='TRM')
     #classlist = [test,test2]
     #perm_compare(classlist)
+    pass    # Comment to run example
     
 if __name__ == '__main__':
-    main()
+    #main()
+    pass    # Comment to run example

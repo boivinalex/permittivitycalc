@@ -77,27 +77,21 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         xlabel = 'Frequency (Hz)'
         if not legend_label: # make label if none specified
             legend_label = ['$\epsilon^\prime$']
-        buffer = 0.5
-        spacing = 0.1
-        rnd = 0 # decimals to round to for axes determination
+        rnd = 1 # decimals to round to for axes determination
     elif plot_type == 'lf': # Imaginary part
         plot_title = 'Loss Factor'
         ylabel = '$\epsilon^{\prime\prime}$'
         xlabel = 'Frequency (Hz)'
         if not legend_label:
             legend_label = ['$\epsilon^{\prime\prime}$']
-        buffer = 0.05
-        spacing = 0.05
-        rnd = 1
+        rnd = 2
     elif plot_type == 'lt': # Loss tan
         plot_title = 'Loss Tangent'
         ylabel = '$tan\delta$'
         xlabel = 'Frequency (Hz)'
         if not legend_label:
             legend_label = ['$tan\delta$']
-        buffer = 0.05
-        spacing = 0.01
-        rnd = 1
+        rnd = 2
     else:
         pass
     
@@ -135,18 +129,38 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     y_max = 0
     y_min = 9999999999
     for n in range(0,number_to_compare):
-        max_tmp = round(max(unp.nominal_values(x[n])),rnd)
-        min_tmp = round(min(unp.nominal_values(x[n])))
+        x_chk = unp.nominal_values(x[n])
+        max_tmp = round(max(x_chk[~np.isnan(x_chk)]),rnd)
+        min_tmp = round(min(x_chk[~np.isnan(x_chk)]))
         if max_tmp > x_max:
             x_max = max_tmp
         if min_tmp < x_min:
             x_min = min_tmp
-        max_tmp = round(max(unp.nominal_values(y[n])),rnd)
-        min_tmp = round(min(unp.nominal_values(y[n])))
+        y_chk = unp.nominal_values(y[n])
+        max_tmp = round(max(y_chk[~np.isnan(y_chk)]),rnd)
+        min_tmp = round(min(y_chk[~np.isnan(y_chk)]),rnd)
         if max_tmp > y_max:
             y_max = max_tmp
         if min_tmp < y_min:
             y_min = min_tmp
+            
+    # Determine appropriate buffer and spacing depedning on plot type
+    thickness = y_max - y_min
+    if plot_type == 'd':
+        if thickness < 0.1:
+            buffer = 0.1
+            spacing = 0.02
+        else:
+            buffer = 0.5
+            spacing = round((thickness + 2*buffer)/9,1)
+    elif plot_type in ('lf','lt'):
+        if thickness < 0.01:
+            buffer = 0.01
+            spacing = 0.002
+        else:
+            buffer = 0.05
+            spacing = round((thickness + 2*buffer)/9,2)
+
     # Makes sure the lowest point is 0 if y_min is 0
     if y_min == 0:
         y_min+=buffer

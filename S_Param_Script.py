@@ -129,7 +129,7 @@ class AirlineData:
         self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan = \
             self._permittivity_calc('r')
         # Calculate corrected permittivity
-        if corr:
+        if corr and not np.isnan(unp.nominal_values(self.avg_dielec)).any():    #Check for nan
             self.corr_s11, self.corr_s21, self.corr_s12, self.corr_s22 = \
                 self._de_embed()
             self.corr_avg_dielec, self.corr_avg_lossfac, self.corr_avg_losstan = \

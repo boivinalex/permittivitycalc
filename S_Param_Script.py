@@ -84,6 +84,9 @@ class AirlineData:
     
     file (str): Input file path.
     
+    corr (bool): (Optional) If True, also correct S-parameter data and \
+        produce corr_* arrays. Default = True.
+    
     freq (array): Frequency points.
     
     s11, s21, s12, s22 (array): Mag and Phase S-Parameters.
@@ -110,11 +113,32 @@ class AirlineData:
     
     date (str): (Optional) Measurement date.
     
-    corr (bool): (Optional) If True, also correct S-parameter data and \
-        produce corr_* arrays. Default = True.
+    solid_dielec (float): (Optional) The solid dielectric constant \
+        of the material.
+        
+    solid_losstan (float): (Optional) The solid loss tangent of the material.
+        
+    particle_diameter (float): (Optional) The average particle diameter in \
+        the airline in cm.
+        
+    particle_density (float): (Optional) The average (solid) particle density \
+        of the material in g/cm^3.
+        
+    airline_dimentions (dict): Dimentions of the airline in cm. D1 is the \
+        diameter of the inner conductor and D4 is the diameter of the outer \
+        conductor. D2 and D3 bound the sample-airline boundary regions if \
+        particle_diameter is provided. airline_dimentions is generated \
+        automatically for airlines VAL, PAL, and GAL. Empty otherwise.
+        
+    bcorr (complex array): Avg complex permittivity corrected for boundary \
+        effects. Computed automatically if solid_dielec, particle_diameter, \
+        particle_density, and bulk_density are present. solid_losstan is \
+        optional.
     """
     def __init__(self,L,airline,dataArray,file,corr=True,bulk_density=None,\
-                 temperature=None,name=None,date=None):
+                 temperature=None,name=None,date=None,solid_dielec=True,\
+                 solid_losstan=None,particle_diameter=None,\
+                 particle_density=None):
         self.L = L
         self.airline_name = airline
         self.file = file
@@ -142,6 +166,15 @@ class AirlineData:
         self.temperature = temperature
         self.name = name
         self.date = date
+        self.solid_dielec = solid_dielec
+        self.solid_losstan = solid_losstan
+        self.particle_diameter = particle_diameter
+        self.particle_density = particle_density
+        self.airline_dimentions = self._dims()
+        # If appropriate data provided, correct for boundary effects
+        if (solid_dielec and particle_diameter and particle_density and \
+            bulk_density):
+            self.bcorr = self.boundary_correct()
         
     def __repr__(self):
         rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \
@@ -185,6 +218,25 @@ class AirlineData:
         else:
             raise Exception('Input file has the wrong number of columns')
         return freq, s11, s21, s12, s22
+    
+    def _dims(self):
+        """
+        Determine the dimentions of the airline used in cm.
+        """
+        dims = {}
+        # Store inner and outer diameters in a dictionary
+        if self.airline_name in ('VAL','PAL'):
+            dims['D1'] = 6.205
+            dims['D4'] = 14.285
+        elif self.airline_name == 'GAL':
+            dims['D1'] = 6.19
+            dims['D4'] = 14.32
+        # If particle diameter is known, calculate D2 and D3 for boundary 
+        #   effect correction   
+        if dims and self.particle_diameter:
+            dims['D2'] = dims['D1'] + self.particle_diameter
+            dims['D3'] = dims['D4'] - self.particle_diameter
+        return dims
     
     def _permittivity_calc(self,s_param,corr=False):
         """
@@ -248,10 +300,10 @@ class AirlineData:
             s_t = unp.nominal_values(s12)
             
         # Initialize arrays
-        Nrows = len(self.freq)
-        gam = np.zeros(Nrows,dtype=complex)
-        sign = np.empty(Nrows,dtype=bool)
-        a = np.zeros(Nrows,dtype=complex)
+        nrows = len(self.freq)
+        gam = np.zeros(nrows,dtype=complex)
+        sign = np.empty(nrows,dtype=bool)
+        a = np.zeros(nrows,dtype=complex)
         
         ### NOTE: change function from np to unp to propagate uncertainties ###
         
@@ -323,7 +375,7 @@ class AirlineData:
         # Calculate uncertainties
         if isinstance(self.s11[0][0], uncertainties.UFloat): # Check for uncertainties
             delta_dielec, delta_lossfac, delta_losstan = \
-                self._calc_uncertainties(s_param,Nrows,sign,x,s_reflect,\
+                self._calc_uncertainties(s_param,nrows,sign,x,s_reflect,\
                                          s_trans,gam,lam_og,new_t,mu_eff,\
                                          ep_eff,lam_0,dielec,lossfac,losstan,corr)
             dielec = unp.uarray(dielec,delta_dielec)
@@ -332,7 +384,7 @@ class AirlineData:
         
         return dielec,lossfac,losstan
         
-    def _calc_uncertainties(self,s_param,Nrows,sign,x,s_reflect,s_trans,gam,\
+    def _calc_uncertainties(self,s_param,nrows,sign,x,s_reflect,s_trans,gam,\
                             lam_og,new_t,mu_eff,ep_eff,lam_0,dielec,\
                             lossfac,losstan,corr):
         """
@@ -375,8 +427,8 @@ class AirlineData:
         
         # Initialize arrays
         delta_length = 0.001 #in cm
-        dgam_dS_reflect = np.zeros(Nrows,dtype=complex)
-        dgam_dS_trans = np.zeros(Nrows,dtype=complex)
+        dgam_dS_reflect = np.zeros(nrows,dtype=complex)
+        dgam_dS_trans = np.zeros(nrows,dtype=complex)
         
         # Calculate partial derivatives
         # Determine +/- ambiguity by condition |GAMMA| < 1 from before            
@@ -573,6 +625,53 @@ class AirlineData:
                                      corr_s22_phase*(180/np.pi)])
             
         return corr_s11, corr_s21, corr_s12, corr_s22
+    
+    def boundary_correct(self):
+        """
+        Correct calculated sprams for boundary effects in the airline after \
+            Hickson et al., 2017. Requires the effective solid permittivity \
+            of the material, the average particle size in the airline, and \
+            the average particle (solid) density to be supplied to the class\
+            instance. Uses the Looyenga mixing model to calculate the \
+            permittivity in the boundary region.
+        """
+        beta = 1.835    # Porosity proportinality constant
+        # Determine boundary region porosity
+        total_volume = np.pi*(self.airline_dimentions['D4']**2)*self.L - \
+            np.pi*(self.airline_dimentions['D1']**2)*self.L
+        sample_volume = np.pi*((self.airline_dimentions['D4']-\
+            self.particle_diameter/2)**2)*self.L - \
+            np.pi*((self.airline_dimentions['D1']-\
+            self.particle_diameter/2)**2)*self.L
+        boundary_volume = total_volume - sample_volume
+        total_porosity = 1 - (self.bulk_density/self.particle_density)
+        boundary_porosity = (beta * total_porosity * total_volume) / \
+            (sample_volume + beta*boundary_volume)
+        # Calculate boundary region permittivity using Looyenga mixing model
+        if self.solid_losstan:  #Cast to complex if appropriate
+            solid_lossfac = self.solid_dielec*self.solid_losstan
+            solid_permittivity = 1j*(self.solid_dielec*np.sin(solid_lossfac))
+            solid_permittivity += self.solid_dielec*np.cos(solid_lossfac)
+        else:
+            solid_permittivity = self.solid_dielec
+        # Looyenga eqn. for air (ep_air = 1)
+        epsilon_thrid = (1 - boundary_porosity)*solid_permittivity**(1/3) \
+            + boundary_porosity
+        boundary_permittivity = np.cbrt(epsilon_thrid)
+        # Cast measured average permittivity to complex
+        measured_dielec = unp.nominal_values(self.avg_dielec)
+        measured_lossfac = unp.nominal_values(self.avg_lossfac)
+        measured_permittivity = 1j*(measured_dielec*np.sin(measured_lossfac))
+        measured_permittivity += measured_dielec*np.cos(measured_lossfac)
+        # Calculate model corrected sample permittivity
+        sample_permittivity = (boundary_permittivity * measured_permittivity \
+            * np.log(self.airline_dimentions['D2']/\
+            self.airline_dimentions['D3'])) / (boundary_permittivity * \
+            np.log(self.airline_dimentions['D4']/self.airline_dimentions['D1']) \
+            - measured_permittivity * (np.log(self.airline_dimentions['D2']/\
+            self.airline_dimentions['D1'])-np.log(self.airline_dimentions['D4']\
+            /self.airline_dimentions['D3'])))
+        return sample_permittivity
         
     def draw_plots(self,default_setting=True,corr=False,publish=False):
         """

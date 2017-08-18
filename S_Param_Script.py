@@ -174,7 +174,7 @@ class AirlineData:
         # If appropriate data provided, correct for boundary effects
         if (solid_dielec and particle_diameter and particle_density and \
             bulk_density):
-            self.bcorr = self.boundary_correct()
+            self.bcorr_dielec, self.bcorr_losstan = self.boundary_correct()
         
     def __repr__(self):
         rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \
@@ -634,44 +634,62 @@ class AirlineData:
             the average particle (solid) density to be supplied to the class\
             instance. Uses the Looyenga mixing model to calculate the \
             permittivity in the boundary region.
+            
+            As of now, produces dubious results for the imaginary part.
         """
         beta = 1.835    # Porosity proportinality constant
+        # Use washer corrected data if it exists
+        if self.corr:
+            measured_dielec = unp.nominal_values(self.corr_avg_dielec)
+            measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
+            L = self.L - 0.3
+        else:
+            measured_dielec = unp.nominal_values(self.avg_dielec)
+            measured_lossfac = unp.nominal_values(self.avg_lossfac)
+            L = self.L
+        
         # Determine boundary region porosity
-        total_volume = np.pi*(self.airline_dimentions['D4']**2)*self.L - \
+        total_volume = np.pi*(self.airline_dimentions['D4']**2)*L - \
             np.pi*(self.airline_dimentions['D1']**2)*self.L
         sample_volume = np.pi*((self.airline_dimentions['D4']-\
-            self.particle_diameter/2)**2)*self.L - \
+            self.particle_diameter/2)**2)*L - \
             np.pi*((self.airline_dimentions['D1']-\
-            self.particle_diameter/2)**2)*self.L
+            self.particle_diameter/2)**2)*L
         boundary_volume = total_volume - sample_volume
         total_porosity = 1 - (self.bulk_density/self.particle_density)
         boundary_porosity = (beta * total_porosity * total_volume) / \
             (sample_volume + beta*boundary_volume)
+            
         # Calculate boundary region permittivity using Looyenga mixing model
         if self.solid_losstan:  #Cast to complex if appropriate
             solid_lossfac = self.solid_dielec*self.solid_losstan
             solid_permittivity = 1j*(self.solid_dielec*np.sin(solid_lossfac))
             solid_permittivity += self.solid_dielec*np.cos(solid_lossfac)
         else:
-            solid_permittivity = self.solid_dielec
+            solid_permittivity = 1j*0
+            solid_permittivity += self.solid_dielec
         # Looyenga eqn. for air (ep_air = 1)
         epsilon_thrid = (1 - boundary_porosity)*solid_permittivity**(1/3) \
             + boundary_porosity
-        boundary_permittivity = np.cbrt(epsilon_thrid)
+        boundary_permittivity = epsilon_thrid**3
+        
         # Cast measured average permittivity to complex
-        measured_dielec = unp.nominal_values(self.avg_dielec)
-        measured_lossfac = unp.nominal_values(self.avg_lossfac)
         measured_permittivity = 1j*(measured_dielec*np.sin(measured_lossfac))
         measured_permittivity += measured_dielec*np.cos(measured_lossfac)
+        
         # Calculate model corrected sample permittivity
         sample_permittivity = (boundary_permittivity * measured_permittivity \
-            * np.log(self.airline_dimentions['D2']/\
-            self.airline_dimentions['D3'])) / (boundary_permittivity * \
+            * np.log(self.airline_dimentions['D3']/\
+            self.airline_dimentions['D2'])) / (boundary_permittivity * \
             np.log(self.airline_dimentions['D4']/self.airline_dimentions['D1']) \
             - measured_permittivity * (np.log(self.airline_dimentions['D2']/\
-            self.airline_dimentions['D1'])-np.log(self.airline_dimentions['D4']\
+            self.airline_dimentions['D1'])+np.log(self.airline_dimentions['D4']\
             /self.airline_dimentions['D3'])))
-        return sample_permittivity
+            
+        # Unpack complex
+        sample_dielec = sample_permittivity.real
+        samples_losstan = sample_permittivity.imag / sample_dielec
+        return sample_dielec, samples_losstan
         
     def draw_plots(self,default_setting=True,corr=False,publish=False):
         """

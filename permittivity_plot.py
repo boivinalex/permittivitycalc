@@ -75,22 +75,16 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         plot_title = 'Dielectric Constant'
         ylabel = '$\epsilon^\prime$'
         xlabel = 'Frequency (Hz)'
-        if not legend_label: # make label if none specified
-            legend_label = ['$\epsilon^\prime$']
         rnd = 1 # decimals to round to for axes determination
     elif plot_type == 'lf': # Imaginary part
         plot_title = 'Loss Factor'
         ylabel = '$\epsilon^{\prime\prime}$'
         xlabel = 'Frequency (Hz)'
-        if not legend_label:
-            legend_label = ['$\epsilon^{\prime\prime}$']
         rnd = 2
     elif plot_type == 'lt': # Loss tan
         plot_title = 'Loss Tangent'
         ylabel = '$tan\delta$'
         xlabel = 'Frequency (Hz)'
-        if not legend_label:
-            legend_label = ['$tan\delta$']
         rnd = 2
     else:
         pass
@@ -113,6 +107,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     else:   # If legend_label is a list, make sure no list items are None
         for n in range(0,len(xval)):
             # If a list item is None, make it a label
+            print(n)
             if not legend_label[n]:
                 legend_label[n] = 'Data {}'.format(n+1)
         

@@ -279,11 +279,13 @@ class AirlineData:
             s21 = self.corr_s21
             s12 = self.corr_s12
             s22 = self.corr_s22
+            L = self.L - 0.3
         else:
             s11 = self.s11
             s21 = self.s21
             s12 = self.s12
             s22 = self.s22
+            L = self.L
         
         # Strip arrays of their uncertainties
         #   This measure is temporary as the uncertainties module does not 
@@ -353,8 +355,8 @@ class AirlineData:
         new_t = 1j*t_phase_unwrap; new_t += np.absolute(t)
         
         # Calculate A 
-        a_1 = np.sqrt(-(ln_1_T / (2*np.pi*self.L))**2)
-        a_2 = -1 * (np.sqrt(-(ln_1_T / (2*np.pi*self.L))**2))
+        a_1 = np.sqrt(-(ln_1_T / (2*np.pi*L))**2)
+        a_2 = -1 * (np.sqrt(-(ln_1_T / (2*np.pi*L))**2))
          
         # Determine correct root with condition Re(1/A) > 0
         a[a_1.real > 0] = 1 / a_1[a_1.real > 0]
@@ -523,7 +525,7 @@ class AirlineData:
         sw22_phase = sw22[1]
         sw21_phase = sw21[1]
         sw12_phase = sw12[1]
-        # Cast to complex and unwarp phase
+        # Cast to complex and unwrap phase
         sw11_complex = 1j*(unp.nominal_values(sw11_mag)*\
                            np.sin(np.unwrap(np.radians(unp.nominal_values(sw11_phase))))); \
         sw11_complex += unp.nominal_values(sw11_mag)*\
@@ -909,11 +911,7 @@ def run_example(flag='single'):
         classlist = [test,test2]
         perm_compare(classlist)
         return test, test2, classlist
-    
-        
-            
-    
-    
+
                 
 #%% MAIN
 def main():

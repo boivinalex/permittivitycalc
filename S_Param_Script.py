@@ -654,12 +654,10 @@ class AirlineData:
             L = self.L
         
         # Determine boundary region porosity
-        total_volume = np.pi*(self.airline_dimensions['D4']**2)*L - \
-            np.pi*(self.airline_dimensions['D1']**2)*self.L
-        sample_volume = np.pi*((self.airline_dimensions['D4']-\
-            self.particle_diameter/2)**2)*L - \
-            np.pi*((self.airline_dimensions['D1']-\
-            self.particle_diameter/2)**2)*L
+        total_volume = np.pi*((self.airline_dimensions['D4']/2)**2)*L - \
+            np.pi*((self.airline_dimensions['D1']/2)**2)*L
+        sample_volume = np.pi*((self.airline_dimensions['D3']/2)**2)*L - \
+            np.pi*((self.airline_dimensions['D2']/2)**2)*L
         boundary_volume = total_volume - sample_volume
         total_porosity = 1 - (self.bulk_density/self.particle_density)
         boundary_porosity = (beta * total_porosity * total_volume) / \

@@ -136,7 +136,7 @@ class AirlineData:
         optional.
     """
     def __init__(self,L,airline,dataArray,file,corr=True,bulk_density=None,\
-                 temperature=None,name=None,date=None,solid_dielec=True,\
+                 temperature=None,name=None,date=None,solid_dielec=None,\
                  solid_losstan=None,particle_diameter=None,\
                  particle_density=None):
         self.L = L
@@ -179,9 +179,12 @@ class AirlineData:
     def __repr__(self):
         rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \
                 (self.airline_name,self.file) + \
-                'bulk_density=%r,temperature=%r,name=%r,date=%r,corr=%r)' % \
+                'bulk_density=%r,temperature=%r,name=%r,date=%r,corr=%r' % \
                 (self.bulk_density,self.temperature,self.name,self.date,\
-                 self.corr)
+                 self.corr) + ',solid_dielec=%r,solid_losstan=%r' % \
+                 (self.solid_dielec,self.solid_losstan) + \
+                 ',particle_diameter=%r,particle_density=%r)' % \
+                 (self.particle_diameter, self.particle_density)
         return rep
         
     def __str__(self):
@@ -894,21 +897,34 @@ def run_default():
         instance.
     """
     return AirlineData(*get_METAS_data())
+
+def run_example(flag='single'):
+    test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
+                        '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
+                         name='Alumina Vac 2.5hrs',date='2017/04/07')
+    if flag == 'single':
+        return test
+    elif flag == 'multiple':
+        test2 = AirlineData(*get_METAS_data(),name='TRM')
+        classlist = [test,test2]
+        perm_compare(classlist)
+        return test, test2, classlist
+    
+        
+            
+    
+    
                 
 #%% MAIN
 def main():
     ## Single file example:
-    #global test
-    #test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
-    #                    '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
-    #                     name='Alumina Vac 2.5hrs',date='2017/04/07')
-    
+    global test
+    test = run_example()
     ## Multiple file example:
-    #test2 = AirlineData(*get_METAS_data(),name='TRM')
-    #classlist = [test,test2]
-    #perm_compare(classlist)
-    pass    # Comment to run example
+    #global test, test2, classlist
+    #test, test2, classlist = run_example(flag='multiple')
+    #pass    # Comment to run example
     
 if __name__ == '__main__':
-    #main()
-    pass    # Comment to run example
+    main()
+    #pass    # Comment to run example

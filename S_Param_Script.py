@@ -157,6 +157,7 @@ class AirlineData:
         # Also check for NaNs and don't run if any
         if corr and len(self.freq) == 601:
             if not np.isnan(unp.nominal_values(self.avg_dielec)).any():
+                self.Lcorr = self.L - 0.3
                 self.corr_s11, self.corr_s21, self.corr_s12, self.corr_s22 = \
                     self._de_embed()
                 self.corr_avg_dielec, self.corr_avg_lossfac, \
@@ -240,7 +241,7 @@ class AirlineData:
             dims['D2'] = dims['D1'] + self.particle_diameter
             dims['D3'] = dims['D4'] - self.particle_diameter
         return dims
-    
+
     def _permittivity_calc(self,s_param,corr=False):
         """
         Return the complex permittivity and loss tangent from S-parameters \
@@ -279,7 +280,7 @@ class AirlineData:
             s21 = self.corr_s21
             s12 = self.corr_s12
             s22 = self.corr_s22
-            L = self.L - 0.3
+            L = self.Lcorr
         else:
             s11 = self.s11
             s21 = self.s21
@@ -409,7 +410,7 @@ class AirlineData:
             s21 = self.corr_s21
             s12 = self.corr_s12
             s22 = self.corr_s22
-            L = self.L - 0.3
+            L = self.Lcorr
         else:
             s11 = self.s11
             s21 = self.s21
@@ -647,7 +648,7 @@ class AirlineData:
         if self.corr:
             measured_dielec = unp.nominal_values(self.corr_avg_dielec)
             measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
-            L = self.L - 0.3
+            L = self.Lcorr
         else:
             measured_dielec = unp.nominal_values(self.avg_dielec)
             measured_lossfac = unp.nominal_values(self.avg_lossfac)

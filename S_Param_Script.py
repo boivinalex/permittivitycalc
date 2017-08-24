@@ -57,6 +57,8 @@ import uncertainties
 #Citation: Uncertainties: a Python package for calculations with uncertainties,
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
 from uncertainties import unumpy as unp
+# Nonlinear fitting
+from lmfit import minimize, Minimizer, Parameters, Parameter, report_fit
 # Plotting
 import permittivity_plot as pplot
 # Make relative path
@@ -241,6 +243,48 @@ class AirlineData:
             dims['D2'] = dims['D1'] + self.particle_diameter
             dims['D3'] = dims['D4'] - self.particle_diameter
         return dims
+    
+    def _iterate_objective_function(self,params,freq,data):
+        
+        # Check if using corrected S-params
+        if corr:
+            s11 = self.corr_s11
+            s21 = self.corr_s21
+            s12 = self.corr_s12
+            s22 = self.corr_s22
+            L = self.Lcorr
+        else:
+            s11 = self.s11
+            s21 = self.s21
+            s12 = self.s12
+            s22 = self.s22
+            L = self.L
+            
+        v = params.valuesdict()
+        
+        lam_0 = (C/freq)*100
+        
+        small_gam = (1j*2*np.pi/lam_0)*np.sqrt(v['epsilon']*v['mu'] - (lam_0/LAM_C)**2)
+        
+        small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
+        
+        t = np.exp(-small_gam*L)
+        
+        big_gam = (small_gam_0*v['mu'] - small_gam) / (small_gam_0*v['mu'] + small_gam)
+        
+        s11_short_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
+        
+        s21_predicted = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
+        
+        s22_predicted = s11_short_predicted
+        
+        s12_predicted = s22_predicted
+    
+    def _permittivity_iterate(self,corr=False):
+        """
+        
+        """
+
 
     def _permittivity_calc(self,s_param,corr=False):
         """

@@ -124,10 +124,10 @@ class AirlineData:
     particle_density (float): (Optional) The average (solid) particle density \
         of the material in g/cm^3.
         
-    airline_dimentions (dict): Dimentions of the airline in cm. D1 is the \
+    airline_dimensions (dict): dimensions of the airline in cm. D1 is the \
         diameter of the inner conductor and D4 is the diameter of the outer \
         conductor. D2 and D3 bound the sample-airline boundary regions if \
-        particle_diameter is provided. airline_dimentions is generated \
+        particle_diameter is provided. airline_dimensions is generated \
         automatically for airlines VAL, PAL, and GAL. Empty otherwise.
         
     bcorr (complex array): Avg complex permittivity corrected for boundary \
@@ -170,7 +170,7 @@ class AirlineData:
         self.solid_losstan = solid_losstan
         self.particle_diameter = particle_diameter
         self.particle_density = particle_density
-        self.airline_dimentions = self._dims()
+        self.airline_dimensions = self._dims()
         # If appropriate data provided, correct for boundary effects
         if (solid_dielec and particle_diameter and particle_density and \
             bulk_density):
@@ -224,7 +224,7 @@ class AirlineData:
     
     def _dims(self):
         """
-        Determine the dimentions of the airline used in cm.
+        Determine the dimensions of the airline used in cm.
         """
         dims = {}
         # Store inner and outer diameters in a dictionary
@@ -654,11 +654,11 @@ class AirlineData:
             L = self.L
         
         # Determine boundary region porosity
-        total_volume = np.pi*(self.airline_dimentions['D4']**2)*L - \
-            np.pi*(self.airline_dimentions['D1']**2)*self.L
-        sample_volume = np.pi*((self.airline_dimentions['D4']-\
+        total_volume = np.pi*(self.airline_dimensions['D4']**2)*L - \
+            np.pi*(self.airline_dimensions['D1']**2)*self.L
+        sample_volume = np.pi*((self.airline_dimensions['D4']-\
             self.particle_diameter/2)**2)*L - \
-            np.pi*((self.airline_dimentions['D1']-\
+            np.pi*((self.airline_dimensions['D1']-\
             self.particle_diameter/2)**2)*L
         boundary_volume = total_volume - sample_volume
         total_porosity = 1 - (self.bulk_density/self.particle_density)
@@ -684,12 +684,12 @@ class AirlineData:
         
         # Calculate model corrected sample permittivity
         sample_permittivity = (boundary_permittivity * measured_permittivity \
-            * np.log(self.airline_dimentions['D3']/\
-            self.airline_dimentions['D2'])) / (boundary_permittivity * \
-            np.log(self.airline_dimentions['D4']/self.airline_dimentions['D1']) \
-            - measured_permittivity * (np.log(self.airline_dimentions['D2']/\
-            self.airline_dimentions['D1'])+np.log(self.airline_dimentions['D4']\
-            /self.airline_dimentions['D3'])))
+            * np.log(self.airline_dimensions['D3']/\
+            self.airline_dimensions['D2'])) / (boundary_permittivity * \
+            np.log(self.airline_dimensions['D4']/self.airline_dimensions['D1']) \
+            - measured_permittivity * (np.log(self.airline_dimensions['D2']/\
+            self.airline_dimensions['D1'])+np.log(self.airline_dimensions['D4']\
+            /self.airline_dimensions['D3'])))
             
         # Unpack complex
         sample_dielec = sample_permittivity.real

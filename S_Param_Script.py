@@ -244,25 +244,48 @@ class AirlineData:
             dims['D3'] = dims['D4'] - self.particle_diameter
         return dims
     
-    def _iterate_objective_function(self,params,freq,data):
-        
+    def _iterate_objective_function(self,params,freq,data,corr):
+        """
+        Objective funtion to minimize from modified Baker-Jarvis (NIST) 
+            iterative method (Houtz et al. 2016).
+        """
         # Check if using corrected S-params
         if corr:
-            s11 = self.corr_s11
-            s21 = self.corr_s21
-            s12 = self.corr_s12
-            s22 = self.corr_s22
+            s11s = unp.nominal_values(self.corr_s11s)
+            s21 = unp.nominal_values(self.corr_s21)
+            s12 = unp.nominal_values(self.corr_s12)
+            s22 = unp.nominal_values(self.corr_s22)
             L = self.Lcorr
         else:
-            s11 = self.s11
-            s21 = self.s21
-            s12 = self.s12
-            s22 = self.s22
+            s11s = unp.nominal_values(self.s11s)
+            s21 = unp.nominal_values(self.s21)
+            s12 = unp.nominal_values(self.s12)
+            s22 = unp.nominal_values(self.s22)
             L = self.L
             
+        # Cast measured sparams to complex and unwrap phase
+        sm11_complex = 1j*(s11s[0])*\
+                           np.sin(np.unwrap(np.radians(s11s[1]))); \
+        sm11_complex += s11s[0]*\
+                            np.cos(np.unwrap(np.radians(s11s[1])))
+        sm21_complex = 1j*(s21[0])*\
+                           np.sin(np.unwrap(np.radians(s21[1]))); \
+        sm21_complex += s21[0]*\
+                            np.cos(np.unwrap(np.radians(s21[1])))
+        sm12_complex = 1j*(s12[0])*\
+                           np.sin(np.unwrap(np.radians(s12[1]))); \
+        sm12_complex += s12[0]*\
+                            np.cos(np.unwrap(np.radians(s12[1])))
+        sm22_complex = 1j*(s22[0])*\
+                           np.sin(np.unwrap(np.radians(s22[1]))); \
+        sm22_complex += s22[0]*\
+                            np.cos(np.unwrap(np.radians(s22[1])))
+
+        # Unpack parameters
         v = params.valuesdict()
         
-        lam_0 = (C/freq)*100
+        # Calculate predicted sparams
+        lam_0 = (C/freq)*100    # Free-space wavelength
         
         small_gam = (1j*2*np.pi/lam_0)*np.sqrt(v['epsilon']*v['mu'] - (lam_0/LAM_C)**2)
         
@@ -279,6 +302,16 @@ class AirlineData:
         s22_predicted = s11_short_predicted
         
         s12_predicted = s22_predicted
+        
+        # Set up objective funtion to be minimized
+        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
+            + ((np.angle(sm21_complex)-np.angle(s21_predicted))/np.pi)**2 +\
+            (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
+            ((np.angle(sm12_complex)-np.angle(s12_predicted))/np.pi)**2 +\
+            (np.absolute(sm11_complex)-np.absolute(s11_short_predicted))**2 +\
+            ((np.angle(sm11_complex)-np.angle(s11_short_predicted))/np.pi)**2
+            
+        return obj_func
     
     def _permittivity_iterate(self,corr=False):
         """

@@ -244,31 +244,14 @@ class AirlineData:
             dims['D3'] = dims['D4'] - self.particle_diameter
         return dims
     
-    def _iterate_objective_function(self,params,freq,data):
+    def _iterate_objective_function(self,params,freq,data,L):
         """
         Objective funtion to minimize from modified Baker-Jarvis (NIST) 
             iterative method (Houtz et al. 2016).
         """
-        s11s = data[0]
-        s21 = data[1]
-        s12 = data[2]
-        # Cast measured sparams to complex and unwrap phase
-        sm11_complex = 1j*(s11s[0])*\
-                           np.sin(np.unwrap(np.radians(s11s[1]))); \
-        sm11_complex += s11s[0]*\
-                            np.cos(np.unwrap(np.radians(s11s[1])))
-        sm21_complex = 1j*(s21[0])*\
-                           np.sin(np.unwrap(np.radians(s21[1]))); \
-        sm21_complex += s21[0]*\
-                            np.cos(np.unwrap(np.radians(s21[1])))
-        sm12_complex = 1j*(s12[0])*\
-                           np.sin(np.unwrap(np.radians(s12[1]))); \
-        sm12_complex += s12[0]*\
-                            np.cos(np.unwrap(np.radians(s12[1])))
-        #sm22_complex = 1j*(s22[0])*\
-                           np.sin(np.unwrap(np.radians(s22[1]))); \
-        #sm22_complex += s22[0]*\
-                            np.cos(np.unwrap(np.radians(s22[1])))
+        sm11_complex = data[0]
+        sm21_complex = data[1]
+        sm12_complex = data[2]
 
         # Unpack parameters
         v = params.valuesdict()
@@ -278,6 +261,8 @@ class AirlineData:
         epsilon += v['dielec']*np.cos(v['lossfac'])
         mu = 1j*v['mu_real']*np.sin(v['mu_imag']); \
         mu += v['mu_real']*np.cos(v['mu_imag'])
+        #epsilon = v['dielec']
+        #mu = v['mu_real']
         
         # Calculate predicted sparams
         lam_0 = (C/freq)*100    # Free-space wavelength
@@ -287,7 +272,7 @@ class AirlineData:
         
         small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
         
-        t = np.exp(-small_gam*self.L)
+        t = np.exp(-small_gam*L)
         
         big_gam = (small_gam_0*mu - small_gam) / (small_gam_0*mu + \
                   small_gam)
@@ -318,13 +303,27 @@ class AirlineData:
             s21 = unp.nominal_values(self.corr_s21)
             s12 = unp.nominal_values(self.corr_s12)
             #s22 = unp.nominal_values(self.corr_s22)
-            #L = self.Lcorr
+            L = self.Lcorr
         else:
             s11s = unp.nominal_values(self.s11)
             s21 = unp.nominal_values(self.s21)
             s12 = unp.nominal_values(self.s12)
             #s22 = unp.nominal_values(self.s22)
-            #L = self.L
+            L = self.L
+            
+        # Cast measured sparams to complex and unwrap phase
+        sm11_complex = 1j*(s11s[0])*\
+                           np.sin(np.unwrap(np.radians(s11s[1]))); \
+        sm11_complex += s11s[0]*\
+                            np.cos(np.unwrap(np.radians(s11s[1])))
+        sm21_complex = 1j*(s21[0])*\
+                           np.sin(np.unwrap(np.radians(s21[1]))); \
+        sm21_complex += s21[0]*\
+                            np.cos(np.unwrap(np.radians(s21[1])))
+        sm12_complex = 1j*(s12[0])*\
+                           np.sin(np.unwrap(np.radians(s12[1]))); \
+        sm12_complex += s12[0]*\
+                            np.cos(np.unwrap(np.radians(s12[1])))
             
         # Create a set of Parameters
         params = Parameters()
@@ -334,17 +333,19 @@ class AirlineData:
         params.add('mu_imag', value=0, min=0)
         
         # Fit data
-        data = np.zeros(len(self.freq))
+        global data
+        data = np.zeros((3,2),dtype=complex)
         re_dielec = np.zeros(len(self.freq))
         re_lossfac = np.zeros(len(self.freq))
         re_mureal = np.zeros(len(self.freq))
         re_muimag = np.zeros(len(self.freq))
         for n in range(0,len(self.freq)):
-            data[0] = s11s[n]
-            data[1] = s21[n]
-            data[2] = s12[n]
+            data[0] = sm11_complex[n]
+            data[1] = sm21_complex[n]
+            data[2] = sm12_complex[n]
             freq = self.freq[n]
-            minner = Minimizer(self._iterate_objective_function,params,fcn_args=(freq,data))
+            minner = Minimizer(self._iterate_objective_function,\
+                               params,fcn_args=(freq,data,L))
             result = minner.minimize()
             re_dielec[n] = result.params['dielec']._val
             re_lossfac[n] = result.params['lossfac']._val

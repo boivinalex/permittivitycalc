@@ -244,25 +244,14 @@ class AirlineData:
             dims['D3'] = dims['D4'] - self.particle_diameter
         return dims
     
-    def _iterate_objective_function(self,params,freq,data,corr):
+    def _iterate_objective_function(self,params,freq,data):
         """
         Objective funtion to minimize from modified Baker-Jarvis (NIST) 
             iterative method (Houtz et al. 2016).
         """
-        # Check if using corrected S-params
-        if corr:
-            s11s = unp.nominal_values(self.corr_s11s)
-            s21 = unp.nominal_values(self.corr_s21)
-            s12 = unp.nominal_values(self.corr_s12)
-            s22 = unp.nominal_values(self.corr_s22)
-            L = self.Lcorr
-        else:
-            s11s = unp.nominal_values(self.s11s)
-            s21 = unp.nominal_values(self.s21)
-            s12 = unp.nominal_values(self.s12)
-            s22 = unp.nominal_values(self.s22)
-            L = self.L
-            
+        s11s = data[0]
+        s21 = data[1]
+        s12 = data[2]
         # Cast measured sparams to complex and unwrap phase
         sm11_complex = 1j*(s11s[0])*\
                            np.sin(np.unwrap(np.radians(s11s[1]))); \
@@ -276,32 +265,38 @@ class AirlineData:
                            np.sin(np.unwrap(np.radians(s12[1]))); \
         sm12_complex += s12[0]*\
                             np.cos(np.unwrap(np.radians(s12[1])))
-        sm22_complex = 1j*(s22[0])*\
+        #sm22_complex = 1j*(s22[0])*\
                            np.sin(np.unwrap(np.radians(s22[1]))); \
-        sm22_complex += s22[0]*\
+        #sm22_complex += s22[0]*\
                             np.cos(np.unwrap(np.radians(s22[1])))
 
         # Unpack parameters
         v = params.valuesdict()
         
+        # Cast permittivity and permeability parameters to complex
+        epsilon = 1j*v['dielec']*np.sin(v['lossfac']); \
+        epsilon += v['dielec']*np.cos(v['lossfac'])
+        mu = 1j*v['mu_real']*np.sin(v['mu_imag']); \
+        mu += v['mu_real']*np.cos(v['mu_imag'])
+        
         # Calculate predicted sparams
         lam_0 = (C/freq)*100    # Free-space wavelength
         
-        small_gam = (1j*2*np.pi/lam_0)*np.sqrt(v['epsilon']*v['mu'] - (lam_0/LAM_C)**2)
+        small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
+                    (lam_0/LAM_C)**2)
         
         small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
         
-        t = np.exp(-small_gam*L)
+        t = np.exp(-small_gam*self.L)
         
-        big_gam = (small_gam_0*v['mu'] - small_gam) / (small_gam_0*v['mu'] + small_gam)
+        big_gam = (small_gam_0*mu - small_gam) / (small_gam_0*mu + \
+                  small_gam)
         
         s11_short_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
         
         s21_predicted = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
         
-        s22_predicted = s11_short_predicted
-        
-        s12_predicted = s22_predicted
+        s12_predicted = s21_predicted
         
         # Set up objective funtion to be minimized
         obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
@@ -311,13 +306,54 @@ class AirlineData:
             (np.absolute(sm11_complex)-np.absolute(s11_short_predicted))**2 +\
             ((np.angle(sm11_complex)-np.angle(s11_short_predicted))/np.pi)**2
             
-        return obj_func
+        return obj_func.view(np.float)
     
     def _permittivity_iterate(self,corr=False):
         """
         
         """
-
+        # Check if using corrected S-params
+        if corr:
+            s11s = unp.nominal_values(self.corr_s11s)
+            s21 = unp.nominal_values(self.corr_s21)
+            s12 = unp.nominal_values(self.corr_s12)
+            #s22 = unp.nominal_values(self.corr_s22)
+            #L = self.Lcorr
+        else:
+            s11s = unp.nominal_values(self.s11)
+            s21 = unp.nominal_values(self.s21)
+            s12 = unp.nominal_values(self.s12)
+            #s22 = unp.nominal_values(self.s22)
+            #L = self.L
+            
+        # Create a set of Parameters
+        params = Parameters()
+        params.add('dielec', value=4, min=0)
+        params.add('lossfac', value=0.01, min=0)
+        params.add('mu_real', value=1, min=1)
+        params.add('mu_imag', value=0, min=0)
+        
+        # Fit data
+        data = np.zeros(len(self.freq))
+        re_dielec = np.zeros(len(self.freq))
+        re_lossfac = np.zeros(len(self.freq))
+        re_mureal = np.zeros(len(self.freq))
+        re_muimag = np.zeros(len(self.freq))
+        for n in range(0,len(self.freq)):
+            data[0] = s11s[n]
+            data[1] = s21[n]
+            data[2] = s12[n]
+            freq = self.freq[n]
+            minner = Minimizer(self._iterate_objective_function,params,fcn_args=(freq,data))
+            result = minner.minimize()
+            re_dielec[n] = result.params['dielec']._val
+            re_lossfac[n] = result.params['lossfac']._val
+            re_mureal[n] = result.params['mu_real']._val
+            re_muimag[n] = result.params['mu_imag']._val
+        
+        #report_fit(result)
+        
+        return result, re_dielec, re_lossfac, re_mureal, re_muimag
 
     def _permittivity_calc(self,s_param,corr=False):
         """

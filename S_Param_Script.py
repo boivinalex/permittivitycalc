@@ -244,14 +244,14 @@ class AirlineData:
             dims['D3'] = dims['D4'] - self.particle_diameter
         return dims
     
-    def _iterate_objective_function(self,params,freq,data,L):
+    def _iterate_objective_function(self,params,freq,data1,data2,data3,L):
         """
         Objective funtion to minimize from modified Baker-Jarvis (NIST) 
             iterative method (Houtz et al. 2016).
         """
-        sm11_complex = data[0]
-        sm21_complex = data[1]
-        sm12_complex = data[2]
+        sm11_complex = data1
+        sm21_complex = data2
+        sm12_complex = data3
 
         # Unpack parameters
         v = params.valuesdict()
@@ -334,18 +334,18 @@ class AirlineData:
         
         # Fit data
         global data
-        data = np.zeros((3,2),dtype=complex)
+        #data = np.zeros((3,1),dtype=complex)
         re_dielec = np.zeros(len(self.freq))
         re_lossfac = np.zeros(len(self.freq))
         re_mureal = np.zeros(len(self.freq))
         re_muimag = np.zeros(len(self.freq))
         for n in range(0,len(self.freq)):
-            data[0] = sm11_complex[n]
-            data[1] = sm21_complex[n]
-            data[2] = sm12_complex[n]
+            data1 = sm11_complex[n]
+            data2 = sm21_complex[n]
+            data3 = sm12_complex[n]
             freq = self.freq[n]
             minner = Minimizer(self._iterate_objective_function,\
-                               params,fcn_args=(freq,data,L))
+                               params,fcn_args=(freq,data1,data2,data3,L))
             result = minner.minimize()
             re_dielec[n] = result.params['dielec']._val
             re_lossfac[n] = result.params['lossfac']._val

@@ -136,25 +136,33 @@ class AirlineData:
         effects. Computed automatically if solid_dielec, particle_diameter, \
         particle_density, and bulk_density are present. solid_losstan is \
         optional.
+    
+    nrw (bool): If True, use Nicholson, Rross, Weir (NRW) algorithm to \
+        calculate permittivity and magnetic permeability.
     """
     def __init__(self,L,airline,dataArray,file,corr=True,bulk_density=None,\
                  temperature=None,name=None,date=None,solid_dielec=None,\
                  solid_losstan=None,particle_diameter=None,\
-                 particle_density=None):
+                 particle_density=None,nrw=False):
         self.L = L
         self.airline_name = airline
         self.file = file
         self.corr = corr
+        self.nrw = nrw
         # Unpack data into arrays
         self.freq, self.s11, self.s21, self.s12, self.s22 = \
             self._unpack(dataArray)
         # Calculate permittivity
-        self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
-            self._permittivity_calc('a')
-        self.forward_dielec, self.forward_lossfac, self.forward_losstan = \
-            self._permittivity_calc('f')
-        self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan = \
-            self._permittivity_calc('r')
+        if nrw:
+            self.avg_dielec, self.avg_lossfac, self.avg_losstan, self.mu = \
+                self._permittivity_calc('a')
+        else:
+            self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
+                self._permittivity_calc('a')
+            self.forward_dielec, self.forward_lossfac, self.forward_losstan = \
+                self._permittivity_calc('f')
+            self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan = \
+                self._permittivity_calc('r')
         # Calculate corrected permittivity if array length is 601 only
         # Also check for NaNs and don't run if any
         if corr and len(self.freq) == 601:
@@ -162,8 +170,13 @@ class AirlineData:
                 self.Lcorr = self.L - 0.3
                 self.corr_s11, self.corr_s21, self.corr_s12, self.corr_s22 = \
                     self._de_embed()
-                self.corr_avg_dielec, self.corr_avg_lossfac, \
-                    self.corr_avg_losstan = self._permittivity_calc('a',True)
+                if nrw:
+                    self.corr_avg_dielec, self.corr_avg_lossfac, \
+                        self.corr_avg_losstan, self.corr_avg_mu = \
+                        self._permittivity_calc('a',True)
+                else:
+                    self.corr_avg_dielec, self.corr_avg_lossfac, \
+                        self.corr_avg_losstan = self._permittivity_calc('a',True)
         # Optional attributes
         self.bulk_density = bulk_density
         self.temperature = temperature
@@ -481,19 +494,31 @@ class AirlineData:
         lam_og = 1 / np.sqrt(1/lam_0**2 - 1/LAM_C**2)
         
         # Calculated effective electromagnetic parameters
-        mu_eff = 1      #Assume mu_eff = mu_r = 1
-        ep_eff = (lam_og/a)**2
-         
-        # Calculate e_r (relative permittivity)
-        ep_r = (1 - lam_0**2/LAM_C**2)*ep_eff + \
-        (lam_0**2/LAM_C*2)/mu_eff
+        if self.nrw:
+            # Calculate mu_r (relative permeability)
+            mu_r = (1+gam)/((a*(1-gam))*(np.sqrt((1/lam_0**2)-(1/LAM_C**2))))
+            mu_eff = mu_r
+            # Calculate e_r (relative permittivity)
+            ep_r = (mu_r*(((1-gam)**2)/((1+gam)**2))*(1-(lam_0**2/LAM_C**2))) \
+                    + ((lam_0**2/LAM_C**2)*(1/mu_r))
+        else: 
+            mu_eff = 1      #Assume mu_eff = mu_r = 1
+            ep_eff = (lam_og/a)**2
+            # Calculate e_r (relative permittivity)
+            ep_r = (1 - lam_0**2/LAM_C**2)*ep_eff + \
+            (lam_0**2/LAM_C*2)/mu_eff
         
         dielec = ep_r.real
-        lossfac = ep_r.imag
+        if self.nrw:
+            lossfac = -ep_r.imag
+            complex_mu = mu_eff
+        else:
+            lossfac = ep_r.imag
         losstan = lossfac/dielec
         
         # Calculate uncertainties
-        if isinstance(self.s11[0][0], uncertainties.UFloat): # Check for uncertainties
+        # Check for uncertainties and make sure not using NRW
+        if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw: 
             delta_dielec, delta_lossfac, delta_losstan = \
                 self._calc_uncertainties(s_param,nrows,sign,x,s_reflect,\
                                          s_trans,gam,lam_og,new_t,mu_eff,\
@@ -502,7 +527,10 @@ class AirlineData:
             lossfac = unp.uarray(lossfac,delta_lossfac)
             losstan = unp.uarray(losstan,delta_losstan)
         
-        return dielec,lossfac,losstan
+        if self.nrw:
+            return dielec,lossfac,losstan,complex_mu
+        else:
+            return dielec,lossfac,losstan
         
     def _calc_uncertainties(self,s_param,nrows,sign,x,s_reflect,s_trans,gam,\
                             lam_og,new_t,mu_eff,ep_eff,lam_0,dielec,\

@@ -199,8 +199,9 @@ class AirlineData:
                 (self.bulk_density,self.temperature,self.name,self.date,\
                  self.corr) + ',solid_dielec=%r,solid_losstan=%r' % \
                  (self.solid_dielec,self.solid_losstan) + \
-                 ',particle_diameter=%r,particle_density=%r)' % \
-                 (self.particle_diameter, self.particle_density)
+                 ',particle_diameter=%r,particle_density=%r' % \
+                 (self.particle_diameter, self.particle_density) + \
+                 ',nrw=%r)' % (self.nrw)
         return rep
         
     def __str__(self):
@@ -380,15 +381,14 @@ class AirlineData:
             epsilon = 1j*self.avg_dielec*np.sin(self.avg_lossfac);
             epsilon += self.avg_dielec*np.cos(self.avg_lossfac)
             mu = 1j* self.mu.real*np.sin(self.mu.imag);
-            mu += self.mu.real*np.cos(self.muimag)
+            mu += self.mu.real*np.cos(self.mu.imag)
         else:
             self.nrw = True
             dielec, lossfac, losstan, mu = \
                 self._permittivity_calc('a')
             epsilon = 1j*dielec*np.sin(lossfac);
             epsilon += dielec*np.cos(lossfac)
-            mu = 1j* mu.real*np.sin(mu.imag);
-            mu += mu.real*np.cos(mu.imag)
+            self.nrw = False    # Reset to previous setting
             
         # Create a set of Parameters to the Laurent model
         init_params = Parameters()

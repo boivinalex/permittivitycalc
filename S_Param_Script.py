@@ -275,8 +275,8 @@ class AirlineData:
         d_0 = v['d_0']
         
         # Equations
-        mu_predicted = a_0 + a_1/(1 + 1j*np.absolute(b_1)*2*np.pi\
-              *self.freq) + a_2/(1 + 1j*np.absolute(b_2)\
+        mu_predicted = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
+              *self.freq) + a_2/(1 + 1j*10e-9*b_2\
               *2*np.pi*self.freq)**2
         #mu_predicted = 1
                         
@@ -321,13 +321,13 @@ class AirlineData:
         global epsilon
         global mu
         
-        mu = a_0 + a_1/(1 + 1j*np.absolute(b_1)*2*np.pi\
-              *self.freq) + a_2/(1 + 1j*np.absolute(b_2)\
+        mu = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
+              *self.freq) + a_2/(1 + 1j*10e-9*b_2\
               *2*np.pi*self.freq)**2
         #mu = 1
                          
-        epsilon = d_0 + a_3/(1 + 1j*np.absolute(10e-9*b_3)*2*np.pi\
-                   *self.freq) + a_4/(1 + 1j*np.absolute(10e-9*b_4)\
+        epsilon = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
+                   *self.freq) + a_4/(1 + 1j*10e-9*b_4\
                    *2*np.pi*self.freq)**2
                              
 #        # Force physical mu and epsilon
@@ -451,18 +451,18 @@ class AirlineData:
         d_0 = init_result.params['d_0']._val
         
         # Calculate model EM parameters
-        mu_iter = a_0 + a_1/(1 + 1j*np.absolute(b_1)*2*np.pi\
-              *self.freq) + a_2/(1 + 1j*np.absolute(b_2)\
+        mu_iter = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
+              *self.freq) + a_2/(1 + 1j*10e-9*b_2\
               *2*np.pi*self.freq)**2
                         
-        epsilon_iter = d_0 + a_3/(1 + 1j*np.absolute(10e-9*b_3)*2*np.pi\
-                   *self.freq) + a_4/(1 + 1j*np.absolute(10e-9*b_4)\
+        epsilon_iter = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
+                   *self.freq) + a_4/(1 + 1j*10e-9*b_4\
                    *2*np.pi*self.freq)**2
         # Plot                    
         pplot.make_plot([self.freq,self.freq],[epsilon.real,epsilon_iter.real],legend_label=['Analytical','Iterative'])
         pplot.make_plot([self.freq,self.freq],[epsilon.imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
         pplot.make_plot([self.freq,self.freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
-        pplot.make_plot([self.freq,self.freq],[mu.imag,mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([self.freq,self.freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
         
                 
         ## Perform Modified Baker-Jarvis iteration
@@ -529,19 +529,19 @@ class AirlineData:
         d_0 = result.params['d_0']._val
         
         # Calculate model EM parameters
-        mu_iter = a_0 + a_1/(1 + 1j*np.absolute(b_1)*2*np.pi\
-              *self.freq) + a_2/(1 + 1j*np.absolute(b_2)\
+        mu_iter = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
+              *self.freq) + a_2/(1 + 1j*10e-9*b_2\
               *2*np.pi*self.freq)**2
                         
-        epsilon_iter = d_0 + a_3/(1 + 1j*np.absolute(10e-9*b_3)*2*np.pi\
-                   *self.freq) + a_4/(1 + 1j*np.absolute(10e-9*b_4)\
+        epsilon_iter = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
+                   *self.freq) + a_4/(1 + 1j*10e-9*b_4\
                    *2*np.pi*self.freq)**2
                              
         # Plot
         pplot.make_plot([self.freq,self.freq],[self.avg_dielec,epsilon_iter.real],legend_label=['Analytical','Iterative'])
         pplot.make_plot([self.freq,self.freq],[self.avg_lossfac,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
         pplot.make_plot([self.freq,self.freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
-        pplot.make_plot([self.freq,self.freq],[mu.imag,mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([self.freq,self.freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
         
         return result
 

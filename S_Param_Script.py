@@ -263,41 +263,35 @@ class AirlineData:
         """
         # Unpack parameters
         v = params.valuesdict()
-        a_0 = 1j*v['a_0']*np.sin(v['a_0i']);
-        a_0 += v['a_0']*np.cos(v['a_0i'])
-        a_1 = 1j*v['a_1']*np.sin(v['a_1i']);
-        a_1 += v['a_1']*np.cos(v['a_1i'])
-        a_2 = 1j*v['a_2']*np.sin(v['a_2i']);
-        a_2 += v['a_2']*np.cos(v['a_2i'])
-        a_3 = 1j*v['a_3']*np.sin(v['a_3i']);
-        a_3 += v['a_3']*np.cos(v['a_3i'])
-        a_4 = 1j*v['a_4']*np.sin(v['a_4i']);
-        a_4 += v['a_4']*np.cos(v['a_4i'])
-        b_1 = 1j*v['b_1']*np.sin(v['b_1i']);
-        b_1 += v['b_1']*np.cos(v['b_1i'])
-        b_2 = 1j*v['b_2']*np.sin(v['b_2i']);
-        b_2 += v['b_2']*np.cos(v['b_2i'])
-        b_3 = 1j*v['b_3']*np.sin(v['b_3i']);
-        b_3 += v['b_3']*np.cos(v['b_3i'])
-        b_4 = 1j*v['b_4']*np.sin(v['b_4i']);
-        b_4 += v['b_4']*np.cos(v['b_4i'])
-        d_0 = 1j*v['d_0']*np.sin(v['d_0i']);
-        d_0 += v['d_0']*np.cos(v['d_0i'])
+        a_0 = v['a_0'] 
+        a_1 = v['a_1']
+        a_2 = v['a_2']
+        b_1 = v['b_1']
+        b_2 = v['b_2']
+        a_3 = v['a_3']
+        a_4 = v['a_4']
+        b_3 = v['b_3']
+        b_4 = v['b_4']
+        d_0 = v['d_0']
         
         # Equations
         mu_predicted = a_0 + a_1/(1 + 1j*np.absolute(b_1)*2*np.pi\
               *self.freq) + a_2/(1 + 1j*np.absolute(b_2)\
               *2*np.pi*self.freq)**2
+        #mu_predicted = 1
                         
-        epsilon_predicted = d_0 + a_3/(1 + 1j*np.absolute(b_3)*2*np.pi\
-                   *self.freq) + a_4/(1 + 1j*np.absolute(b_4)\
+        epsilon_predicted = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
+                   *self.freq) + a_4/(1 + 1j*10e-9*b_4\
                    *2*np.pi*self.freq)**2
                              
         # Residuals
-        resid1 = mu_predicted - mu
-        resid2 = epsilon_predicted - epsilon
+        resid1 = mu_predicted.real - mu.real
+        resid2 = mu_predicted.imag - mu.imag
+        resid3 = epsilon_predicted.real - epsilon.real
+        resid4 = epsilon_predicted.imag - epsilon.imag
         
-        return np.concatenate((resid1.view(np.float),resid2.view(np.float)))
+        #return np.concatenate((resid1.view(np.float),resid2.view(np.float)))
+        return np.concatenate((resid1,0.01*resid2,resid3,0.01*resid4))
         
     def _iterate_objective_function(self,params,data,L):
         """
@@ -310,41 +304,49 @@ class AirlineData:
 
         # Unpack parameters
         v = params.valuesdict()
-        a_0 = 1j*v['a_0']*np.sin(v['a_0i']);
-        a_0 += v['a_0']*np.cos(v['a_0i'])
-        a_1 = 1j*v['a_1']*np.sin(v['a_1i']);
-        a_1 += v['a_1']*np.cos(v['a_1i'])
-        a_2 = 1j*v['a_2']*np.sin(v['a_2i']);
-        a_2 += v['a_2']*np.cos(v['a_2i'])
-        a_3 = 1j*v['a_3']*np.sin(v['a_3i']);
-        a_3 += v['a_3']*np.cos(v['a_3i'])
-        a_4 = 1j*v['a_4']*np.sin(v['a_4i']);
-        a_4 += v['a_4']*np.cos(v['a_4i'])
-        b_1 = 1j*v['b_1']*np.sin(v['b_1i']);
-        b_1 += v['b_1']*np.cos(v['b_1i'])
-        b_2 = 1j*v['b_2']*np.sin(v['b_2i']);
-        b_2 += v['b_2']*np.cos(v['b_2i'])
-        b_3 = 1j*v['b_3']*np.sin(v['b_3i']);
-        b_3 += v['b_3']*np.cos(v['b_3i'])
-        b_4 = 1j*v['b_4']*np.sin(v['b_4i']);
-        b_4 += v['b_4']*np.cos(v['b_4i'])
-        d_0 = 1j*v['d_0']*np.sin(v['d_0i']);
-        d_0 += v['d_0']*np.cos(v['d_0i'])
+        a_0 = v['a_0'] 
+        a_1 = v['a_1']
+        a_2 = v['a_2']
+        b_1 = v['b_1']
+        b_2 = v['b_2']
+        a_3 = v['a_3']
+        a_4 = v['a_4']
+        b_3 = v['b_3']
+        b_4 = v['b_4']
+        d_0 = v['d_0']
         
-        # Calculate predicted mu and epsilon
+        # Calculate predicted mu and epsilon and force positive
+        global epsilon
+        global mu
+        
         mu = a_0 + a_1/(1 + 1j*np.absolute(b_1)*2*np.pi\
               *self.freq) + a_2/(1 + 1j*np.absolute(b_2)\
               *2*np.pi*self.freq)**2
-                        
-        epsilon = d_0 + a_3/(1 + 1j*np.absolute(b_3)*2*np.pi\
-                   *self.freq) + a_4/(1 + 1j*np.absolute(b_4)\
+        #mu = 1
+                         
+        epsilon = d_0 + a_3/(1 + 1j*np.absolute(10e-9*b_3)*2*np.pi\
+                   *self.freq) + a_4/(1 + 1j*np.absolute(10e-9*b_4)\
                    *2*np.pi*self.freq)**2
+                             
+#        # Force physical mu and epsilon
+#        for n in range(0,len(mu)):
+#            mu[n] = max(mu[n],1)
+#            epsilon[n] = max(epsilon[n],1)
         
         # Calculate predicted sparams
         lam_0 = (C/self.freq)*100    # Free-space wavelength
         
+        global small_gam
+        global small_gam_0
+        global t
+        global big_gam
+        global s11_short_predicted
+        global s21_predicted
+        
         small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
                     (lam_0/LAM_C)**2)
+        
+        #print(np.isnan(small_gam).any())
         
         small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
         
@@ -353,28 +355,51 @@ class AirlineData:
         big_gam = (small_gam_0*mu - small_gam) / (small_gam_0*mu + \
                   small_gam)
         
-        s11_short_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
+        #print(np.isinf(small_gam).any())
+        #print(np.isinf(big_gam).any())
+        #print(np.isinf(t).any())
+        
+        # Modified S11
+        #s11_short_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
+        
+        # Baker-Jarvis S11
+        s11_short_predicted = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
         
         s21_predicted = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
+        
+        # Force positive S-params
+#        for n in range(0,len(self.freq)):
+#            if np.isnan(s11_short_predicted[n]):
+#                s11_short_predicted[n] = 0
+#            if np.isnan(s21_predicted[n]):
+#                s21_predicted[n] = 0
+        
+        #print(np.isnan(s11_short_predicted).any())
+        #print(np.isnan(s21_predicted).any())
         
         s12_predicted = s21_predicted
         
         # Set up objective funtion to be minimized
-        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
-            + ((np.angle(sm21_complex)-np.angle(s21_predicted))/np.pi)**2 +\
-            (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
-            ((np.angle(sm12_complex)-np.angle(s12_predicted))/np.pi)**2 +\
-            (np.absolute(sm11_complex)-np.absolute(s11_short_predicted))**2 +\
-            ((np.angle(sm11_complex)-np.angle(s11_short_predicted))/np.pi)**2
+#        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
+#            + ((np.angle(sm21_complex)-np.angle(s21_predicted))/np.pi)**2 +\
+#            (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
+#            ((np.angle(sm12_complex)-np.angle(s12_predicted))/np.pi)**2 +\
+#            (np.absolute(sm11_complex)-np.absolute(s11_short_predicted))**2 +\
+#            ((np.angle(sm11_complex)-np.angle(s11_short_predicted))/np.pi)**2
+        obj_func_real = (sm21_complex.real - s21_predicted.real) + \
+            (sm12_complex.real - s12_predicted.real) + \
+            (sm11_complex.real - s11_short_predicted.real)
+        obj_func_imag = (sm21_complex.imag - s21_predicted.imag) + \
+            (sm12_complex.imag - s12_predicted.imag) + \
+            (sm11_complex.imag - s11_short_predicted.imag)
             
-        return obj_func.view(np.float)
+        return np.concatenate((obj_func_real,obj_func_imag))
+        #return np.abs(obj_func)
     
     def _permittivity_iterate(self,corr=False):
         """
         
         """
-        global epsilon
-        global mu
         ## Get Initial Guess for Iteration Using NRW
         # Get electromagnetic properties
         if self.nrw:
@@ -392,26 +417,16 @@ class AirlineData:
             
         # Create a set of Parameters to the Laurent model
         init_params = Parameters()
-        init_params.add('a_0',value=0)
-        init_params.add('a_1',value=0)
-        init_params.add('a_2',value=0)
-        init_params.add('a_3',value=0)
-        init_params.add('a_4',value=0)
-        init_params.add('b_1',value=0)
-        init_params.add('b_2',value=0)
-        init_params.add('b_3',value=0)
-        init_params.add('b_4',value=0)
-        init_params.add('d_0',value=0)
-        init_params.add('a_0i',value=0)
-        init_params.add('a_1i',value=0)
-        init_params.add('a_2i',value=0)
-        init_params.add('a_3i',value=0)
-        init_params.add('a_4i',value=0)
-        init_params.add('b_1i',value=0)
-        init_params.add('b_2i',value=0)
-        init_params.add('b_3i',value=0)
-        init_params.add('b_4i',value=0)
-        init_params.add('d_0i',value=0)
+        init_params.add('a_0',value=1,min=0)
+        init_params.add('a_1',value=1,min=0)
+        init_params.add('a_2',value=1,min=0)
+        init_params.add('a_3',value=1,min=0)
+        init_params.add('a_4',value=1,min=0)
+        init_params.add('b_1',value=1,min=0)
+        init_params.add('b_2',value=1,min=0)
+        init_params.add('b_3',value=1,min=0)
+        init_params.add('b_4',value=1,min=0)
+        init_params.add('d_0',value=1,min=0)
         
         # Iterate to find parameters
         miner = Minimizer(self._laurent_debye_equations,init_params,\
@@ -432,16 +447,21 @@ class AirlineData:
         b_3 = init_result.params['b_3']._val
         b_4 = init_result.params['b_4']._val
         d_0 = init_result.params['d_0']._val
-        a_0i = init_result.params['a_0i']._val
-        a_1i = init_result.params['a_1i']._val
-        a_2i = init_result.params['a_2i']._val
-        a_3i = init_result.params['a_3i']._val
-        a_4i = init_result.params['a_4i']._val
-        b_1i = init_result.params['b_1i']._val
-        b_2i = init_result.params['b_2i']._val
-        b_3i = init_result.params['b_3i']._val
-        b_4i = init_result.params['b_4i']._val
-        d_0i = init_result.params['d_0i']._val
+        
+        # Calculate model EM parameters
+        mu_iter = a_0 + a_1/(1 + 1j*np.absolute(b_1)*2*np.pi\
+              *self.freq) + a_2/(1 + 1j*np.absolute(b_2)\
+              *2*np.pi*self.freq)**2
+                        
+        epsilon_iter = d_0 + a_3/(1 + 1j*np.absolute(10e-9*b_3)*2*np.pi\
+                   *self.freq) + a_4/(1 + 1j*np.absolute(10e-9*b_4)\
+                   *2*np.pi*self.freq)**2
+        # Plot                    
+        pplot.make_plot([self.freq,self.freq],[epsilon.real,epsilon_iter.real],legend_label=['Analytical','Iterative'])
+        pplot.make_plot([self.freq,self.freq],[epsilon.imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([self.freq,self.freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([self.freq,self.freq],[mu.imag,mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+        
                 
         ## Perform Modified Baker-Jarvis iteration
         # Check if using corrected S-params
@@ -460,45 +480,36 @@ class AirlineData:
             
         # Cast measured sparams to complex and unwrap phase
         sm11_complex = 1j*(s11s[0])*\
-                           np.sin(np.unwrap(np.radians(s11s[1]))); \
+                           np.sin(np.radians(s11s[1])); \
         sm11_complex += s11s[0]*\
-                            np.cos(np.unwrap(np.radians(s11s[1])))
+                            np.cos(np.radians(s11s[1]))
         sm21_complex = 1j*(s21[0])*\
-                           np.sin(np.unwrap(np.radians(s21[1]))); \
+                           np.sin(np.radians(s21[1])); \
         sm21_complex += s21[0]*\
-                            np.cos(np.unwrap(np.radians(s21[1])))
+                            np.cos(np.radians(s21[1]))
         sm12_complex = 1j*(s12[0])*\
-                           np.sin(np.unwrap(np.radians(s12[1]))); \
+                           np.sin(np.radians(s12[1])); \
         sm12_complex += s12[0]*\
-                            np.cos(np.unwrap(np.radians(s12[1])))
+                            np.cos(np.radians(s12[1]))
             
         # Create a set of Parameters
         params = Parameters()
-        params.add('a_0',value=a_0)
-        params.add('a_1',value=a_1)
-        params.add('a_2',value=a_2)
-        params.add('a_3',value=a_3)
-        params.add('a_4',value=a_4)
-        params.add('b_1',value=b_1)
-        params.add('b_2',value=b_2)
-        params.add('b_3',value=b_3)
-        params.add('b_4',value=b_4)
-        params.add('d_0',value=d_0)
-        params.add('a_0i',value=a_0i)
-        params.add('a_1i',value=a_1i)
-        params.add('a_2i',value=a_2i)
-        params.add('a_3i',value=a_3i)
-        params.add('a_4i',value=a_4i)
-        params.add('b_1i',value=b_1i)
-        params.add('b_2i',value=b_2i)
-        params.add('b_3i',value=b_3i)
-        params.add('b_4i',value=b_4i)
-        params.add('d_0i',value=d_0i)
+        params.add('a_0',value=a_0,min=0)
+        params.add('a_1',value=a_1,min=0)
+        params.add('a_2',value=a_2,min=0)
+        params.add('a_3',value=a_3,min=0)
+        params.add('a_4',value=a_4,min=0)
+        params.add('b_1',value=b_1,min=0)
+        params.add('b_2',value=b_2,min=0)
+        params.add('b_3',value=b_3,min=0)
+        params.add('b_4',value=b_4,min=0)
+        params.add('d_0',value=d_0,min=0)
         
         # Fit data
         data = [sm11_complex,sm21_complex,sm12_complex]
         minner = Minimizer(self._iterate_objective_function,\
                            params,fcn_args=(data,L))
+        global result
         result = minner.minimize()
         
         report_fit(result)
@@ -514,29 +525,19 @@ class AirlineData:
         b_3 = result.params['b_3']._val
         b_4 = result.params['b_4']._val
         d_0 = result.params['d_0']._val
-        a_0i = result.params['a_0i']._val
-        a_1i = result.params['a_1i']._val
-        a_2i = result.params['a_2i']._val
-        a_3i = result.params['a_3i']._val
-        a_4i = result.params['a_4i']._val
-        b_1i = result.params['b_1i']._val
-        b_2i = result.params['b_2i']._val
-        b_3i = result.params['b_3i']._val
-        b_4i = result.params['b_4i']._val
-        d_0i = result.params['d_0i']._val
         
         # Calculate model EM parameters
         mu_iter = a_0 + a_1/(1 + 1j*np.absolute(b_1)*2*np.pi\
               *self.freq) + a_2/(1 + 1j*np.absolute(b_2)\
               *2*np.pi*self.freq)**2
                         
-        epsilon_iter = d_0 + a_3/(1 + 1j*np.absolute(b_3)*2*np.pi\
-                   *self.freq) + a_4/(1 + 1j*np.absolute(b_4)\
+        epsilon_iter = d_0 + a_3/(1 + 1j*np.absolute(10e-9*b_3)*2*np.pi\
+                   *self.freq) + a_4/(1 + 1j*np.absolute(10e-9*b_4)\
                    *2*np.pi*self.freq)**2
                              
         # Plot
         pplot.make_plot([self.freq,self.freq],[self.avg_dielec,epsilon_iter.real],legend_label=['Analytical','Iterative'])
-        pplot.make_plot([self.freq,self.freq],[self.avg_lossfac,epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([self.freq,self.freq],[self.avg_lossfac,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
         pplot.make_plot([self.freq,self.freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
         pplot.make_plot([self.freq,self.freq],[mu.imag,mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
         
@@ -1207,12 +1208,12 @@ def perm_compare(classlist,allplots=False):
         pplot.make_plot(freq,dielec,'d',**kwargs)
         pplot.make_plot(freq,losstan,'lt',**kwargs)
         
-def run_default():
+def run_default(airline_name='VAL'):
     """
     Run AirlineData on get_METAS_data with all the prompts and return the \
         instance.
     """
-    return AirlineData(*get_METAS_data())
+    return AirlineData(*get_METAS_data(airline=airline_name))
 
 def run_example(flag='single'):
     test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \

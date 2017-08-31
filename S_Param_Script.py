@@ -301,6 +301,8 @@ class AirlineData:
         sm11_complex = data[0]
         sm21_complex = data[1]
         sm12_complex = data[2]
+        
+        beta = 0
 
         # Unpack parameters
         v = params.valuesdict()
@@ -363,7 +365,7 @@ class AirlineData:
         #s11_short_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
         
         # Baker-Jarvis S11
-        s11_short_predicted = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
+        s11_short_predicted = beta*(big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
         
         s21_predicted = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
         
@@ -388,10 +390,10 @@ class AirlineData:
 #            ((np.angle(sm11_complex)-np.angle(s11_short_predicted))/np.pi)**2
         obj_func_real = (sm21_complex.real - s21_predicted.real) + \
             (sm12_complex.real - s12_predicted.real) + \
-            (sm11_complex.real - s11_short_predicted.real)
+            beta*(sm11_complex.real - s11_short_predicted.real)
         obj_func_imag = (sm21_complex.imag - s21_predicted.imag) + \
             (sm12_complex.imag - s12_predicted.imag) + \
-            (sm11_complex.imag - s11_short_predicted.imag)
+            beta*(sm11_complex.imag - s11_short_predicted.imag)
             
         return np.concatenate((obj_func_real,obj_func_imag))
         #return np.abs(obj_func)

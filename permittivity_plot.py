@@ -107,7 +107,6 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     else:   # If legend_label is a list, make sure no list items are None
         for n in range(0,len(xval)):
             # If a list item is None, make it a label
-            print(n)
             if not legend_label[n]:
                 legend_label[n] = 'Data {}'.format(n+1)
         

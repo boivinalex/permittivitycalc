@@ -275,6 +275,7 @@ class AirlineData:
         d_0 = v['d_0']
         
         # Equations
+        global mu_predicted
         mu_predicted = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
               *self.freq) + a_2/(1 + 1j*10e-9*b_2\
               *2*np.pi*self.freq)**2
@@ -302,7 +303,7 @@ class AirlineData:
         sm21_complex = data[1]
         sm12_complex = data[2]
         
-        beta = 0
+        beta = 1
 
         # Unpack parameters
         v = params.valuesdict()
@@ -318,8 +319,8 @@ class AirlineData:
         d_0 = v['d_0']
         
         # Calculate predicted mu and epsilon and force positive
-        global epsilon
-        global mu
+        #global epsilon
+        #global mu
         
         mu = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
               *self.freq) + a_2/(1 + 1j*10e-9*b_2\
@@ -404,6 +405,7 @@ class AirlineData:
         """
         ## Get Initial Guess for Iteration Using NRW
         # Get electromagnetic properties
+        global mu
         if self.nrw:
             epsilon = 1j*self.avg_dielec*np.sin(self.avg_lossfac);
             epsilon += self.avg_dielec*np.cos(self.avg_lossfac)
@@ -542,8 +544,6 @@ class AirlineData:
         pplot.make_plot([self.freq,self.freq],[self.avg_lossfac,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
         pplot.make_plot([self.freq,self.freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
         pplot.make_plot([self.freq,self.freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
-        
-        return result
 
     def _permittivity_calc(self,s_param,corr=False):
         """

@@ -277,22 +277,22 @@ class AirlineData:
         # Equations
         global mu_predicted
         mu_predicted = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
-              *self.freq) + a_2/(1 + 1j*10e-9*b_2\
-              *2*np.pi*self.freq)**2
+              *self.freq[test.freq>300000]) + a_2/(1 + 1j*10e-9*b_2\
+              *2*np.pi*self.freq[test.freq>300000])**2
         #mu_predicted = 1
                         
         epsilon_predicted = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
-                   *self.freq) + a_4/(1 + 1j*10e-9*b_4\
-                   *2*np.pi*self.freq)**2
+                   *self.freq[test.freq>300000]) + a_4/(1 + 1j*10e-9*b_4\
+                   *2*np.pi*self.freq[test.freq>300000])**2
                              
         # Residuals
         resid1 = mu_predicted.real - mu.real
-        resid2 = mu_predicted.imag - mu.imag
+        resid2 = (0.01*mu_predicted.imag - 0.01*mu.imag)
         resid3 = epsilon_predicted.real - epsilon.real
-        resid4 = epsilon_predicted.imag - epsilon.imag
+        resid4 = (0.1*epsilon_predicted.imag - 0.1*epsilon.imag)
         
         #return np.concatenate((resid1.view(np.float),resid2.view(np.float)))
-        return np.concatenate((resid1,0.01*resid2,resid3,0.01*resid4))
+        return np.concatenate((resid1,resid2,resid3,resid4))
         
     def _iterate_objective_function(self,params,data,L):
         """
@@ -323,13 +323,13 @@ class AirlineData:
         #global mu
         
         mu = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
-              *self.freq) + a_2/(1 + 1j*10e-9*b_2\
-              *2*np.pi*self.freq)**2
+              *self.freq[test.freq>300000]) + a_2/(1 + 1j*10e-9*b_2\
+              *2*np.pi*self.freq[test.freq>300000])**2
         #mu = 1
                          
         epsilon = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
-                   *self.freq) + a_4/(1 + 1j*10e-9*b_4\
-                   *2*np.pi*self.freq)**2
+                   *self.freq[test.freq>300000]) + a_4/(1 + 1j*10e-9*b_4\
+                   *2*np.pi*self.freq[test.freq>300000])**2
                              
 #        # Force physical mu and epsilon
 #        for n in range(0,len(mu)):
@@ -337,7 +337,7 @@ class AirlineData:
 #            epsilon[n] = max(epsilon[n],1)
         
         # Calculate predicted sparams
-        lam_0 = (C/self.freq)*100    # Free-space wavelength
+        lam_0 = (C/self.freq[test.freq>300000])*100    # Free-space wavelength
         
         global small_gam
         global small_gam_0
@@ -406,17 +406,20 @@ class AirlineData:
         ## Get Initial Guess for Iteration Using NRW
         # Get electromagnetic properties
         global mu
+        freq = self.freq[test.freq>300000]
         if self.nrw:
             epsilon = 1j*self.avg_dielec*np.sin(self.avg_lossfac);
             epsilon += self.avg_dielec*np.cos(self.avg_lossfac)
-            mu = 1j* self.mu.real*np.sin(self.mu.imag);
-            mu += self.mu.real*np.cos(self.mu.imag)
+            epsilon = epsilon[test.freq>300000]
+            mu = self.mu[test.freq>300000]
         else:
             self.nrw = True
             dielec, lossfac, losstan, mu = \
                 self._permittivity_calc('a')
             epsilon = 1j*dielec*np.sin(lossfac);
             epsilon += dielec*np.cos(lossfac)
+            epsilon = epsilon[test.freq>300000]
+            mu = mu[test.freq>300000]
             self.nrw = False    # Reset to previous setting
             
         # Create a set of Parameters to the Laurent model
@@ -454,17 +457,17 @@ class AirlineData:
         
         # Calculate model EM parameters
         mu_iter = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
-              *self.freq) + a_2/(1 + 1j*10e-9*b_2\
-              *2*np.pi*self.freq)**2
+              *freq) + a_2/(1 + 1j*10e-9*b_2\
+              *2*np.pi*freq)**2
                         
         epsilon_iter = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
-                   *self.freq) + a_4/(1 + 1j*10e-9*b_4\
-                   *2*np.pi*self.freq)**2
+                   *freq) + a_4/(1 + 1j*10e-9*b_4\
+                   *2*np.pi*freq)**2
         # Plot                    
-        pplot.make_plot([self.freq,self.freq],[epsilon.real,epsilon_iter.real],legend_label=['Analytical','Iterative'])
-        pplot.make_plot([self.freq,self.freq],[epsilon.imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
-        pplot.make_plot([self.freq,self.freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
-        pplot.make_plot([self.freq,self.freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter.real],legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[epsilon.imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
         
                 
         ## Perform Modified Baker-Jarvis iteration
@@ -481,6 +484,10 @@ class AirlineData:
             s12 = unp.nominal_values(self.s12)
             #s22 = unp.nominal_values(self.s22)
             L = self.L
+            
+        s11s = np.array((s11s[0][test.freq>300000],s11s[1][test.freq>300000]))
+        s21 = np.array((s21[0][test.freq>300000],s21[1][test.freq>300000]))
+        s12 = np.array((s12[0][test.freq>300000],s12[1][test.freq>300000]))
             
         # Cast measured sparams to complex and unwrap phase
         sm11_complex = 1j*(s11s[0])*\
@@ -532,18 +539,18 @@ class AirlineData:
         
         # Calculate model EM parameters
         mu_iter = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
-              *self.freq) + a_2/(1 + 1j*10e-9*b_2\
-              *2*np.pi*self.freq)**2
+              *freq) + a_2/(1 + 1j*10e-9*b_2\
+              *2*np.pi*freq)**2
                         
         epsilon_iter = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
-                   *self.freq) + a_4/(1 + 1j*10e-9*b_4\
-                   *2*np.pi*self.freq)**2
+                   *freq) + a_4/(1 + 1j*10e-9*b_4\
+                   *2*np.pi*freq)**2
                              
         # Plot
-        pplot.make_plot([self.freq,self.freq],[self.avg_dielec,epsilon_iter.real],legend_label=['Analytical','Iterative'])
-        pplot.make_plot([self.freq,self.freq],[self.avg_lossfac,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
-        pplot.make_plot([self.freq,self.freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
-        pplot.make_plot([self.freq,self.freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([freq,freq],[self.avg_dielec[test.freq>300000],epsilon_iter.real],legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[self.avg_lossfac[test.freq>300000],-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
 
     def _permittivity_calc(self,s_param,corr=False):
         """

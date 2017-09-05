@@ -276,9 +276,14 @@ class AirlineData:
         
         # Equations
         global mu_predicted
-        mu_predicted = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
+        global mu_check
+        mu_check = mu
+        mu_predicted_real = (a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
               *self.freq[test.freq>300000]) + a_2/(1 + 1j*10e-9*b_2\
-              *2*np.pi*self.freq[test.freq>300000])**2
+              *2*np.pi*self.freq[test.freq>300000])**2).real
+        mu_predicted_imag = -(a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
+              *self.freq[test.freq>300000]) + a_2/(1 + 1j*10e-9*b_2\
+              *2*np.pi*self.freq[test.freq>300000])**2).imag
         #mu_predicted = 1
                         
         epsilon_predicted = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
@@ -286,13 +291,17 @@ class AirlineData:
                    *2*np.pi*self.freq[test.freq>300000])**2
                              
         # Residuals
-        resid1 = mu_predicted.real - mu.real
-        resid2 = (0.01*mu_predicted.imag - 0.01*mu.imag)
+        resid1 = mu_predicted_real - mu.real
+        resid2 = (mu_predicted_imag - mu.imag)
         resid3 = epsilon_predicted.real - epsilon.real
-        resid4 = (0.1*epsilon_predicted.imag - 0.1*epsilon.imag)
+        resid4 = (-epsilon_predicted.imag - epsilon.imag)
+        global resids
+        resids = [resid1,resid2,resid3,resid4]
+#        resids = [resid2,resid4]
         
         #return np.concatenate((resid1.view(np.float),resid2.view(np.float)))
         return np.concatenate((resid1,resid2,resid3,resid4))
+#        return np.concatenate((resid1,resid2))
         
     def _iterate_objective_function(self,params,data,L):
         """
@@ -408,29 +417,29 @@ class AirlineData:
         global mu
         freq = self.freq[test.freq>300000]
         if self.nrw:
-            epsilon = 1j*self.avg_dielec*np.sin(self.avg_lossfac);
-            epsilon += self.avg_dielec*np.cos(self.avg_lossfac)
+            epsilon = 1j*self.avg_lossfac;
+            epsilon += self.avg_dielec
             epsilon = epsilon[test.freq>300000]
             mu = self.mu[test.freq>300000]
         else:
             self.nrw = True
             dielec, lossfac, losstan, mu = \
                 self._permittivity_calc('a')
-            epsilon = 1j*dielec*np.sin(lossfac);
-            epsilon += dielec*np.cos(lossfac)
+            epsilon = 1j*lossfac;
+            epsilon += dielec
             epsilon = epsilon[test.freq>300000]
             mu = mu[test.freq>300000]
             self.nrw = False    # Reset to previous setting
             
         # Create a set of Parameters to the Laurent model
         init_params = Parameters()
-        init_params.add('a_0',value=1,min=0)
-        init_params.add('a_1',value=1,min=0)
-        init_params.add('a_2',value=1,min=0)
+        init_params.add('a_0',value=0.1,min=0)
+        init_params.add('a_1',value=0.01,min=0)
+        init_params.add('a_2',value=0.02,min=0)
         init_params.add('a_3',value=1,min=0)
         init_params.add('a_4',value=1,min=0)
-        init_params.add('b_1',value=1,min=0)
-        init_params.add('b_2',value=1,min=0)
+        init_params.add('b_1',value=0.0003,min=0)
+        init_params.add('b_2',value=0.0004,min=0)
         init_params.add('b_3',value=1,min=0)
         init_params.add('b_4',value=1,min=0)
         init_params.add('d_0',value=1,min=0)

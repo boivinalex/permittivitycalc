@@ -316,11 +316,11 @@ class AirlineData:
 
         # Unpack parameters
         v = params.valuesdict()
-        a_0 = v['a_0'] 
-        a_1 = v['a_1']
-        a_2 = v['a_2']
-        b_1 = v['b_1']
-        b_2 = v['b_2']
+#        a_0 = v['a_0'] 
+#        a_1 = v['a_1']
+#        a_2 = v['a_2']
+#        b_1 = v['b_1']
+#        b_2 = v['b_2']
         a_3 = v['a_3']
         a_4 = v['a_4']
         b_3 = v['b_3']
@@ -331,10 +331,10 @@ class AirlineData:
         #global epsilon
         #global mu
         
-        mu = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
-              *self.freq[test.freq>300000]) + a_2/(1 + 1j*10e-9*b_2\
-              *2*np.pi*self.freq[test.freq>300000])**2
-        #mu = 1
+#        mu = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
+#              *self.freq[test.freq>300000]) + a_2/(1 + 1j*10e-9*b_2\
+#              *2*np.pi*self.freq[test.freq>300000])**2
+        mu = 1
                          
         epsilon = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
                    *self.freq[test.freq>300000]) + a_4/(1 + 1j*10e-9*b_4\
@@ -514,13 +514,13 @@ class AirlineData:
             
         # Create a set of Parameters
         params = Parameters()
-        params.add('a_0',value=a_0,min=0)
-        params.add('a_1',value=a_1,min=0)
-        params.add('a_2',value=a_2,min=0)
+#        params.add('a_0',value=a_0,min=0)
+#        params.add('a_1',value=a_1,min=0)
+#        params.add('a_2',value=a_2,min=0)
         params.add('a_3',value=a_3,min=0)
         params.add('a_4',value=a_4,min=0)
-        params.add('b_1',value=b_1,min=0)
-        params.add('b_2',value=b_2,min=0)
+#        params.add('b_1',value=b_1,min=0)
+#        params.add('b_2',value=b_2,min=0)
         params.add('b_3',value=b_3,min=0)
         params.add('b_4',value=b_4,min=0)
         params.add('d_0',value=d_0,min=0)
@@ -535,21 +535,21 @@ class AirlineData:
         report_fit(result)
         
         # Get new params
-        a_0 = result.params['a_0']._val
-        a_1 = result.params['a_1']._val
-        a_2 = result.params['a_2']._val
+#        a_0 = result.params['a_0']._val
+#        a_1 = result.params['a_1']._val
+#        a_2 = result.params['a_2']._val
         a_3 = result.params['a_3']._val
         a_4 = result.params['a_4']._val
-        b_1 = result.params['b_1']._val
-        b_2 = result.params['b_2']._val
+#        b_1 = result.params['b_1']._val
+#        b_2 = result.params['b_2']._val
         b_3 = result.params['b_3']._val
         b_4 = result.params['b_4']._val
         d_0 = result.params['d_0']._val
         
         # Calculate model EM parameters
-        mu_iter = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
-              *freq) + a_2/(1 + 1j*10e-9*b_2\
-              *2*np.pi*freq)**2
+#        mu_iter = a_0 + a_1/(1 + 1j*10e-9*b_1*2*np.pi\
+#              *freq) + a_2/(1 + 1j*10e-9*b_2\
+#              *2*np.pi*freq)**2
                         
         epsilon_iter = d_0 + a_3/(1 + 1j*10e-9*b_3*2*np.pi\
                    *freq) + a_4/(1 + 1j*10e-9*b_4\
@@ -558,8 +558,8 @@ class AirlineData:
         # Plot
         pplot.make_plot([freq,freq],[self.avg_dielec[test.freq>300000],epsilon_iter.real],legend_label=['Analytical','Iterative'])
         pplot.make_plot([freq,freq],[self.avg_lossfac[test.freq>300000],-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
-        pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
-        pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+#        pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
+#        pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
 
     def _permittivity_calc(self,s_param,corr=False):
         """
@@ -1237,8 +1237,14 @@ def run_example(flag='single'):
     test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
                         '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
                          name='Alumina Vac 2.5hrs',date='2017/04/07')
+    atm = AirlineData(*get_METAS_data(\
+        airline='VAL',\
+        file_path='/Volumes/NO NAME/Alex/2017-08-30_vac_bake_alumina_test/LHKM_TRM_LRM_01_out/DUTs/atm.txt'),\
+            bulk_density=None,temperature=None,name=None,date=None,corr=True,\
+            solid_dielec=None,solid_losstan=None,particle_diameter=None,\
+            particle_density=None,nrw=False)
     if flag == 'single':
-        return test
+        return test, atm
     elif flag == 'multiple':
         test2 = AirlineData(*get_METAS_data(),name='TRM')
         classlist = [test,test2]

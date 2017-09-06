@@ -398,15 +398,15 @@ class AirlineData:
 #            ((np.angle(sm12_complex)-np.angle(s12_predicted))/np.pi)**2 +\
 #            (np.absolute(sm11_complex)-np.absolute(s11_short_predicted))**2 +\
 #            ((np.angle(sm11_complex)-np.angle(s11_short_predicted))/np.pi)**2
-        obj_func_real = (sm21_complex.real - s21_predicted.real) + \
-            (sm12_complex.real - s12_predicted.real) + \
-            beta*(sm11_complex.real - s11_short_predicted.real)
-        obj_func_imag = (sm21_complex.imag - s21_predicted.imag) + \
-            (sm12_complex.imag - s12_predicted.imag) + \
-            beta*(sm11_complex.imag - s11_short_predicted.imag)
+        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 + \
+            (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
+            beta*(np.absolute(sm11_complex)-np.absolute(s11_short_predicted))**2
+        obj_func_imag = ((np.angle(sm21_complex)-np.angle(s21_predicted))/np.pi)**2 + \
+            ((np.angle(sm12_complex)-np.angle(s12_predicted))/np.pi)**2 + \
+            beta*((np.angle(sm11_complex)-np.angle(s11_short_predicted))/np.pi)**2
             
         return np.concatenate((obj_func_real,obj_func_imag))
-        #return np.abs(obj_func)
+#        return np.abs(obj_func)
     
     def _permittivity_iterate(self,corr=False):
         """
@@ -425,15 +425,19 @@ class AirlineData:
             self.nrw = True
             dielec, lossfac, losstan, mu = \
                 self._permittivity_calc('a')
-            epsilon = 1j*lossfac;
-            epsilon += dielec
+            # NRW epsilon
+#            epsilon = 1j*lossfac;
+#            epsilon += dielec
+            # Default epsilon
+            epsilon = 1j*unp.nominal_values(self.avg_lossfac);
+            epsilon += unp.nominal_values(self.avg_dielec)
             epsilon = epsilon[test.freq>300000]
             mu = mu[test.freq>300000]
             self.nrw = False    # Reset to previous setting
             
         # Create a set of Parameters to the Laurent model
         init_params = Parameters()
-        init_params.add('a_0',value=0.1,min=0)
+        init_params.add('a_0',value=1,min=0)
         init_params.add('a_1',value=0.01,min=0)
         init_params.add('a_2',value=0.02,min=0)
         init_params.add('a_3',value=1,min=0)
@@ -497,7 +501,7 @@ class AirlineData:
         s11s = np.array((s11s[0][test.freq>300000],s11s[1][test.freq>300000]))
         s21 = np.array((s21[0][test.freq>300000],s21[1][test.freq>300000]))
         s12 = np.array((s12[0][test.freq>300000],s12[1][test.freq>300000]))
-            
+        global sm21_complex 
         # Cast measured sparams to complex and unwrap phase
         sm11_complex = 1j*(s11s[0])*\
                            np.sin(np.radians(s11s[1])); \
@@ -1256,7 +1260,7 @@ def run_example(flag='single'):
 def main():
     ## Single file example:
     global test
-    test = run_example()
+    test,atm = run_example()
     ## Multiple file example:
     #global test, test2, classlist
     #test, test2, classlist = run_example(flag='multiple')

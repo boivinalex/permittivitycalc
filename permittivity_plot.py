@@ -145,14 +145,14 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
             buffer = 0.1
             spacing = 0.02
         else:
-            buffer = 0.5
+            buffer = 0.2
             spacing = round((thickness + 2*buffer)/9,1)
     elif plot_type in ('lf','lt'):
         if thickness < 0.01:
             buffer = 0.01
             spacing = 0.002
         else:
-            buffer = 0.05
+            buffer = 0.02
             spacing = round((thickness + 2*buffer)/9,2)
 
     # Makes sure the lowest point is 0 if y_min is 0

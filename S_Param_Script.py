@@ -378,6 +378,10 @@ class AirlineData:
         #print(np.isinf(big_gam).any())
         #print(np.isinf(t).any())
         
+        # Make parameters global for plotting
+        global s11_short_predicted
+        global s21_predicted
+        
         # Modified S11
         #s11_short_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
         

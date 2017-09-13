@@ -416,11 +416,13 @@ class AirlineData:
         global s11_short_predicted
         global s21_predicted
         
-        # Modified S11
-        #s11_short_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
-        
-        # Baker-Jarvis S11
-        s11_short_predicted = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
+        # Use shorted S11 data if present
+        if self.shorted:
+            # Modified S11
+            s11_short_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
+        else:
+            # Baker-Jarvis S11
+            s11_short_predicted = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
         
         # S21
         s21_predicted = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
@@ -595,7 +597,11 @@ class AirlineData:
             s22 = unp.nominal_values(self.corr_s22)
             L = self.Lcorr
         else:
-            s11s = unp.nominal_values(self.s11)
+            # Use shorted S11 if available
+            if self.shorted:
+                s11s = unp.nominal_values(self.s11_short)
+            else:
+                s11s = unp.nominal_values(self.s11)
             s21 = unp.nominal_values(self.s21)
             s12 = unp.nominal_values(self.s12)
             s22 = unp.nominal_values(self.s22)

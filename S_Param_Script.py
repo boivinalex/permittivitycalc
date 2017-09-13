@@ -139,19 +139,43 @@ class AirlineData:
     
     nrw (bool): If True, use Nicholson, Rross, Weir (NRW) algorithm to \
         calculate permittivity and magnetic permeability.
+        
+    shorted (bool): If True, automatically load Shorted S11 data. File name \
+        must have the following format and be in the same folder as original \
+        file: file_path/file_name_shorted.txt
+        
+        Example:
+            file_path/air_atm.txt
+            file_path/air_atm_shorted.txt
     """
     def __init__(self,L,airline,dataArray,file,corr=True,bulk_density=None,\
                  temperature=None,name=None,date=None,solid_dielec=None,\
                  solid_losstan=None,particle_diameter=None,\
-                 particle_density=None,nrw=False):
+                 particle_density=None,nrw=False,shorted=False):
         self.L = L
         self.airline_name = airline
         self.file = file
         self.corr = corr
         self.nrw = nrw
+        self.shorted = shorted
         # Unpack data into arrays
         self.freq, self.s11, self.s21, self.s12, self.s22 = \
             self._unpack(dataArray)
+        if self.shorted:
+            #Get path of shorted file
+            path = os.path.split(self.file)
+            folder = path[0]
+            file_name_full = path[1]
+            file_name = os.path.splitext(file_name_full)[0]
+            file_name_shorted = file_name + '_shorted.txt'
+            path_shorted = folder + '/' + file_name_shorted
+            print(path_shorted)
+            # Check if file exists
+            if os.path.isfile(path_shorted):
+                dataArray2 = get_METAS_data(airline=self.airline_name,file_path=path_shorted)
+                self.freq_short, self.s11_short = self._unpack(dataArray2[2])
+            else:
+                raise Exception('Shorted file does not exists.')
         # Calculate permittivity
         if nrw:
             self.avg_dielec, self.avg_lossfac, self.avg_losstan, self.mu = \
@@ -219,6 +243,7 @@ class AirlineData:
         
     def _unpack(self,dataArray):
         """See if uncertainty in data and unpack to S-parameter arrays"""
+        shorted_flag = False
         if dataArray.shape[1] == 17: # Has unc so use unumpy
             freq = dataArray[:,0]
             s11 = unp.uarray([dataArray[:,1],dataArray[:,3]],\
@@ -235,9 +260,18 @@ class AirlineData:
             s21 = np.array([dataArray[:,3],dataArray[:,4]])
             s12 = np.array([dataArray[:,5],dataArray[:,6]])
             s22 = np.array([dataArray[:,7],dataArray[:,8]])
+        elif self.shorted and dataArray.shape[1] == 5:
+            shorted_flag = True
+            freq = dataArray[:,0]
+            s11 = unp.uarray([dataArray[:,1],dataArray[:,3]],\
+                                     [dataArray[:,2],dataArray[:,4]])
         else:
             raise Exception('Input file has the wrong number of columns')
-        return freq, s11, s21, s12, s22
+        
+        if shorted_flag:
+            return freq, s11
+        else:
+            return freq, s11, s21, s12, s22
     
     def _dims(self):
         """

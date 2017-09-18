@@ -1261,27 +1261,8 @@ class AirlineData:
             pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12)
 
 #%% FUCNTIONS
-def get_METAS_data(airline=None,file_path=None):
-    """
-    Return data arrays from METAS VNA Tools II text file based on user input \
-    Frequencies must be in Hz. Recomeneded precision in VNA Tools II is f9.
-    
-    Arguments
-    ---------
-    airline (str): Airline used for measurement. Options are: 'VAL', \
-        'PAL', 'GAL', '7'. If not provided, will prompt user. Prompt will \
-        allow user to input a custom airline length.
-    
-    file_path (str): If a path is not given, will prompt user for file. \
-        Default: None
-    
-    Return
-    ------
-    L (float): Length of airline in cm.
-    
-    SparmArray (array): S-parameters and their uncertainties (if present)
-    """
-    
+def get_file(airline,file_path):
+    L_in = None
     # Figure out the file path and the airline name
     if file_path and airline:
         if airline not in ('VAL','PAL','GAL','7','washer'):
@@ -1324,6 +1305,32 @@ def get_METAS_data(airline=None,file_path=None):
         root.withdraw()
         file = filedialog.askopenfilename(filetypes=[('text files', '*.txt')],\
                                 title='Select the VNA Tools II Output Data Table')
+        
+    return airline, file, L_in
+    
+def get_METAS_data(airline=None,file_path=None):
+    """
+    Return data arrays from METAS VNA Tools II text file based on user input \
+    Frequencies must be in Hz. Recomeneded precision in VNA Tools II is f9.
+    
+    Arguments
+    ---------
+    airline (str): Airline used for measurement. Options are: 'VAL', \
+        'PAL', 'GAL', '7'. If not provided, will prompt user. Prompt will \
+        allow user to input a custom airline length.
+    
+    file_path (str): If a path is not given, will prompt user for file. \
+        Default: None
+    
+    Return
+    ------
+    L (float): Length of airline in cm.
+    
+    SparmArray (array): S-parameters and their uncertainties (if present)
+    """
+    
+    # Get the file path and the airline name
+    airline, file, L_in = get_file(airline,file_path)
 
     # Open the file and make array    
     open_file = codecs.open(file, encoding="utf-8")
@@ -1403,7 +1410,9 @@ def run_example(flag='single'):
         classlist = [test,test2]
         perm_compare(classlist)
         return test, test2, classlist
-
+    
+def multiple_meas(file_path=None,airline=None,skip=None):
+    pass
                 
 #%% MAIN
 def main():

@@ -1261,7 +1261,8 @@ class AirlineData:
             pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12)
 
 #%% FUCNTIONS
-def get_file(airline,file_path):
+def _get_file(airline,file_path):
+    """Return the file path and airline name. Use prompts if needed."""
     L_in = None
     # Figure out the file path and the airline name
     if file_path and airline:
@@ -1330,7 +1331,7 @@ def get_METAS_data(airline=None,file_path=None):
     """
     
     # Get the file path and the airline name
-    airline, file, L_in = get_file(airline,file_path)
+    airline, file, L_in = _get_file(airline,file_path)
 
     # Open the file and make array    
     open_file = codecs.open(file, encoding="utf-8")
@@ -1412,7 +1413,8 @@ def run_example(flag='single'):
         return test, test2, classlist
     
 def multiple_meas(file_path=None,airline=None,skip=None):
-    pass
+    # Get the file path and the airline name
+    airline, file, L_in = _get_file(airline,file_path)
                 
 #%% MAIN
 def main():

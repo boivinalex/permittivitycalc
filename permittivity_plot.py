@@ -8,6 +8,8 @@ Created on Thu Jun 22 14:24:19 2017
 import numpy as np
 from uncertainties import unumpy as unp
 import matplotlib.pyplot as plt
+import seaborn.apionly as sns
+from cycler import cycler
 import os
 import datetime
 
@@ -166,6 +168,12 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     f = plt.figure(figsize=figure_size)
     plt.title(plot_title, fontsize=22)
     ax = f.add_subplot(111)
+    if number_to_compare > 6:
+        ax.set_prop_cycle(cycler('color',\
+                            sns.cubehelix_palette(number_to_compare)))
+    else:
+        ax.set_prop_cycle(cycler('color',\
+                            sns.color_palette("colorblind",number_to_compare)))    
     ax.spines["top"].set_visible(False)  
     ax.spines["right"].set_visible(False)
     ax.get_xaxis().tick_bottom()  

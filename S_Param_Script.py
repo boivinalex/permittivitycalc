@@ -309,7 +309,8 @@ class AirlineData:
         mu_predicted = (a_0 + 1j*a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
               *self.freq[self.freq>1e8]) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
               *2*np.pi*self.freq[self.freq>1e8])**2
-        #mu_predicted = 1
+#        mu.real = np.ones(len(mu_check))
+#        mu.imag = np.zeros(len(mu_check))
         
         # Residuals
         resid1 = mu_predicted.real - mu.real
@@ -339,13 +340,8 @@ class AirlineData:
         # Residuals
         resid1 = epsilon_predicted.real - epsilon.real
         resid2 = (epsilon_predicted.imag + epsilon.imag)
-        global resids
-        resids = [resid1,resid2]
-#        resids = [resid2,resid4]
         
-        #return np.concatenate((resid1.view(np.float),resid2.view(np.float)))
         return np.concatenate((resid1,resid2))
-#        return np.concatenate((resid1,resid2))
         
     def _iterate_objective_function(self,params,data,L):
         """
@@ -413,49 +409,52 @@ class AirlineData:
         #print(np.isinf(t).any())
         
         # Make parameters global for plotting
-        global s11_short_predicted
+        global s11_predicted
         global s21_predicted
         
         # Use shorted S11 data if present
         if self.shorted:
             # Modified S11
-            s11_short_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
+            s11_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
         else:
             # Baker-Jarvis S11
-            s11_short_predicted = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
+            s11_predicted = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
         
         # S21
         s21_predicted = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
         
         # Force positive S-params
 #        for n in range(0,len(self.freq)):
-#            if np.isnan(s11_short_predicted[n]):
-#                s11_short_predicted[n] = 0
+#            if np.isnan(s11_predicted[n]):
+#                s11_predicted[n] = 0
 #            if np.isnan(s21_predicted[n]):
 #                s21_predicted[n] = 0
         
-        #print(np.isnan(s11_short_predicted).any())
+        #print(np.isnan(s11_predicted).any())
         #print(np.isnan(s21_predicted).any())
         
         s12_predicted = s21_predicted
-        #s22_predicted = s11_short_predicted
+        #s22_predicted = s11_predicted
         
         # Set up objective funtion to be minimized
 #        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
 #            + ((np.angle(sm21_complex)-np.angle(s21_predicted))/np.pi)**2 +\
 #            (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
 #            ((np.angle(sm12_complex)-np.angle(s12_predicted))/np.pi)**2 +\
-#            (np.absolute(sm11_complex)-np.absolute(s11_short_predicted))**2 +\
-#            ((np.angle(sm11_complex)-np.angle(s11_short_predicted))/np.pi)**2
+#            (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2 +\
+#            ((np.angle(sm11_complex)-np.angle(s11_predicted))/np.pi)**2
 #        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 + \
 #            (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
-#            beta*(np.absolute(sm11_complex)-np.absolute(s11_short_predicted))**2
+#            (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
 #        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-np.unwrap(np.angle(s21_predicted)))/np.pi)**2 + \
 #            ((np.unwrap(np.angle(sm12_complex))-np.unwrap(np.angle(s12_predicted)))/np.pi)**2 + \
-#            beta*((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_short_predicted)))/np.pi)**2
+#            ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**2
+#        obj_func_imag = ((np.angle(sm21_complex)-np.angle(s21_predicted))/np.pi)**2 + \
+#            ((np.angle(sm12_complex)-np.angle(s12_predicted))/np.pi)**2 + \
+#            ((np.angle(sm11_complex)-np.angle(s11_predicted))/np.pi)**2
 
-#        s11_short_predicted_abs = np.absolute(s11_short_predicted)
-#        s11_short_predicted_angle = np.angle(s11_short_predicted)
+#        s11_predicted_abs = np.absolute(s11_predicted)
+#        s11_predicted_angle = np.angle(s11_predicted)
 #        s21_predicted_abs = np.absolute(s21_predicted)
 #        s21_predicted_angle = np.unwrap(np.angle(s21_predicted))
 #        s12_predicted_abs  = s21_predicted_abs
@@ -468,13 +467,13 @@ class AirlineData:
 #        sm12_abs = np.absolute(sm12_complex)
 #        sm12_angle = np.unwrap(np.angle(sm12_complex))
 
-#        obj_func_real = (sm11_complex.real - s11_short_predicted.real) + (sm21_complex.real - s21_predicted.real) + (sm12_complex.real - s12_predicted.real)
-#        obj_func_imag = (sm11_complex.imag - s11_short_predicted.imag + sm21_complex.imag - s21_predicted.imag + sm12_complex.imag - s12_predicted.imag)/np.pi
+#        obj_func_real = (sm11_complex.real - s11_predicted.real) + (sm21_complex.real - s21_predicted.real) + (sm12_complex.real - s12_predicted.real)
+#        obj_func_imag = (sm11_complex.imag - s11_predicted.imag + sm21_complex.imag - s21_predicted.imag + sm12_complex.imag - s12_predicted.imag)
 
-#        obj_func_real = sm11_abs - s11_short_predicted_abs
+#        obj_func_real = sm11_abs - s11_predicted_abs
 #        obj_func_real2 = sm21_abs - s21_predicted_abs
 #        obj_func_real3 = sm12_abs - s12_predicted_abs
-#        obj_func_imag = sm11_angle - s11_short_predicted_angle
+#        obj_func_imag = sm11_angle - s11_predicted_angle
 #        obj_func_imag2 = sm21_angle - s21_predicted_angle
 #        obj_func_imag3 = sm12_angle - s12_predicted_angle
         
@@ -482,12 +481,19 @@ class AirlineData:
                     + ((np.unwrap(np.angle(sm21_complex))-np.unwrap(np.angle(s21_predicted)))/np.pi)**2 +\
                     (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
                     ((np.unwrap(np.angle(sm12_complex))-np.unwrap(np.angle(s12_predicted)))/np.pi)**2 +\
-                    (np.absolute(sm11_complex)-np.absolute(s11_short_predicted))**2 +\
-                    ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_short_predicted)))/np.pi)**2 \
+                    (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2 +\
+                    ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**2 \
 #                    + (np.absolute(sm22_complex)-np.absolute(s22_predicted))**2 \
 #                    + ((np.unwrap(np.angle(sm22_complex))-np.unwrap(np.angle(s22_predicted)))/np.pi)**2
 
-#        obj_func = (sm11_complex - s11_short_predicted) + (sm21_complex - s21_predicted) + (sm12_complex - s12_predicted)
+#        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**6 \
+#                    + ((np.unwrap(np.angle(sm21_complex))-np.unwrap(np.angle(s21_predicted)))/np.pi)**6 +\
+#                    (np.absolute(sm12_complex)-np.absolute(s12_predicted))**6 + \
+#                    ((np.unwrap(np.angle(sm12_complex))-np.unwrap(np.angle(s12_predicted)))/np.pi)**6 +\
+#                    (np.absolute(sm11_complex)-np.absolute(s11_predicted))**6 +\
+#                    ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**6
+
+#        obj_func = (sm11_complex - s11_predicted) + (sm21_complex - s21_predicted) + (sm12_complex - s12_predicted)
             
 #        return np.concatenate((obj_func_real,obj_func_imag,obj_func_real2,obj_func_imag2,obj_func_real3,obj_func_imag3))
 #        return obj_func_real
@@ -528,19 +534,19 @@ class AirlineData:
         init_params_mu.add('a_0',value=1,min=0)
         init_params_mu.add('a_1',value=0.01,min=0)
         init_params_mu.add('a_2',value=0.02,min=0)
-        init_params_mu.add('a_0i',value=1)
-        init_params_mu.add('a_1i',value=1)
-        init_params_mu.add('a_2i',value=1)
-        init_params_eps.add('a_3',value=1,min=0)
-        init_params_eps.add('a_4',value=1,min=0)
-        init_params_eps.add('a_3i',value=1)
-        init_params_eps.add('a_4i',value=1)
+        init_params_mu.add('a_0i',value=1.1)
+        init_params_mu.add('a_1i',value=1.2)
+        init_params_mu.add('a_2i',value=1.3)
+        init_params_eps.add('a_3',value=0.01,min=0)
+        init_params_eps.add('a_4',value=0.02,min=0)
+        init_params_eps.add('a_3i',value=1.1)
+        init_params_eps.add('a_4i',value=1.2)
         init_params_mu.add('b_1',value=0.0003,min=0)
         init_params_mu.add('b_2',value=0.0004,min=0)
-        init_params_eps.add('b_3',value=1,min=0)
-        init_params_eps.add('b_4',value=1,min=0)
+        init_params_eps.add('b_3',value=0.0003,min=0)
+        init_params_eps.add('b_4',value=0.0004,min=0)
         init_params_eps.add('d_0',value=1,min=0)
-        init_params_eps.add('d_0i',value=1)
+        init_params_eps.add('d_0i',value=1.1)
         
         # Iterate to find parameters
         miner_eps = Minimizer(self._laurent_debye_equations_epsilon,init_params_eps,\
@@ -696,12 +702,12 @@ class AirlineData:
         import matplotlib.pyplot as plt
         plt.figure()
         plt.plot(freq, np.absolute(sm11_complex),label='Measured')
-        plt.plot(freq, np.absolute(s11_short_predicted),label='Predicted')
+        plt.plot(freq, np.absolute(s11_predicted),label='Predicted')
         plt.title('s11mag')
         plt.legend()
         plt.figure()
         plt.plot(freq, np.angle(sm11_complex),label='Measured')
-        plt.plot(freq, np.angle(s11_short_predicted),label='Predicted')
+        plt.plot(freq, np.angle(s11_predicted),label='Predicted')
         plt.title('s11phase')
         plt.figure()
         plt.plot(freq, np.absolute(sm21_complex),label='Measured')
@@ -1398,13 +1404,12 @@ def run_example(flag='single'):
     test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
                         '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
                          name='Alumina Vac 2.5hrs',date='2017/04/07')
-    atm = AirlineData(*get_METAS_data(\
-        airline='VAL',\
-        file_path='/Volumes/NO NAME/Alex/2017-08-30_vac_bake_alumina_test/LHKM_TRM_LRM_01_out/DUTs/atm.txt'),\
+    if flag == 'single':
+        atm = AirlineData(*get_METAS_data(airline='VAL',\
+            file_path='/Volumes/NO NAME/Alex/2017-08-30_vac_bake_alumina_test/LHKM_TRM_LRM_01_out/DUTs/atm.txt'),\
             bulk_density=None,temperature=None,name=None,date=None,corr=True,\
             solid_dielec=None,solid_losstan=None,particle_diameter=None,\
             particle_density=None,nrw=False)
-    if flag == 'single':
         return test, atm
     elif flag == 'multiple':
         test2 = AirlineData(*get_METAS_data(),name='TRM')
@@ -1456,14 +1461,15 @@ def multiple_meas(file_path=None,airline=None):
     # Plot all files        
     perm_compare(class_list)
     
-    return class_list
+    return class_list 
         
                 
 #%% MAIN
 def main():
     ## Single file example:
     global test
-    test,atm = run_example()
+    global atm
+    test, atm = run_example()
     ## Multiple file example:
     #global test, test2, classlist
     #test, test2, classlist = run_example(flag='multiple')

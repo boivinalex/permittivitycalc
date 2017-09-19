@@ -194,7 +194,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         for n in range(0,number_to_compare):
             ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
                     label=legend_label[n])
-    plt.legend()
+    plt.legend(fontsize='large',loc='best')
     if publish:
         # Check for directory
         if not os.path.exists(DATAPATH):

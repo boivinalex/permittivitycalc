@@ -1407,8 +1407,8 @@ def run_example(flag='single'):
                          name='Alumina Vac 2.5hrs',date='2017/04/07')
     if flag == 'single':
         atm = AirlineData(*get_METAS_data(airline='VAL',\
-            file_path='/Volumes/NO NAME/Alex/2017-08-30_vac_bake_alumina_test/LHKM_TRM_LRM_01_out/DUTs/atm.txt'),\
-            bulk_density=None,temperature=None,name='Alumina atm',date=None,corr=True,\
+            file_path=DATAPATH + 'atm.txt'),bulk_density=None,\
+            temperature=None,name='Alumina atm',date=None,corr=True,\
             solid_dielec=None,solid_losstan=None,particle_diameter=None,\
             particle_density=None,nrw=False)
         return test, atm

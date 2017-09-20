@@ -8,6 +8,8 @@ Created on Thu Jun 22 14:24:19 2017
 import numpy as np
 from uncertainties import unumpy as unp
 import matplotlib.pyplot as plt
+import seaborn as sns
+from cycler import cycler
 import os
 import datetime
 
@@ -107,7 +109,6 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     else:   # If legend_label is a list, make sure no list items are None
         for n in range(0,len(xval)):
             # If a list item is None, make it a label
-            print(n)
             if not legend_label[n]:
                 legend_label[n] = 'Data {}'.format(n+1)
         
@@ -146,14 +147,14 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
             buffer = 0.1
             spacing = 0.02
         else:
-            buffer = 0.5
+            buffer = 0.2
             spacing = round((thickness + 2*buffer)/9,1)
     elif plot_type in ('lf','lt'):
         if thickness < 0.01:
             buffer = 0.01
             spacing = 0.002
         else:
-            buffer = 0.05
+            buffer = 0.02
             spacing = round((thickness + 2*buffer)/9,2)
 
     # Makes sure the lowest point is 0 if y_min is 0
@@ -167,6 +168,12 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     f = plt.figure(figsize=figure_size)
     plt.title(plot_title, fontsize=22)
     ax = f.add_subplot(111)
+    if number_to_compare > 6:
+        ax.set_prop_cycle(cycler('color',\
+                            sns.cubehelix_palette(number_to_compare)))
+    else:
+        ax.set_prop_cycle(cycler('color',\
+                            sns.color_palette("colorblind",number_to_compare)))    
     ax.spines["top"].set_visible(False)  
     ax.spines["right"].set_visible(False)
     ax.get_xaxis().tick_bottom()  
@@ -187,7 +194,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         for n in range(0,number_to_compare):
             ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
                     label=legend_label[n])
-    plt.legend()
+    plt.legend(fontsize='large',loc='best')
     if publish:
         # Check for directory
         if not os.path.exists(DATAPATH):

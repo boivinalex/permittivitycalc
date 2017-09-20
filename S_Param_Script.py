@@ -394,8 +394,9 @@ class AirlineData:
         
         small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
                     (lam_0/LAM_C)**2)
+#        print(small_gam)
         
-        #print(np.isnan(small_gam).any())
+#        print(np.isnan(small_gam).any())
         
         small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
         
@@ -404,9 +405,9 @@ class AirlineData:
         big_gam = (small_gam_0*mu - small_gam) / (small_gam_0*mu + \
                   small_gam)
         
-        #print(np.isinf(small_gam).any())
-        #print(np.isinf(big_gam).any())
-        #print(np.isinf(t).any())
+#        print(np.isinf(small_gam).any())
+#        print(np.isinf(big_gam).any())
+#        print(np.isinf(t).any())
         
         # Make parameters global for plotting
         global s11_predicted
@@ -430,8 +431,8 @@ class AirlineData:
 #            if np.isnan(s21_predicted[n]):
 #                s21_predicted[n] = 0
         
-        #print(np.isnan(s11_predicted).any())
-        #print(np.isnan(s21_predicted).any())
+#        print(np.isnan(s11_predicted).any())
+#        print(np.isnan(s21_predicted).any())
         
         s12_predicted = s21_predicted
         #s22_predicted = s11_predicted
@@ -662,7 +663,7 @@ class AirlineData:
         minner = Minimizer(self._iterate_objective_function,\
                            params,fcn_args=(data,L))
         global result
-        result = minner.minimize()
+        result = minner.minimize()#method='differential_evolution')
         
         report_fit(result)
         

@@ -8,7 +8,7 @@ Created on Thu Jun 22 14:24:19 2017
 import numpy as np
 from uncertainties import unumpy as unp
 import matplotlib.pyplot as plt
-import seaborn.apionly as sns
+import seaborn as sns
 from cycler import cycler
 import os
 import datetime

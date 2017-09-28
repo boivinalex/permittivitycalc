@@ -187,20 +187,24 @@ class AirlineData:
                 self._permittivity_calc('f')
             self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan = \
                 self._permittivity_calc('r')
-        # Calculate corrected permittivity if array length is 601 only
+        # Try to calculate corrected permittivity if array length is 601 only
         # Also check for NaNs and don't run if any
         if corr and len(self.freq) == 601:
-            if not np.isnan(unp.nominal_values(self.avg_dielec)).any():
-                self.Lcorr = self.L - 0.3
-                self.corr_s11, self.corr_s21, self.corr_s12, self.corr_s22 = \
-                    self._de_embed()
-                if nrw:
-                    self.corr_avg_dielec, self.corr_avg_lossfac, \
-                        self.corr_avg_losstan, self.corr_avg_mu = \
-                        self._permittivity_calc('a',True)
-                else:
-                    self.corr_avg_dielec, self.corr_avg_lossfac, \
-                        self.corr_avg_losstan = self._permittivity_calc('a',True)
+            try:
+                if not np.isnan(unp.nominal_values(self.avg_dielec)).any():
+                    self.Lcorr = self.L - 0.3
+                    self.corr_s11, self.corr_s21, self.corr_s12, \
+                        self.corr_s22 = self._de_embed()
+                    if nrw:
+                        self.corr_avg_dielec, self.corr_avg_lossfac, \
+                            self.corr_avg_losstan, self.corr_avg_mu = \
+                            self._permittivity_calc('a',True)
+                    else:
+                        self.corr_avg_dielec, self.corr_avg_lossfac, \
+                            self.corr_avg_losstan = \
+                            self._permittivity_calc('a',True)
+            except:
+                pass
         # Optional attributes
         self.bulk_density = bulk_density
         self.temperature = temperature

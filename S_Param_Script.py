@@ -482,12 +482,12 @@ class AirlineData:
 #        obj_func_imag2 = sm21_angle - s21_predicted_angle
 #        obj_func_imag3 = sm12_angle - s12_predicted_angle
         
-        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
-                    + ((np.unwrap(np.angle(sm21_complex))-np.unwrap(np.angle(s21_predicted)))/np.pi)**2 +\
-                    (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
-                    ((np.unwrap(np.angle(sm12_complex))-np.unwrap(np.angle(s12_predicted)))/np.pi)**2 +\
-                    (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2 +\
-                    ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**2 \
+#        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
+#                    + ((np.unwrap(np.angle(sm21_complex))-np.unwrap(np.angle(s21_predicted)))/np.pi)**2 +\
+#                    (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
+#                    ((np.unwrap(np.angle(sm12_complex))-np.unwrap(np.angle(s12_predicted)))/np.pi)**2 +\
+#                    (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2 +\
+#                    ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**2 \
 #                    + (np.absolute(sm22_complex)-np.absolute(s22_predicted))**2 \
 #                    + ((np.unwrap(np.angle(sm22_complex))-np.unwrap(np.angle(s22_predicted)))/np.pi)**2
 
@@ -499,6 +499,27 @@ class AirlineData:
 #                    ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**6
 
 #        obj_func = (sm11_complex - s11_predicted) + (sm21_complex - s21_predicted) + (sm12_complex - s12_predicted)
+
+        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted)) + \
+            ((np.unwrap(np.angle(sm21_complex))-\
+              np.unwrap(np.angle(s21_predicted)))/np.pi) + \
+              (np.absolute(sm12_complex)-np.absolute(s12_predicted)) + \
+              ((np.unwrap(np.angle(sm12_complex))-\
+                np.unwrap(np.angle(s12_predicted)))/np.pi) + \
+                (np.absolute(sm11_complex)-np.absolute(s11_predicted)) + \
+                ((np.unwrap(np.angle(sm11_complex))-\
+                  np.unwrap(np.angle(s11_predicted)))/np.pi)
+        
+        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted)) \
+            + (np.absolute(sm12_complex)-np.absolute(s12_predicted)) + \
+            (np.absolute(sm11_complex)-np.absolute(s11_predicted))
+            
+        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
+              np.unwrap(np.angle(s21_predicted)))) + \
+                ((np.unwrap(np.angle(sm12_complex))-\
+                np.unwrap(np.angle(s12_predicted)))) + \
+                  ((np.unwrap(np.angle(sm11_complex))-\
+                  np.unwrap(np.angle(s11_predicted))))
             
 #        return np.concatenate((obj_func_real,obj_func_imag,obj_func_real2,obj_func_imag2,obj_func_real3,obj_func_imag3))
 #        return obj_func_real

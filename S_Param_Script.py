@@ -383,7 +383,12 @@ class AirlineData:
               *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
               *2*np.pi*freq)**2
 #        mu = 1 + 1j*0
-                         
+
+        # Force magnetic loss to be > 0
+        if mu.imag.any() > 0: # >0 since -mu.imag is plotted
+            mu.real = 10
+            mu.imag = -1
+             
         epsilon = (d_0 + 1j*d_0i) + (a_3 + 1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
                    *freq) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
                    *2*np.pi*freq)**2

@@ -384,10 +384,9 @@ class AirlineData:
               *2*np.pi*freq)**2
 #        mu = 1 + 1j*0
 
-        # Force magnetic loss to be > 0
-        if mu.imag.any() > 0: # >0 since -mu.imag is plotted
-            mu.real = 10
-            mu.imag = -1
+#        # Force magnetic loss to be > 0
+#        if mu.imag.any() > 0: # >0 since -mu.imag is plotted
+#            mu.imag = -mu.imag
              
         epsilon = (d_0 + 1j*d_0i) + (a_3 + 1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
                    *freq) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
@@ -478,7 +477,7 @@ class AirlineData:
 #        sm12_angle = np.unwrap(np.angle(sm12_complex))
 
 #        obj_func_real = (sm11_complex.real - s11_predicted.real) + (sm21_complex.real - s21_predicted.real) + (sm12_complex.real - s12_predicted.real)
-#        obj_func_imag = (sm11_complex.imag - s11_predicted.imag + sm21_complex.imag - s21_predicted.imag + sm12_complex.imag - s12_predicted.imag)
+#        obj_func_imag = (sm11_complex.imag - s11_predicted.imag) + (sm21_complex.imag - s21_predicted.imag) + (sm12_complex.imag - s12_predicted.imag)
 
 #        obj_func_real = sm11_abs - s11_predicted_abs
 #        obj_func_real2 = sm21_abs - s21_predicted_abs
@@ -492,7 +491,7 @@ class AirlineData:
 #                    (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
 #                    ((np.unwrap(np.angle(sm12_complex))-np.unwrap(np.angle(s12_predicted)))/np.pi)**2 +\
 #                    (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2 +\
-#                    ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**2 \
+#                    ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**2 #\
 #                    + (np.absolute(sm22_complex)-np.absolute(s22_predicted))**2 \
 #                    + ((np.unwrap(np.angle(sm22_complex))-np.unwrap(np.angle(s22_predicted)))/np.pi)**2
 
@@ -531,6 +530,13 @@ class AirlineData:
 #        return obj_func.view(np.float)
         return obj_func
 #        return np.concatenate((obj_func_real,obj_func_imag))
+
+    def _mymu(self,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2):
+        freq = self.freq[test.freq>1e8]
+        mu = (a_0 + 1j*a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
+              *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
+              *2*np.pi*freq)**2
+        return mu
     
     def _permittivity_iterate(self,corr=False):
         """
@@ -728,7 +734,7 @@ class AirlineData:
         pplot.make_plot([freq,freq],[self.avg_dielec[self.freq>1e8],epsilon_iter.real],legend_label=['Analytical','Iterative'])
         pplot.make_plot([freq,freq],[self.avg_lossfac[self.freq>1e8],-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
         pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
-        pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([freq,freq],[mu.imag,mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
         # Plot s-params for troubleshooting
         import matplotlib.pyplot as plt
         plt.figure()

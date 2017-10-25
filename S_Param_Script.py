@@ -230,6 +230,8 @@ class AirlineData:
             complex_dielec = np.complex(self.avg_dielec,self.avg_lossfac)
             norm_complex_dielec = complex_dielec*(1.92)**(1.60-self.bulk_density)
             self.norm_dielec = np.real(norm_complex_dielec)
+            self.norm_lossfac = np.imag(norm_complex_dielec)
+            self.norm_losstan = self.norm_lossfac/self.norm_dielec
         elif normalize_density:
             raise Exception('Need bulk desnity to normalize to constant density')
             
@@ -1428,8 +1430,12 @@ def perm_compare(classlist,allplots=False):
     labels = []
     for item in classlist:
         freq.append(item.freq)
-        dielec.append(item.avg_dielec)
-        losstan.append(item.avg_losstan)
+        if item.normalize_density: # Check for normalize_density
+            dielec.append(item.norm_dielec)
+            losstan.append(item.norm_losstan)
+        else:
+            dielec.append(item.avg_dielec)
+            losstan.append(item.avg_losstan)
         labels.append(item.name)
     kwargs = {"legend_label":labels}
     if allplots:

@@ -227,7 +227,8 @@ class AirlineData:
             self.bcorr_dielec, self.bcorr_losstan = self.boundary_correct()
         # If normalize_density is True and bulk_density exists, do it
         if normalize_density and bulk_density:
-            complex_dielec = np.complex(self.avg_dielec,self.avg_lossfac)
+            complex_dielec = 1j*unp.nominal_values(self.avg_lossfac);
+            complex_dielec += unp.nominal_values(self.avg_dielec)
             norm_complex_dielec = complex_dielec*(1.92)**(1.60-self.bulk_density)
             self.norm_dielec = np.real(norm_complex_dielec)
             self.norm_lossfac = np.imag(norm_complex_dielec)

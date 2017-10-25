@@ -105,13 +105,17 @@ class AirlineData:
         Only average S-parameters are used for permittivity calculations with \
         corrected S-parameters. Examples: corr_s11, corr_avg_losstan. Only \
         created if corr = True.
+        
+    name (str): (Optional) Name of measurement to be used in plots.
     
     bulk_density (float): (Optional) Bulk density of material. Nessesary for \
         bulk density normalization.
         
+    normalize_density (bool): (Optional) If True, use both Lichtenecker and \
+        Landau-Lifshitz-Looyenga equations to normalize the real part of the \
+        permittivity to a constant density. Default: False
+        
     temperature (str or float): (Optional) Temperature of measurement.
-    
-    name (str): (Optional) Name of measurement to be used in plots.
     
     date (str): (Optional) Measurement date.
     
@@ -151,7 +155,8 @@ class AirlineData:
     def __init__(self,L,airline,dataArray,file,corr=True,bulk_density=None,\
                  temperature=None,name=None,date=None,solid_dielec=None,\
                  solid_losstan=None,particle_diameter=None,\
-                 particle_density=None,nrw=False,shorted=False):
+                 particle_density=None,nrw=False,shorted=False,\
+                 normalize_density=False):
         self.L = L
         self.airline_name = airline
         self.file = file
@@ -206,9 +211,10 @@ class AirlineData:
             except:
                 pass
         # Optional attributes
-        self.bulk_density = bulk_density
-        self.temperature = temperature
         self.name = name
+        self.bulk_density = bulk_density
+        self.normalize_density
+        self.temperature = temperature
         self.date = date
         self.solid_dielec = solid_dielec
         self.solid_losstan = solid_losstan
@@ -219,7 +225,14 @@ class AirlineData:
         if (solid_dielec and particle_diameter and particle_density and \
             bulk_density):
             self.bcorr_dielec, self.bcorr_losstan = self.boundary_correct()
-        
+        # If normalize_density is True and bulk_density exists, do it
+        if normalize_density and bulk_density:
+            complex_dielec = np.complex(self.avg_dielec,self.avg_lossfac)
+            norm_complex_dielec = complex_dielec*(1.92)**(1.60-self.bulk_density)
+            self.norm_dielec = np.real(norm_complex_dielec)
+        elif normalize_density:
+            raise Exception('Need bulk desnity to normalize to constant density')
+            
     def __repr__(self):
         rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \
                 (self.airline_name,self.file) + \

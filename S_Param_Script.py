@@ -213,7 +213,7 @@ class AirlineData:
         # Optional attributes
         self.name = name
         self.bulk_density = bulk_density
-        self.normalize_density
+        self.normalize_density = normalize_density
         self.temperature = temperature
         self.date = date
         self.solid_dielec = solid_dielec

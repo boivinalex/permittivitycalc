@@ -1449,12 +1449,12 @@ def perm_compare(classlist,allplots=False):
         pplot.make_plot(freq,dielec,'d',**kwargs)
         pplot.make_plot(freq,losstan,'lt',**kwargs)
         
-def run_default(airline_name='VAL'):
+def run_default(airline_name='VAL',**kwargs):
     """
     Run AirlineData on get_METAS_data with all the prompts and return the \
         instance.
     """
-    return AirlineData(*get_METAS_data(airline=airline_name))
+    return AirlineData(*get_METAS_data(airline=airline_name),**kwargs)
 
 def run_example(flag='single'):
     test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \

@@ -22,7 +22,7 @@ DATE = str(datetime.date.today())
 #%% FUNCTIONS
 def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
               plot_title=None, ylabel=None, xlabel=None, spacing=None, \
-              buffer=None, normalize_density=False, xlim=None, \
+              buffer=None, xlim=None, \
               ylim=None, figure_size=(12,9),publish=False):
     """
     Takes input from S_Param_Script_V5 and plots calculated permittivity. Can \
@@ -55,9 +55,6 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         
     buffer (float): For use with plot_type='c'. Sets buffer space around the \
         min and max y-axis values.
-        
-    normalize_density (bool): If True prompt user for material bulk density \
-        for normalization. Currently not implemented. Default: False
         
     xlim (tuple, float): Manually set x-axis limits. Currently not implemented.
     

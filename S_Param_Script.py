@@ -111,9 +111,15 @@ class AirlineData:
     bulk_density (float): (Optional) Bulk density of material. Nessesary for \
         bulk density normalization.
         
-    normalize_density (bool): (Optional) If True, use both Lichtenecker and \
-        Landau-Lifshitz-Looyenga equations to normalize the real part of the \
-        permittivity to a constant density. Default: False
+    normalize_density (bool): (Optional) If True, use either Lichtenecker or \
+        Landau-Lifshitz-Looyenga equation to normalize the real part of the \
+        permittivity to a constant density of 1.60 g/cm^3. Default: False
+        
+    norm_eqn (str): For use with normalize_density = True. Equation to be \
+        used for normalization. Options are 'LI' (default) for the \
+        Lichtenecker equation and 'LLL' for the Landau-Lifshitz-Looyenga \
+        equation. LI used alpha = 1.92 (Olhoeft, 1985) and LLL uses \
+        alpha = 0.307 (Hickson et al., 2017, Lunar samples).
         
     temperature (str or float): (Optional) Temperature of measurement.
     
@@ -156,7 +162,7 @@ class AirlineData:
                  temperature=None,name=None,date=None,solid_dielec=None,\
                  solid_losstan=None,particle_diameter=None,\
                  particle_density=None,nrw=False,shorted=False,\
-                 normalize_density=False):
+                 normalize_density=False,norm_eqn='LI'):
         self.L = L
         self.airline_name = airline
         self.file = file
@@ -214,6 +220,7 @@ class AirlineData:
         self.name = name
         self.bulk_density = bulk_density
         self.normalize_density = normalize_density
+        self.norm_eqn = norm_eqn
         self.temperature = temperature
         self.date = date
         self.solid_dielec = solid_dielec
@@ -226,10 +233,20 @@ class AirlineData:
             bulk_density):
             self.bcorr_dielec, self.bcorr_losstan = self.boundary_correct()
         # If normalize_density is True and bulk_density exists, do it
+        #   Normalize the density to 1.60 g/cm^3
         if normalize_density and bulk_density:
             complex_dielec = 1j*unp.nominal_values(self.avg_lossfac);
             complex_dielec += unp.nominal_values(self.avg_dielec)
-            norm_complex_dielec = complex_dielec*(1.92)**(1.60-self.bulk_density)
+            if self.norm_eqn == 'LI':
+                # Lichtenecker equation
+                #   alpha from Olhoeft, 1985
+                norm_complex_dielec = complex_dielec*(1.92)**\
+                    (1.60-self.bulk_density)
+            elif self.norm_eqn == 'LLL':
+                # Landau-Lifshitz-Looyenga equation
+                #   alpha from Hickson et al., 2017
+                norm_complex_dielec = complex_dielec*((1.60*0.307 + 1)**3 / \
+                                            (self.bulk_density*0.307 + 1)**3)
             self.norm_dielec = np.real(norm_complex_dielec)
             self.norm_lossfac = np.imag(norm_complex_dielec)
             self.norm_losstan = self.norm_lossfac/self.norm_dielec
@@ -245,7 +262,8 @@ class AirlineData:
                  (self.solid_dielec,self.solid_losstan) + \
                  ',particle_diameter=%r,particle_density=%r' % \
                  (self.particle_diameter, self.particle_density) + \
-                 ',nrw=%r)' % (self.nrw)
+                 ',nrw=%r,normalize_density=%r,norm_eqn=%r)' % \
+                 (self.nrw, self.normalize_density, self.norm_eqn)
         return rep
         
     def __str__(self):
@@ -259,6 +277,13 @@ class AirlineData:
         if self.bulk_density:
             srep += ' with a bulk density of ' + str(self.bulk_density) + ' g/cm^3'
         srep += ' from file: \n' + self.file
+        if self.normalize_density:
+            srep += '\n' + 'Normalized data at a bulk density of 1.60 g/cm^3 using the'
+            if self.norm_eqn == 'LI':
+                srep += ' Lichtenecker equation'
+            elif self.norm_eqn == 'LLL':
+                srep += 'Landau-Lifshitz-Looyenga equation'
+            srep += ' is available.'
         return srep
         
     def _unpack(self,dataArray):

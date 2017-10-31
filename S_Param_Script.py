@@ -53,6 +53,7 @@ import codecs
 import pickle
 # Array math
 import numpy as np
+import scipy.stats as stats
 import uncertainties 
 #Citation: Uncertainties: a Python package for calculations with uncertainties,
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
@@ -172,6 +173,24 @@ class AirlineData:
         # Unpack data into arrays
         self.freq, self.s11, self.s21, self.s12, self.s22 = \
             self._unpack(dataArray)
+        # Perform ANOVA statistical test on forward and backwatd S-params
+        #   Warn if p-value < 0.05 (implies significant difference)
+        f_val1mag, p_val1mag = stats.f_oneway(unp.nominal_values(self.s11[0]),\
+                                        unp.nominal_values(self.s22[0]))
+        f_val2mag, p_val2mag = stats.f_oneway(unp.nominal_values(self.s21[0]),\
+                                        unp.nominal_values(self.s12[0]))
+        f_val1pha, p_val1pha = stats.f_oneway(unp.nominal_values(self.s11[1]),\
+                                        unp.nominal_values(self.s22[1]))
+        f_val2pha, p_val2pha = stats.f_oneway(unp.nominal_values(self.s21[1]),\
+                                        unp.nominal_values(self.s12[1]))
+        print(p_val1mag)
+        print(p_val2mag)
+        print(p_val1pha)
+        print(p_val2pha)
+        if p_val1mag < 0.05 or p_val1pha < 0.05:
+            print('WARNING: SIGNIFICANT DIFFERENCE BETWEEN S11 AND S22!')
+        if p_val2mag < 0.05 or p_val2pha < 0.05:
+            print('WARNING: SIGNIFICANT DIFFERENCE BETWEEN S21 AND S12!')
         if self.shorted:
             #Get path of shorted file
             path = os.path.split(self.file)

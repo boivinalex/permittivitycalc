@@ -573,23 +573,38 @@ class AirlineData:
                 (np.absolute(sm11_complex)-np.absolute(s11_predicted)) + \
                 ((np.unwrap(np.angle(sm11_complex))-\
                   np.unwrap(np.angle(s11_predicted)))/np.pi)
+                
+        sm21_complex = (sm21_complex+sm12_complex)/2
         
-        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted)) \
-            + (np.absolute(sm12_complex)-np.absolute(s12_predicted)) + \
-            (np.absolute(sm11_complex)-np.absolute(s11_predicted))
+#        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
+#            + (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
+#            (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
+        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
+            + (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
             
+#        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
+#              np.unwrap(np.angle(s21_predicted)))) + \
+#                ((np.unwrap(np.angle(sm12_complex))-\
+#                np.unwrap(np.angle(s12_predicted)))) + \
+#                  ((np.unwrap(np.angle(sm11_complex))-\
+#                  np.unwrap(np.angle(s11_predicted))))
+                  
+#        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
+#              np.unwrap(np.angle(s21_predicted)))/np.pi)**2 + \
+#                ((np.unwrap(np.angle(sm12_complex))-\
+#                np.unwrap(np.angle(s12_predicted)))/np.pi)**2 + \
+#                  ((np.unwrap(np.angle(sm11_complex))-\
+#                  np.unwrap(np.angle(s11_predicted)))/np.pi)**2
         obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
-              np.unwrap(np.angle(s21_predicted)))) + \
-                ((np.unwrap(np.angle(sm12_complex))-\
-                np.unwrap(np.angle(s12_predicted)))) + \
-                  ((np.unwrap(np.angle(sm11_complex))-\
-                  np.unwrap(np.angle(s11_predicted))))
+              np.unwrap(np.angle(s21_predicted)))/np.pi)**2 + \
+                ((np.unwrap(np.angle(sm11_complex))-\
+                  np.unwrap(np.angle(s11_predicted)))/np.pi)**2
             
 #        return np.concatenate((obj_func_real,obj_func_imag,obj_func_real2,obj_func_imag2,obj_func_real3,obj_func_imag3))
 #        return obj_func_real
 #        return obj_func.view(np.float)
-        return obj_func
-#        return np.concatenate((obj_func_real,obj_func_imag))
+#        return obj_func
+        return np.concatenate((obj_func_real,obj_func_imag))
 
     def _mymu(self,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2):
         freq = self.freq[test.freq>1e8]
@@ -632,7 +647,7 @@ class AirlineData:
         init_params_mu.add('a_1',value=0.01,min=0)
         init_params_mu.add('a_2',value=0.02,min=0)
         init_params_mu.add('a_0i',value=1.1)
-        init_params_mu.add('a_1i',value=1.2)
+        init_params_mu.add('a_1i',value=0.0002)
         init_params_mu.add('a_2i',value=1.3)
         init_params_eps.add('a_3',value=0.01,min=0)
         init_params_eps.add('a_4',value=0.02,min=0)
@@ -643,7 +658,7 @@ class AirlineData:
         init_params_eps.add('b_3',value=0.0003,min=0)
         init_params_eps.add('b_4',value=0.0004,min=0)
         init_params_eps.add('d_0',value=1,min=0)
-        init_params_eps.add('d_0i',value=1.1)
+        init_params_eps.add('d_0i',value=0.1)
         
         # Iterate to find parameters
         miner_eps = Minimizer(self._laurent_debye_equations_epsilon,init_params_eps,\
@@ -736,23 +751,47 @@ class AirlineData:
                             np.cos(np.radians(s22[1]))
             
         # Create a set of Parameters
+        mu_real = np.real(mu_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
+        mu_imag = np.real(mu_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
+        if mu_imag < 0.5:
+            mu_imag = 0
+        if mu_real < 2:
+            mu_real = 1
+        ep_real = np.real(epsilon_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
+        ep_imag = np.real(epsilon_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
         params = Parameters()
-        params.add('a_0',value=a_0,min=0)
-        params.add('a_1',value=a_1,min=0)
-        params.add('a_2',value=a_2,min=0)
-        params.add('a_0i',value=a_0i)
-        params.add('a_1i',value=a_1i)
-        params.add('a_2i',value=a_2i)
-        params.add('a_3',value=a_3,min=0)
-        params.add('a_4',value=a_4,min=0)
-        params.add('a_3i',value=a_3i)
-        params.add('a_4i',value=a_4i)
-        params.add('b_1',value=b_1,min=0)
-        params.add('b_2',value=b_2,min=0)
-        params.add('b_3',value=b_3,min=0)
-        params.add('b_4',value=b_4,min=0)
-        params.add('d_0',value=d_0,min=0)
-        params.add('d_0i',value=d_0i)
+#        params.add('a_0',value=a_0,min=0)
+        params.add('a_0',value=np.real(mu_real),min=0)
+#        params.add('a_1',value=a_1,min=0)
+#        params.add('a_2',value=a_2,min=0)
+        params.add('a_1',value=0.0001,min=0)
+        params.add('a_2',value=0.0002,min=0)
+#        params.add('a_0i',value=a_0i)
+        params.add('a_0i',value=np.imag(mu_imag))
+#        params.add('a_1i',value=a_1i)
+#        params.add('a_2i',value=a_2i)
+        params.add('a_1i',value=0)
+        params.add('a_2i',value=0)
+#        params.add('a_3',value=a_3,min=0)
+#        params.add('a_4',value=a_4,min=0)
+#        params.add('a_3i',value=a_3i)
+#        params.add('a_4i',value=a_4i)
+#        params.add('b_1',value=b_1,min=0)
+#        params.add('b_2',value=b_2,min=0)
+#        params.add('b_3',value=b_3,min=0)
+#        params.add('b_4',value=b_4,min=0)
+        params.add('a_3',value=0.0001,min=0)
+        params.add('a_4',value=0.0002,min=0)
+        params.add('a_3i',value=0)
+        params.add('a_4i',value=0)
+        params.add('b_1',value=1.0004,min=0)
+        params.add('b_2',value=1.0005,min=0)
+        params.add('b_3',value=1.0004,min=0)
+        params.add('b_4',value=1.0005,min=0)
+#        params.add('d_0',value=d_0,min=0)
+        params.add('d_0',value=np.real(ep_real),min=0)
+#        params.add('d_0i',value=d_0i)
+        params.add('d_0i',value=np.imag(ep_imag))
         
         # Fit data
         data = [sm11_complex,sm21_complex,sm12_complex,sm22_complex]
@@ -1320,6 +1359,7 @@ class AirlineData:
             y1 = avg_dielec
             y2 = avg_lossfac
             y3 = avg_losstan
+            kwargs = {"legend_label":[self.name]}
         else:
             # Prompt user
             s_plot = input('Please designate "f" for Forward, "r" for ' + \

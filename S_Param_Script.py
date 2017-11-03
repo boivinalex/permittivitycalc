@@ -1496,7 +1496,7 @@ def get_METAS_data(airline=None,file_path=None):
         
     return L, airline, dataArray, file        
 
-def perm_compare(classlist,allplots=False):
+def perm_compare(classlist,allplots=False,**kwargs):
     """
     Given a list of AirlineData instances, plot their permittivity results \
         together using permittivity_plot_V1.py
@@ -1522,7 +1522,7 @@ def perm_compare(classlist,allplots=False):
             dielec.append(item.avg_dielec)
             losstan.append(item.avg_losstan)
         labels.append(item.name)
-    kwargs = {"legend_label":labels}
+    kwargs["legend_label"] = labels
     if allplots:
         lossfac = []
         for item in classlist:

@@ -442,6 +442,7 @@ class AirlineData:
         mu = (a_0 + 1j*a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
               *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
               *2*np.pi*freq)**2
+        
 #        mu = 1 + 1j*0
 
 #        # Force magnetic loss to be > 0
@@ -576,11 +577,11 @@ class AirlineData:
                 
         sm21_complex = (sm21_complex+sm12_complex)/2
         
-#        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
-#            + (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
-#            (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
         obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
-            + (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
+            + (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
+            (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
+#        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
+#            + (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
             
 #        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
 #              np.unwrap(np.angle(s21_predicted)))) + \
@@ -589,16 +590,16 @@ class AirlineData:
 #                  ((np.unwrap(np.angle(sm11_complex))-\
 #                  np.unwrap(np.angle(s11_predicted))))
                   
-#        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
-#              np.unwrap(np.angle(s21_predicted)))/np.pi)**2 + \
-#                ((np.unwrap(np.angle(sm12_complex))-\
-#                np.unwrap(np.angle(s12_predicted)))/np.pi)**2 + \
-#                  ((np.unwrap(np.angle(sm11_complex))-\
-#                  np.unwrap(np.angle(s11_predicted)))/np.pi)**2
         obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
               np.unwrap(np.angle(s21_predicted)))/np.pi)**2 + \
-                ((np.unwrap(np.angle(sm11_complex))-\
+                ((np.unwrap(np.angle(sm12_complex))-\
+                np.unwrap(np.angle(s12_predicted)))/np.pi)**2 + \
+                  ((np.unwrap(np.angle(sm11_complex))-\
                   np.unwrap(np.angle(s11_predicted)))/np.pi)**2
+#        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
+#              np.unwrap(np.angle(s21_predicted)))/np.pi)**2 + \
+#                ((np.unwrap(np.angle(sm11_complex))-\
+#                  np.unwrap(np.angle(s11_predicted)))/np.pi)**2
             
 #        return np.concatenate((obj_func_real,obj_func_imag,obj_func_real2,obj_func_imag2,obj_func_real3,obj_func_imag3))
 #        return obj_func_real
@@ -705,6 +706,77 @@ class AirlineData:
         pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
         pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
         
+        ## Re-fit using eps and mu at 1 GHz as basis for fit
+        #   Find value at 1 GHz
+        mu_real = np.real(mu_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
+        mu_imag = np.imag(mu_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
+        ep_real = np.real(epsilon_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
+        ep_imag = np.imag(epsilon_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
+        
+        # Create a set of Parameters to the Laurent model
+        init_params2_mu = Parameters()
+        init_params2_eps = Parameters()
+        init_params2_mu.add('a_0',value=mu_real,min=0)
+        init_params2_mu.add('a_1',value=0.01,min=0)
+        init_params2_mu.add('a_2',value=0.02,min=0)
+        init_params2_mu.add('a_0i',value=mu_imag)
+        init_params2_mu.add('a_1i',value=0)
+        init_params2_mu.add('a_2i',value=0)
+        init_params2_eps.add('a_3',value=0.01,min=0)
+        init_params2_eps.add('a_4',value=0.02,min=0)
+        init_params2_eps.add('a_3i',value=0)
+        init_params2_eps.add('a_4i',value=0)
+        init_params2_mu.add('b_1',value=0.0003,min=0)
+        init_params2_mu.add('b_2',value=0.0004,min=0)
+        init_params2_eps.add('b_3',value=0.0003,min=0)
+        init_params2_eps.add('b_4',value=0.0004,min=0)
+        init_params2_eps.add('d_0',value=ep_real,min=0)
+        init_params2_eps.add('d_0i',value=ep_imag)
+        
+        # Iterate to find parameters
+        miner_eps2 = Minimizer(self._laurent_debye_equations_epsilon,init_params2_eps,\
+                          fcn_args=(epsilon,mu))
+        init_result2_eps = miner_eps2.minimize()
+        miner_mu2 = Minimizer(self._laurent_debye_equations_mu,init_params2_mu,\
+                          fcn_args=(epsilon,mu))
+        init_result2_mu = miner_mu2.minimize()
+        
+        # Write report fit
+        report_fit(init_result2_eps)
+        report_fit(init_result2_mu)
+        
+        # Get parameter values
+        a_0 = init_result2_mu.params['a_0']._val
+        a_1 = init_result2_mu.params['a_1']._val
+        a_2 = init_result2_mu.params['a_2']._val
+        a_0i = init_result2_mu.params['a_0i']._val
+        a_1i = init_result2_mu.params['a_1i']._val
+        a_2i = init_result2_mu.params['a_2i']._val
+        a_3 = init_result2_eps.params['a_3']._val
+        a_4 = init_result2_eps.params['a_4']._val
+        a_3i = init_result2_eps.params['a_3i']._val
+        a_4i = init_result2_eps.params['a_4i']._val
+        b_1 = init_result2_mu.params['b_1']._val
+        b_2 = init_result2_mu.params['b_2']._val
+        b_3 = init_result2_eps.params['b_3']._val
+        b_4 = init_result2_eps.params['b_4']._val
+        d_0 = init_result2_eps.params['d_0']._val
+        d_0i = init_result2_eps.params['d_0i']._val
+        
+        # Calculate model EM parameters
+        global mu_iter2
+        mu_iter2 = (a_0 + 1j* a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
+              *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
+              *2*np.pi*freq)**2
+                        
+        epsilon_iter2 = (d_0 +1j*d_0i) + (a_3 + 1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
+                   *freq) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
+                   *2*np.pi*freq)**2
+        # Plot                    
+        pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter2.real],legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[epsilon.imag,-epsilon_iter2.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[mu.real,mu_iter2.real],legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([freq,freq],[mu.imag,-mu_iter2.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
                 
         ## Perform Modified Baker-Jarvis iteration
         # Check if using corrected S-params
@@ -751,54 +823,53 @@ class AirlineData:
                             np.cos(np.radians(s22[1]))
             
         # Create a set of Parameters
-        mu_real = np.real(mu_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
-        mu_imag = np.real(mu_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
-        if mu_imag < 0.5:
-            mu_imag = 0
-        if mu_real < 2:
-            mu_real = 1
-        ep_real = np.real(epsilon_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
-        ep_imag = np.real(epsilon_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
         params = Parameters()
 #        params.add('a_0',value=a_0,min=0)
-        params.add('a_0',value=np.real(mu_real),min=0)
-#        params.add('a_1',value=a_1,min=0)
-#        params.add('a_2',value=a_2,min=0)
-        params.add('a_1',value=0.0001,min=0)
-        params.add('a_2',value=0.0002,min=0)
+        if mu_real < 0:
+            params.add('a_0',value=1,min=0.99,max=1.01)
+        else:
+            params.add('a_0',value=mu_real,min=0) # Plug in 1 GHz mu
+        if mu_imag < 0:
+            params.add('a_0i',value=0,min=0)
+        else:
+            params.add('a_0i',value=mu_imag) # Plug in 1 GHz mu
+        params.add('a_1',value=a_1,min=0)
+        params.add('a_2',value=a_2,min=0)
+#        params.add('a_1',value=0.0001,min=0)
+#        params.add('a_2',value=0.0002,min=0)
 #        params.add('a_0i',value=a_0i)
-        params.add('a_0i',value=np.imag(mu_imag))
-#        params.add('a_1i',value=a_1i)
-#        params.add('a_2i',value=a_2i)
-        params.add('a_1i',value=0)
-        params.add('a_2i',value=0)
-#        params.add('a_3',value=a_3,min=0)
-#        params.add('a_4',value=a_4,min=0)
-#        params.add('a_3i',value=a_3i)
-#        params.add('a_4i',value=a_4i)
-#        params.add('b_1',value=b_1,min=0)
-#        params.add('b_2',value=b_2,min=0)
-#        params.add('b_3',value=b_3,min=0)
-#        params.add('b_4',value=b_4,min=0)
-        params.add('a_3',value=0.0001,min=0)
-        params.add('a_4',value=0.0002,min=0)
-        params.add('a_3i',value=0)
-        params.add('a_4i',value=0)
-        params.add('b_1',value=1.0004,min=0)
-        params.add('b_2',value=1.0005,min=0)
-        params.add('b_3',value=1.0004,min=0)
-        params.add('b_4',value=1.0005,min=0)
+        params.add('a_1i',value=a_1i)
+        params.add('a_2i',value=a_2i)
+#        params.add('a_1i',value=0.0003)
+#        params.add('a_2i',value=0.0004)
+        params.add('a_3',value=a_3,min=0)
+        params.add('a_4',value=a_4,min=0)
+        params.add('a_3i',value=a_3i)
+        params.add('a_4i',value=a_4i)
+        params.add('b_1',value=b_1,min=0)
+        params.add('b_2',value=b_2,min=0)
+        params.add('b_3',value=b_3,min=0)
+        params.add('b_4',value=b_4,min=0)
+#        params.add('a_3',value=0.0001,min=0)
+#        params.add('a_4',value=0.0002,min=0)
+#        params.add('a_3i',value=0.0003)
+#        params.add('a_4i',value=0.0004)
+#        params.add('b_1',value=1.0004,min=0)
+#        params.add('b_2',value=1.0005,min=0)
+#        params.add('b_3',value=1.0004,min=0)
+#        params.add('b_4',value=1.0005,min=0)
 #        params.add('d_0',value=d_0,min=0)
-        params.add('d_0',value=np.real(ep_real),min=0)
+        params.add('d_0',value=ep_real,min=0) # Plug in 1 GHz eps
 #        params.add('d_0i',value=d_0i)
-        params.add('d_0i',value=np.imag(ep_imag))
+        params.add('d_0i',value=ep_imag) # Plug in 1 GHz eps
         
         # Fit data
         data = [sm11_complex,sm21_complex,sm12_complex,sm22_complex]
         minner = Minimizer(self._iterate_objective_function,\
-                           params,fcn_args=(data,L))
+                           params,fcn_args=(data,L),nan_policy='omit')
         global result
-        result = minner.minimize()#method='differential_evolution')
+#        result = minner.minimize()
+        result = minner.emcee(steps=5000,nwalkers=500,burn=100,is_weighted=False,seed=5)
         
         report_fit(result)
         
@@ -1488,7 +1559,7 @@ def get_METAS_data(airline=None,file_path=None):
         L = 14.979
         #L = 14.9835    # 14mm airline - 15 cm 
     elif airline == 'GAL':
-        L = 14.991
+        L = 14.991 
     elif airline == 'washer':
         L = 0.15
     else:

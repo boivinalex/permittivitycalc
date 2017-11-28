@@ -22,8 +22,8 @@ DATE = str(datetime.date.today())
 #%% FUNCTIONS
 def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
               plot_title=None, ylabel=None, xlabel=None, spacing=None, \
-              buffer=None, xlim=None, \
-              ylim=None, figure_size=(12,9),publish=False):
+              buffer=None, xlim=None, ylim=None, figure_size=(12,9), \
+              publish=False, round_val=None):
     """
     Takes input from S_Param_Script_V5 and plots calculated permittivity. Can \
     handle multiple data sets. Plots uncertainty countour if plotting single \
@@ -37,7 +37,8 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     
     plot_type (str): Flag for default plot types. Can be set to 'd' for Real \
         Part, 'lf' for Imaginary Part, 'lt' for Loss Tangent, or 'c' for \
-        Custom. If 'c' is used, other argunents can be changed.
+        Custom. If 'c' is used, plot_title, ylabel, xlabel, and round_val \
+        must be set.
         
     legend_label (list of str): Plot legend label. Each dataset much have it's \
         own label. Stings must be in a list.
@@ -51,10 +52,10 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     xlabel (str): For use with plot_type='c'. X-axis label.
     
     spacing (float): For use with plot_type='c'. Sets the spacing between \
-        y-axis tick marks.
+        y-axis tick marks. Currently not implemented.
         
     buffer (float): For use with plot_type='c'. Sets buffer space around the \
-        min and max y-axis values.
+        min and max y-axis values. Currently not implemented.
         
     xlim (tuple, float): Manually set x-axis limits. Currently not implemented.
     
@@ -64,10 +65,6 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     
     publish (bool): If True save figure as .eps file. Default: False
     """
-    
-    # Check plot_type
-    if plot_type not in ('d','lf','lt','c'):
-        raise Exception('Invalid plot type')
     
     # Default settings for plotting permittivity data   
     if plot_type == 'd': # Real part
@@ -85,8 +82,13 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         ylabel = '$tan\delta$'
         xlabel = 'Frequency (Hz)'
         rnd = 2
+    elif plot_type == 'c': # Custom plot
+        plot_title = plot_title
+        ylabel = ylabel
+        xlabel = xlabel
+        rnd = round_val
     else:
-        pass
+        raise Exception('Invalid plot type')
     
     # Checks if input data is in a list and determines number of things to plot
     #   NOTE: Multiple data sets must be in a list      
@@ -146,7 +148,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         else:
             buffer = 0.2
             spacing = round((thickness + 2*buffer)/9,1)
-    elif plot_type in ('lf','lt'):
+    elif plot_type in ('lf','lt','c'):
         if thickness < 0.01:
             buffer = 0.01
             spacing = 0.002

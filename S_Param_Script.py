@@ -403,7 +403,7 @@ class AirlineData:
                              
         # Residuals
         resid1 = epsilon_predicted.real - epsilon.real
-        resid2 = (epsilon_predicted.imag + epsilon.imag)
+        resid2 = (epsilon_predicted.imag - epsilon.imag)
         
         return np.concatenate((resid1,resid2))
         
@@ -442,30 +442,16 @@ class AirlineData:
         mu = (a_0 + 1j*a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
               *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
               *2*np.pi*freq)**2
-        
-#        mu = 1 + 1j*0
-
-#        # Force magnetic loss to be > 0
-#        if mu.imag.any() > 0: # >0 since -mu.imag is plotted
-#            mu.imag = -mu.imag
              
         epsilon = (d_0 + 1j*d_0i) + (a_3 + 1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
                    *freq) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
                    *2*np.pi*freq)**2
-                             
-#        # Force physical mu and epsilon
-#        for n in range(0,len(mu)):
-#            mu[n] = max(mu[n],1)
-#            epsilon[n] = max(epsilon[n],1)
         
         # Calculate predicted sparams
         lam_0 = (C/freq)*100    # Free-space wavelength
         
         small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
                     (lam_0/LAM_C)**2)
-#        print(small_gam)
-        
-#        print(np.isnan(small_gam).any())
         
         small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
         
@@ -474,11 +460,7 @@ class AirlineData:
         big_gam = (small_gam_0*mu - small_gam) / (small_gam_0*mu + \
                   small_gam)
         
-#        print(np.isinf(small_gam).any())
-#        print(np.isinf(big_gam).any())
-#        print(np.isinf(t).any())
-        
-        # Make parameters global for plotting
+        # Make parameters global for plotting (TEMP)
         global s11_predicted
         global s21_predicted
         
@@ -493,102 +475,11 @@ class AirlineData:
         # S21
         s21_predicted = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
         
-        # Force positive S-params
-#        for n in range(0,len(self.freq)):
-#            if np.isnan(s11_predicted[n]):
-#                s11_predicted[n] = 0
-#            if np.isnan(s21_predicted[n]):
-#                s21_predicted[n] = 0
-        
-#        print(np.isnan(s11_predicted).any())
-#        print(np.isnan(s21_predicted).any())
-        
         s12_predicted = s21_predicted
-        #s22_predicted = s11_predicted
-        
-        # Set up objective funtion to be minimized
-#        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
-#            + ((np.angle(sm21_complex)-np.angle(s21_predicted))/np.pi)**2 +\
-#            (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
-#            ((np.angle(sm12_complex)-np.angle(s12_predicted))/np.pi)**2 +\
-#            (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2 +\
-#            ((np.angle(sm11_complex)-np.angle(s11_predicted))/np.pi)**2
-#        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 + \
-#            (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
-#            (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
-#        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-np.unwrap(np.angle(s21_predicted)))/np.pi)**2 + \
-#            ((np.unwrap(np.angle(sm12_complex))-np.unwrap(np.angle(s12_predicted)))/np.pi)**2 + \
-#            ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**2
-#        obj_func_imag = ((np.angle(sm21_complex)-np.angle(s21_predicted))/np.pi)**2 + \
-#            ((np.angle(sm12_complex)-np.angle(s12_predicted))/np.pi)**2 + \
-#            ((np.angle(sm11_complex)-np.angle(s11_predicted))/np.pi)**2
-
-#        s11_predicted_abs = np.absolute(s11_predicted)
-#        s11_predicted_angle = np.angle(s11_predicted)
-#        s21_predicted_abs = np.absolute(s21_predicted)
-#        s21_predicted_angle = np.unwrap(np.angle(s21_predicted))
-#        s12_predicted_abs  = s21_predicted_abs
-#        s12_predicted_angle = s21_predicted_angle
-##        
-#        sm11_abs = np.absolute(sm11_complex)
-#        sm11_angle = np.angle(sm11_complex)
-#        sm21_abs  = np.absolute(sm21_complex)
-#        sm21_angle = np.unwrap(np.angle(sm21_complex))
-#        sm12_abs = np.absolute(sm12_complex)
-#        sm12_angle = np.unwrap(np.angle(sm12_complex))
-
-#        obj_func_real = (sm11_complex.real - s11_predicted.real) + (sm21_complex.real - s21_predicted.real) + (sm12_complex.real - s12_predicted.real)
-#        obj_func_imag = (sm11_complex.imag - s11_predicted.imag) + (sm21_complex.imag - s21_predicted.imag) + (sm12_complex.imag - s12_predicted.imag)
-
-#        obj_func_real = sm11_abs - s11_predicted_abs
-#        obj_func_real2 = sm21_abs - s21_predicted_abs
-#        obj_func_real3 = sm12_abs - s12_predicted_abs
-#        obj_func_imag = sm11_angle - s11_predicted_angle
-#        obj_func_imag2 = sm21_angle - s21_predicted_angle
-#        obj_func_imag3 = sm12_angle - s12_predicted_angle
-        
-#        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
-#                    + ((np.unwrap(np.angle(sm21_complex))-np.unwrap(np.angle(s21_predicted)))/np.pi)**2 +\
-#                    (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
-#                    ((np.unwrap(np.angle(sm12_complex))-np.unwrap(np.angle(s12_predicted)))/np.pi)**2 +\
-#                    (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2 +\
-#                    ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**2 #\
-#                    + (np.absolute(sm22_complex)-np.absolute(s22_predicted))**2 \
-#                    + ((np.unwrap(np.angle(sm22_complex))-np.unwrap(np.angle(s22_predicted)))/np.pi)**2
-
-#        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**6 \
-#                    + ((np.unwrap(np.angle(sm21_complex))-np.unwrap(np.angle(s21_predicted)))/np.pi)**6 +\
-#                    (np.absolute(sm12_complex)-np.absolute(s12_predicted))**6 + \
-#                    ((np.unwrap(np.angle(sm12_complex))-np.unwrap(np.angle(s12_predicted)))/np.pi)**6 +\
-#                    (np.absolute(sm11_complex)-np.absolute(s11_predicted))**6 +\
-#                    ((np.unwrap(np.angle(sm11_complex))-np.unwrap(np.angle(s11_predicted)))/np.pi)**6
-
-#        obj_func = (sm11_complex - s11_predicted) + (sm21_complex - s21_predicted) + (sm12_complex - s12_predicted)
-
-        obj_func = (np.absolute(sm21_complex)-np.absolute(s21_predicted)) + \
-            ((np.unwrap(np.angle(sm21_complex))-\
-              np.unwrap(np.angle(s21_predicted)))/np.pi) + \
-              (np.absolute(sm12_complex)-np.absolute(s12_predicted)) + \
-              ((np.unwrap(np.angle(sm12_complex))-\
-                np.unwrap(np.angle(s12_predicted)))/np.pi) + \
-                (np.absolute(sm11_complex)-np.absolute(s11_predicted)) + \
-                ((np.unwrap(np.angle(sm11_complex))-\
-                  np.unwrap(np.angle(s11_predicted)))/np.pi)
-                
-        sm21_complex = (sm21_complex+sm12_complex)/2
         
         obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
             + (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
             (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
-#        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
-#            + (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
-            
-#        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
-#              np.unwrap(np.angle(s21_predicted)))) + \
-#                ((np.unwrap(np.angle(sm12_complex))-\
-#                np.unwrap(np.angle(s12_predicted)))) + \
-#                  ((np.unwrap(np.angle(sm11_complex))-\
-#                  np.unwrap(np.angle(s11_predicted))))
                   
         obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
               np.unwrap(np.angle(s21_predicted)))/np.pi)**2 + \
@@ -596,15 +487,7 @@ class AirlineData:
                 np.unwrap(np.angle(s12_predicted)))/np.pi)**2 + \
                   ((np.unwrap(np.angle(sm11_complex))-\
                   np.unwrap(np.angle(s11_predicted)))/np.pi)**2
-#        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
-#              np.unwrap(np.angle(s21_predicted)))/np.pi)**2 + \
-#                ((np.unwrap(np.angle(sm11_complex))-\
-#                  np.unwrap(np.angle(s11_predicted)))/np.pi)**2
-            
-#        return np.concatenate((obj_func_real,obj_func_imag,obj_func_real2,obj_func_imag2,obj_func_real3,obj_func_imag3))
-#        return obj_func_real
-#        return obj_func.view(np.float)
-#        return obj_func
+                    
         return np.concatenate((obj_func_real,obj_func_imag))
 
     def _mymu(self,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2):
@@ -623,7 +506,7 @@ class AirlineData:
         global mu
         freq = self.freq[self.freq>1e8]
         if self.nrw:
-            epsilon = 1j*self.avg_lossfac;
+            epsilon = -1j*self.avg_lossfac;
             epsilon += self.avg_dielec
             epsilon = epsilon[self.freq>1e8]
             mu = self.mu[self.freq>1e8]
@@ -635,7 +518,7 @@ class AirlineData:
 #            epsilon = 1j*lossfac;
 #            epsilon += dielec
             # Default epsilon
-            epsilon = 1j*unp.nominal_values(self.avg_lossfac);
+            epsilon = -1j*unp.nominal_values(self.avg_lossfac);
             epsilon += unp.nominal_values(self.avg_dielec)
             epsilon = epsilon[self.freq>1e8]
             mu = mu[self.freq>1e8]
@@ -702,18 +585,23 @@ class AirlineData:
                    *2*np.pi*freq)**2
         # Plot                    
         pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter.real],legend_label=['Analytical','Iterative'])
-        pplot.make_plot([freq,freq],[epsilon.imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[-epsilon.imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
         pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
         pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
         
         ## Re-fit using eps and mu at 1 GHz as basis for fit
-        #   Find value at 1 GHz
-        mu_real = np.real(mu_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
-        mu_imag = np.imag(mu_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
-        ep_real = np.real(epsilon_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
-        ep_imag = np.imag(epsilon_iter[np.where(freq.flat[np.abs(freq - 1e9).argmin()])])[0]
+        # Find values at 1 GHz by finding index where freq is closest to 1 GHz
+        mu_real = mu_iter.real[np.where(test.freq == test.freq[np.abs(test.freq - 1e9).argmin()])][0]
+        mu_imag = mu_iter.imag[np.where(test.freq == test.freq[np.abs(test.freq - 1e9).argmin()])][0]
+        ep_real = epsilon_iter.real[np.where(test.freq == test.freq[np.abs(test.freq - 1e9).argmin()])][0]
+        ep_imag = epsilon_iter.imag[np.where(test.freq == test.freq[np.abs(test.freq - 1e9).argmin()])][0]
+        print(mu_real)
+        print(mu_imag)
+        print(ep_real)
+        print(ep_imag)
         
         # Create a set of Parameters to the Laurent model
+        #   Use fit mu and epsilon as starting values in the Laurent model
         init_params2_mu = Parameters()
         init_params2_eps = Parameters()
         init_params2_mu.add('a_0',value=mu_real,min=0)
@@ -774,7 +662,7 @@ class AirlineData:
                    *2*np.pi*freq)**2
         # Plot                    
         pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter2.real],legend_label=['Analytical','Iterative'])
-        pplot.make_plot([freq,freq],[epsilon.imag,-epsilon_iter2.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[-epsilon.imag,-epsilon_iter2.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
         pplot.make_plot([freq,freq],[mu.real,mu_iter2.real],legend_label=['Analytical mu','Iterative mu'])
         pplot.make_plot([freq,freq],[mu.imag,-mu_iter2.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
                 
@@ -825,14 +713,18 @@ class AirlineData:
         # Create a set of Parameters
         params = Parameters()
 #        params.add('a_0',value=a_0,min=0)
-        if mu_real < 0:
-            params.add('a_0',value=1,min=0.99,max=1.01)
-        else:
-            params.add('a_0',value=mu_real,min=0) # Plug in 1 GHz mu
-        if mu_imag < 0:
-            params.add('a_0i',value=0,min=0)
-        else:
-            params.add('a_0i',value=mu_imag) # Plug in 1 GHz mu
+#        if mu_real < 0:
+#            params.add('a_0',value=1,min=0.99,max=1.01)
+#        else:
+#            params.add('a_0',value=mu_real,min=0) # Plug in 1 GHz mu
+#        if mu_imag < 0:
+#            params.add('a_0i',value=0,min=0)
+#        else:
+#            params.add('a_0i',value=mu_imag) # Plug in 1 GHz mu
+#        params.add('a_0',value=mu_real,min=0)
+        params.add('a_0',value=a_0,min=0)
+#        params.add('a_0i',value=mu_imag,max=0)
+        params.add('a_0i',value=-np.abs(a_0i),max=0)
         params.add('a_1',value=a_1,min=0)
         params.add('a_2',value=a_2,min=0)
 #        params.add('a_1',value=0.0001,min=0)
@@ -859,9 +751,11 @@ class AirlineData:
 #        params.add('b_3',value=1.0004,min=0)
 #        params.add('b_4',value=1.0005,min=0)
 #        params.add('d_0',value=d_0,min=0)
-        params.add('d_0',value=ep_real,min=0) # Plug in 1 GHz eps
+#        params.add('d_0',value=ep_real,min=0) # Plug in 1 GHz eps
+        params.add('d_0',value=d_0,min=0)
 #        params.add('d_0i',value=d_0i)
-        params.add('d_0i',value=ep_imag) # Plug in 1 GHz eps
+#        params.add('d_0i',value=ep_imag) # Plug in 1 GHz eps
+        params.add('d_0i',value=-np.abs(d_0i),max=0)
         
         # Fit data
         data = [sm11_complex,sm21_complex,sm12_complex,sm22_complex]
@@ -869,7 +763,7 @@ class AirlineData:
                            params,fcn_args=(data,L),nan_policy='omit')
         global result
 #        result = minner.minimize()
-        result = minner.emcee(steps=5000,nwalkers=500,burn=100,is_weighted=False,seed=5)
+        result = minner.emcee(steps=5000,nwalkers=500,burn=200,is_weighted=False,seed=5)
         
         report_fit(result)
         
@@ -904,7 +798,7 @@ class AirlineData:
         pplot.make_plot([freq,freq],[self.avg_dielec[self.freq>1e8],epsilon_iter.real],legend_label=['Analytical','Iterative'])
         pplot.make_plot([freq,freq],[self.avg_lossfac[self.freq>1e8],-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
         pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
-        pplot.make_plot([freq,freq],[mu.imag,mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
         # Plot s-params for troubleshooting
         import matplotlib.pyplot as plt
         plt.figure()

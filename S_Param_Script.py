@@ -1210,19 +1210,43 @@ class AirlineData:
         corr_s12_phase = np.arctan2(corr_s12_complex.imag,corr_s12_complex.real)
         corr_s21_phase = np.arctan2(corr_s21_complex.imag,corr_s21_complex.real)
         corr_s22_phase = np.arctan2(corr_s22_complex.imag,corr_s22_complex.real)
-        # Final corrected arrays
-        corr_s11 = np.array([np.sqrt(corr_s11_complex.real**2 + \
-                                     corr_s11_complex.imag**2),\
-                                     corr_s11_phase*(180/np.pi)])
-        corr_s12 = np.array([np.sqrt(corr_s12_complex.real**2 + \
-                                     corr_s12_complex.imag**2),\
-                                     corr_s12_phase*(180/np.pi)])
-        corr_s21 = np.array([np.sqrt(corr_s21_complex.real**2 + \
-                                     corr_s21_complex.imag**2),\
-                                     corr_s21_phase*(180/np.pi)])
-        corr_s22 = np.array([np.sqrt(corr_s22_complex.real**2 + \
-                                     corr_s22_complex.imag**2),\
-                                     corr_s22_phase*(180/np.pi)])
+        ## Build final corrected arrays
+        # Get corrected mag and phase
+        corr_s11_mag = np.sqrt(corr_s11_complex.real**2 + \
+                                     corr_s11_complex.imag**2)
+        corr_s11_phase = corr_s11_phase*(180/np.pi)
+        corr_s12_mag = np.sqrt(corr_s12_complex.real**2 + \
+                                     corr_s12_complex.imag**2)
+        corr_s12_phase = corr_s12_phase*(180/np.pi)
+        corr_s21_mag = np.sqrt(corr_s21_complex.real**2 + \
+                                     corr_s21_complex.imag**2)
+        corr_s21_phase = corr_s21_phase*(180/np.pi)
+        corr_s22_mag = np.sqrt(corr_s22_complex.real**2 + \
+                                     corr_s22_complex.imag**2)
+        corr_s22_phase = corr_s22_phase*(180/np.pi)
+        # Get original s-param uncertainties
+        # NOTE: This is an underestimate of the real uncertainties since they \
+        #   are not properly propagated in de-embedding but they are \
+        #   probably still much smaller at high freqencies than the stardard \
+        #   deviation of the measurement. To be fixed when the uncertainties \
+        #   package can handle complex numbers.
+        err_s11_mag = unp.std_devs(self.s11[0])
+        err_s11_phase = unp.std_devs(self.s11[1])
+        err_s12_mag = unp.std_devs(self.s12[0])
+        err_s12_phase = unp.std_devs(self.s12[1])
+        err_s21_mag = unp.std_devs(self.s21[0])
+        err_s21_phase = unp.std_devs(self.s21[1])
+        err_s22_mag = unp.std_devs(self.s22[0])
+        err_s22_phase = unp.std_devs(self.s22[1])
+        # Make final arrays with uncertainties
+        corr_s11 = unp.uarray([corr_s11_mag,corr_s11_phase],\
+                              [err_s11_mag,err_s11_phase])
+        corr_s12 = unp.uarray([corr_s12_mag,corr_s12_phase],\
+                              [err_s12_mag,err_s12_phase])
+        corr_s21 = unp.uarray([corr_s21_mag,corr_s21_phase],\
+                              [err_s21_mag,err_s21_phase])
+        corr_s22 = unp.uarray([corr_s22_mag,corr_s22_phase],\
+                              [err_s22_mag,err_s22_phase])
             
         return corr_s11, corr_s21, corr_s12, corr_s22
     

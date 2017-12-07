@@ -1289,7 +1289,8 @@ class AirlineData:
         samples_losstan = sample_permittivity.imag / sample_dielec
         return sample_dielec, samples_losstan
         
-    def draw_plots(self,default_setting=True,corr=False,publish=False):
+    def draw_plots(self,default_setting=True,corr=False,normalized=False,\
+                   publish=False):
         """
         Plots permittivity data using make_plot from permittivity_plot_V1.
         
@@ -1313,6 +1314,10 @@ class AirlineData:
             avg_losstan = self.corr_avg_losstan
         elif corr and not default_setting:
             raise Exception('default_setting must be True if using corrected data')
+        elif normalized:
+            avg_dielec = self.norm_dielec
+            avg_lossfac = self.norm_lossfac
+            avg_losstan = self.norm_losstan
         else:
             avg_dielec = self.avg_dielec
             avg_lossfac = self.avg_lossfac

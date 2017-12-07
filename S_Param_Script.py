@@ -48,7 +48,7 @@ Version History (all previous versions based in MATLAB):
 """
 # File input
 import tkinter as tk
-from tkinter import filedialog
+from tkinter.filedialog import askopenfilename
 import codecs
 import pickle
 # Array math
@@ -1374,6 +1374,19 @@ class AirlineData:
             pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12)
 
 #%% FUCNTIONS
+def _prompt():
+    """Prompt for VNA Tools II text file"""
+    print('\n')
+    print('Select the VNA Tools II Output Data Table')
+    print('\n')
+    root = tk.Tk()
+    root.withdraw()
+    file = askopenfilename(filetypes=[('text files', '*.txt')],\
+                            title='Select the VNA Tools II Output Data Table')
+    root.update()
+    
+    return file
+    
 def _get_file(airline,file_path):
     """Return the file path and airline name. Use prompts if needed."""
     L_in = None
@@ -1396,13 +1409,7 @@ def _get_file(airline,file_path):
     elif airline and not file_path:
         # Prompt for file
         airline = airline
-        print('\n')
-        print('Select the VNA Tools II Output Data Table')
-        print('\n')
-        root = tk.Tk()
-        root.withdraw()
-        file = filedialog.askopenfilename(filetypes=[('text files', '*.txt')],\
-                                title='Select the VNA Tools II Output Data Table')
+        file = _prompt()
     else:   # Prompt for both
         # Airline
         airline = input('Are you using the "VAL", "PAL", "GAL", "7" mm, ' + \
@@ -1412,13 +1419,7 @@ def _get_file(airline,file_path):
         elif airline == 'custom':
             L_in = input('Enter the length of the airline (cm): ')
         # File
-        print('\n')
-        print('Select the VNA Tools II Output Data Table')
-        print('\n')
-        root = tk.Tk()
-        root.withdraw()
-        file = filedialog.askopenfilename(filetypes=[('text files', '*.txt')],\
-                                title='Select the VNA Tools II Output Data Table')
+        file = _prompt()
         
     return airline, file, L_in
     

@@ -222,7 +222,7 @@ class AirlineData:
         if corr and len(self.freq) == 601:
             try:
                 if not np.isnan(unp.nominal_values(self.avg_dielec)).any():
-                    self.Lcorr = self.L - 0.3
+                    self.Lcorr = self.L - 0.345 # Remove total washer length 
                     self.corr_s11, self.corr_s21, self.corr_s12, \
                         self.corr_s22 = self._de_embed()
                     if nrw:

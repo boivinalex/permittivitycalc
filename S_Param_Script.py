@@ -356,7 +356,7 @@ class AirlineData:
             dims['D3'] = dims['D4'] - self.particle_diameter
         return dims
     
-    def _laurent_debye_equations_mu(self,params,epsilon,mu):
+    def _laurent_debye_equations_mu(self,params,freq,epsilon,mu):
         v = params.valuesdict()
         a_0 = v['a_0'] 
         a_1 = v['a_1']
@@ -370,9 +370,7 @@ class AirlineData:
         global mu_predicted
         global mu_check
         mu_check = mu
-        mu_predicted = (a_0 + 1j*a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
-              *self.freq[self.freq>5e8]) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
-              *2*np.pi*self.freq[self.freq>5e8])**2
+        mu_predicted = self._mymu(freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2)
 #        mu.real = np.ones(len(mu_check))
 #        mu.imag = np.zeros(len(mu_check))
         
@@ -382,7 +380,7 @@ class AirlineData:
         
         return np.concatenate((resid1,resid2))
     
-    def _laurent_debye_equations_epsilon(self,params,epsilon,mu):
+    def _laurent_debye_equations_epsilon(self,params,freq,epsilon,mu):
         """
         """
         # Unpack parameters
@@ -397,9 +395,7 @@ class AirlineData:
         d_0i = v['d_0i']
         
         # Equations
-        epsilon_predicted = (d_0 +1j*d_0i) + (a_3 +1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
-                   *self.freq[self.freq>5e8]) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
-                   *2*np.pi*self.freq[self.freq>5e8])**2
+        epsilon_predicted = self._myeps(freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4)
                              
         # Residuals
         resid1 = epsilon_predicted.real - epsilon.real
@@ -439,13 +435,9 @@ class AirlineData:
         d_0i = v['d_0i']
         
         # Calculate predicted mu and epsilon
-        mu = (a_0 + 1j*a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
-              *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
-              *2*np.pi*freq)**2
+        mu = self._mymu(freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2)
              
-        epsilon = (d_0 + 1j*d_0i) + (a_3 + 1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
-                   *freq) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
-                   *2*np.pi*freq)**2
+        epsilon = self._myeps(freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4)
         
         # Calculate predicted sparams
         lam_0 = (C/freq)*100    # Free-space wavelength in cm
@@ -507,12 +499,17 @@ class AirlineData:
         
         return np.concatenate((obj_func_real,obj_func_imag))
 
-    def _mymu(self,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2):
-        freq = self.freq[test.freq>1e8]
+    def _mymu(self,freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2):
         mu = (a_0 + 1j*a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
               *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
               *2*np.pi*freq)**2
         return mu
+    
+    def _myeps(self,freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4):
+        epsilon = (d_0 + 1j*d_0i) + (a_3 + 1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
+                   *freq) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
+                   *2*np.pi*freq)**2
+        return epsilon
     
     def _permittivity_iterate(self,corr=False):
         """
@@ -525,8 +522,8 @@ class AirlineData:
         if self.nrw:
             epsilon = -1j*self.avg_lossfac;
             epsilon += self.avg_dielec
-            epsilon = epsilon[self.freq>5e8]
-            mu = self.mu[self.freq>5e8]
+            epsilon = epsilon[self.freq>=freq[0]]
+            mu = self.mu[self.freq>=freq[0]]
         else:
             self.nrw = True
             dielec, lossfac, losstan, mu = \
@@ -537,8 +534,8 @@ class AirlineData:
             # Default epsilon
             epsilon = -1j*unp.nominal_values(self.avg_lossfac);
             epsilon += unp.nominal_values(self.avg_dielec)
-            epsilon = epsilon[self.freq>5e8]
-            mu = mu[self.freq>5e8]
+            epsilon = epsilon[self.freq>=freq[0]]
+            mu = mu[self.freq>=freq[0]]
             self.nrw = False    # Reset to previous setting
             
         # Create a set of Parameters to the Laurent model
@@ -563,10 +560,10 @@ class AirlineData:
         
         # Iterate to find parameters
         miner_eps = Minimizer(self._laurent_debye_equations_epsilon,init_params_eps,\
-                          fcn_args=(epsilon,mu))
+                          fcn_args=(freq,epsilon,mu))
         init_result_eps = miner_eps.minimize()
         miner_mu = Minimizer(self._laurent_debye_equations_mu,init_params_mu,\
-                          fcn_args=(epsilon,mu))
+                          fcn_args=(freq,epsilon,mu))
         init_result_mu = miner_mu.minimize()
         
         # Write report fit
@@ -593,13 +590,10 @@ class AirlineData:
         
         # Calculate model EM parameters
         global mu_iter
-        mu_iter = (a_0 + 1j* a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
-              *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
-              *2*np.pi*freq)**2
+        mu_iter = self._mymu(freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2)
                         
-        epsilon_iter = (d_0 +1j*d_0i) + (a_3 + 1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
-                   *freq) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
-                   *2*np.pi*freq)**2
+        epsilon_iter = self._myeps(freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4)
+        
         # Plot                    
         pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter.real],legend_label=['Analytical','Iterative'])
         pplot.make_plot([freq,freq],[-epsilon.imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
@@ -640,10 +634,10 @@ class AirlineData:
         
         # Iterate to find parameters
         miner_eps2 = Minimizer(self._laurent_debye_equations_epsilon,init_params2_eps,\
-                          fcn_args=(epsilon,mu))
+                          fcn_args=(freq,epsilon,mu))
         init_result2_eps = miner_eps2.minimize()
         miner_mu2 = Minimizer(self._laurent_debye_equations_mu,init_params2_mu,\
-                          fcn_args=(epsilon,mu))
+                          fcn_args=(freq,epsilon,mu))
         init_result2_mu = miner_mu2.minimize()
         
         # Write report fit
@@ -670,13 +664,9 @@ class AirlineData:
         
         # Calculate model EM parameters
         global mu_iter2
-        mu_iter2 = (a_0 + 1j* a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
-              *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
-              *2*np.pi*freq)**2
+        mu_iter2 = self._mymu(freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2)
                         
-        epsilon_iter2 = (d_0 +1j*d_0i) + (a_3 + 1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
-                   *freq) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
-                   *2*np.pi*freq)**2
+        epsilon_iter2 = self._myeps(freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4)
         # Plot                    
         pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter2.real],legend_label=['Analytical','Iterative'])
         pplot.make_plot([freq,freq],[-epsilon.imag,-epsilon_iter2.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
@@ -702,10 +692,10 @@ class AirlineData:
             s22 = unp.nominal_values(self.s22)
             L = self.L
             
-        s11s = np.array((s11s[0][self.freq>5e8],s11s[1][self.freq>5e8]))
-        s21 = np.array((s21[0][self.freq>5e8],s21[1][self.freq>5e8]))
-        s12 = np.array((s12[0][self.freq>5e8],s12[1][self.freq>5e8]))
-        s22 = np.array((s22[0][self.freq>5e8],s22[1][self.freq>5e8]))
+        s11s = np.array((s11s[0][self.freq>=freq[0]],s11s[1][self.freq>=freq[0]]))
+        s21 = np.array((s21[0][self.freq>=freq[0]],s21[1][self.freq>=freq[0]]))
+        s12 = np.array((s12[0][self.freq>=freq[0]],s12[1][self.freq>=freq[0]]))
+        s22 = np.array((s22[0][self.freq>=freq[0]],s22[1][self.freq>=freq[0]]))
         global sm21_complex 
         # Cast measured sparams to complex
         global sm11_complex
@@ -784,7 +774,7 @@ class AirlineData:
                            params,fcn_args=(data,L),nan_policy='omit')
         global result
 #        result = minner.minimize()
-        result = minner.emcee(steps=3000,nwalkers=1500,is_weighted=False)
+        result = minner.emcee(steps=4000,nwalkers=1500,is_weighted=False)
         
         report_fit(result)
         
@@ -807,17 +797,13 @@ class AirlineData:
         d_0i = result.params['d_0i']._val
         
         # Calculate model EM parameters
-        mu_iter = (a_0 + 1j* a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
-              *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
-              *2*np.pi*freq)**2
+        mu_iter = self._mymu(freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2)
                         
-        epsilon_iter = (d_0 + 1j*d_0i) + (a_3 + 1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
-                   *freq) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
-                   *2*np.pi*freq)**2
+        epsilon_iter = self._myeps(freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4)
                              
         # Plot
-        pplot.make_plot([freq,freq],[self.avg_dielec[self.freq>5e8],epsilon_iter.real],legend_label=['Analytical','Iterative'])
-        pplot.make_plot([freq,freq],[self.avg_lossfac[self.freq>5e8],-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[self.avg_dielec[self.freq>=freq[0]],epsilon_iter.real],legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[self.avg_lossfac[self.freq>=freq[0]],-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
         pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
         pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
         # Plot s-params for troubleshooting

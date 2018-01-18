@@ -1319,6 +1319,44 @@ class AirlineData:
         sample_dielec = sample_permittivity.real
         samples_losstan = sample_permittivity.imag / sample_dielec
         return sample_dielec, samples_losstan
+    
+    def air_gap_correction(self, Ds2, Ds3):
+        """
+        Calculates air gap corrected complex permittivity for solid samples.
+        
+        Follows Baker-Jarvis et al., 1993 and Rhode & Schwarz Application Note RAC0607-0019_1_4E
+        
+        Arguments
+        ---------
+        Ds2 (float): The inner diameter (cm) of the solid toroid sample to be specified by user
+        
+        Ds3 (float): The outer diameter (cm) of the solid toroid sample to be specified by user
+        
+        Return
+        ---------
+        corr_dielec (array): Corrected real part of measured permittivity
+        
+        corr_lossfac (array): Corrected imaginary part of measured permittivity
+        """
+        if self.corr:
+            measured_dielec = unp.nominal_values(self.corr_avg_dielec)
+            measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
+        else:
+            measured_dielec = unp.nominal_values(self.avg_dielec)
+            measured_lossfac = unp.nominal_values(self.avg_lossfac)
+        
+        # Calculate L1, L2, and L3 terms
+        L1 = np.log(Ds2/self.airline_dimensions['D1']) + np.log(self.airline_dimensions['D4']/Ds3)
+        L2 = np.log(Ds3/Ds2)
+        L3 = np.log(self.airline_dimensions['D4']/self.airline_dimensions['D1'])
+        
+        # Calculate corr_dielec, corr_lossfac 
+        corr_dielec  = measured_dielec*(L2/(L3 - measured_dielec*L1))
+        corr_lossfac = (corr_dielec*(measured_lossfac/measured_dielec))*(L3/(L3 - L1 \ 
+                       *measured_dielec*(1 + (measured_lossfac/measured_dielec)**2)))
+        
+        return corr_dielec, corr_lossfac
+        
         
     def draw_plots(self,default_setting=True,corr=False,normalized=False,\
                    publish=False):

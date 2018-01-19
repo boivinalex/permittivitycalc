@@ -1337,6 +1337,8 @@ class AirlineData:
         corr_dielec (array): Corrected real part of measured permittivity
         
         corr_lossfac (array): Corrected imaginary part of measured permittivity
+        
+        corr_losstan (array): Corrected loss tangent 
         """
         if self.corr:
             measured_dielec = unp.nominal_values(self.corr_avg_dielec)
@@ -1354,8 +1356,9 @@ class AirlineData:
         corr_dielec  = measured_dielec*(L2/(L3 - measured_dielec*L1))
         corr_lossfac = (corr_dielec*(measured_lossfac/measured_dielec))*(L3/(L3 - L1 \ 
                        *measured_dielec*(1 + (measured_lossfac/measured_dielec)**2)))
+        corr_losstan = corr_lossfac/corr_dielec
         
-        return corr_dielec, corr_lossfac
+        return corr_dielec, corr_lossfac, corr_losstan
         
         
     def draw_plots(self,default_setting=True,corr=False,normalized=False,\

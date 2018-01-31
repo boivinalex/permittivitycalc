@@ -1095,6 +1095,17 @@ class AirlineData:
         delta_losstan = abs(losstan*np.sqrt((delta_dielec/dielec)**2 +\
                                         (delta_lossfac/lossfac)**2))
         
+        # Add measurement standard deviation error to measurement uncertainty
+        #   as calculated with multiple rexolite measurements
+        
+        delta_dielec = np.sqrt(delta_dielec**2 + 0.001**2)
+        
+        delta_losstan[np.where(self.freq<10**8)] = \
+            np.sqrt(delta_losstan[np.where(self.freq<10**8)]**2 + 0.01**2)
+            
+        delta_losstan[np.where(self.freq>=10**8)] = \
+            np.sqrt(delta_losstan[np.where(self.freq>=10**8)]**2 + 0.002**2)
+        
         return delta_dielec, delta_lossfac, delta_losstan
     
     def _de_embed(self):
@@ -1354,7 +1365,7 @@ class AirlineData:
         
         # Calculate corr_dielec, corr_lossfac 
         corr_dielec  = measured_dielec*(L2/(L3 - measured_dielec*L1))
-        corr_lossfac = (corr_dielec*(measured_lossfac/measured_dielec))*(L3/(L3 - L1 \ 
+        corr_lossfac = (corr_dielec*(measured_lossfac/measured_dielec))*(L3/(L3 - L1 \
                        *measured_dielec*(1 + (measured_lossfac/measured_dielec)**2)))
         corr_losstan = corr_lossfac/corr_dielec
         

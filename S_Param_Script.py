@@ -1097,14 +1097,14 @@ class AirlineData:
         
         # Add measurement standard deviation error to measurement uncertainty
         #   as calculated with multiple rexolite measurements
-        
-        delta_dielec = np.sqrt(delta_dielec**2 + 0.001**2)
-        
-        delta_losstan[np.where(self.freq<10**8)] = \
-            np.sqrt(delta_losstan[np.where(self.freq<10**8)]**2 + 0.01**2)
-            
-        delta_losstan[np.where(self.freq>=10**8)] = \
-            np.sqrt(delta_losstan[np.where(self.freq>=10**8)]**2 + 0.002**2)
+#        
+#        delta_dielec = np.sqrt(delta_dielec**2 + 0.001**2)
+#        
+#        delta_losstan[np.where(self.freq<10**8)] = \
+#            np.sqrt(delta_losstan[np.where(self.freq<10**8)]**2 + 0.01**2)
+#            
+#        delta_losstan[np.where(self.freq>=10**8)] = \
+#            np.sqrt(delta_losstan[np.where(self.freq>=10**8)]**2 + 0.002**2)
         
         return delta_dielec, delta_lossfac, delta_losstan
     

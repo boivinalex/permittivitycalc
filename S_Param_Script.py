@@ -263,7 +263,7 @@ class AirlineData:
                     (1.60-self.bulk_density)
             elif self.norm_eqn == 'LLL':
                 # Landau-Lifshitz-Looyenga equation
-                #   alpha from Hickson et al., 2017
+                #   alpha from Hickson et al., 2018
                 norm_complex_dielec = complex_dielec*((1.60*0.307 + 1)**3 / \
                                             (self.bulk_density*0.307 + 1)**3)
             self.norm_dielec = np.real(norm_complex_dielec)
@@ -773,8 +773,8 @@ class AirlineData:
         minner = Minimizer(self._iterate_objective_function,\
                            params,fcn_args=(data,L),nan_policy='omit')
         global result
-#        result = minner.minimize()
-        result = minner.emcee(steps=4000,nwalkers=1500,is_weighted=False)
+        result = minner.minimize()
+#        result = minner.emcee(steps=4000,nwalkers=1500,is_weighted=False)
         
         report_fit(result)
         
@@ -1097,14 +1097,14 @@ class AirlineData:
         
         # Add measurement standard deviation error to measurement uncertainty
         #   as calculated with multiple rexolite measurements
-#        
-#        delta_dielec = np.sqrt(delta_dielec**2 + 0.001**2)
-#        
-#        delta_losstan[np.where(self.freq<10**8)] = \
-#            np.sqrt(delta_losstan[np.where(self.freq<10**8)]**2 + 0.01**2)
-#            
-#        delta_losstan[np.where(self.freq>=10**8)] = \
-#            np.sqrt(delta_losstan[np.where(self.freq>=10**8)]**2 + 0.002**2)
+        
+        delta_dielec = np.sqrt(delta_dielec**2 + 0.008**2)
+        
+        delta_losstan[np.where(self.freq<10**8)] = \
+            np.sqrt(delta_losstan[np.where(self.freq<10**8)]**2 + 0.009**2)
+            
+        delta_losstan[np.where(self.freq>=10**8)] = \
+            np.sqrt(delta_losstan[np.where(self.freq>=10**8)]**2 + 0.002**2)
         
         return delta_dielec, delta_lossfac, delta_losstan
     

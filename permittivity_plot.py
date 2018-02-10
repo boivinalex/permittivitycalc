@@ -22,8 +22,8 @@ DATE = str(datetime.date.today())
 #%% FUNCTIONS
 def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
               plot_title=None, ylabel=None, xlabel=None, spacing=None, \
-              buffer=None, xlim=None, ylim=None, figure_size=(12,9), \
-              publish=False, round_val=None):
+              buffer=None, xlim=None, ylim=None, figure_size=(16,10), \
+              publish=False, round_val=None): #normal figure_size=(12,9)
     """
     Takes input from S_Param_Script_V5 and plots calculated permittivity. Can \
     handle multiple data sets. Plots uncertainty countour if plotting single \
@@ -165,7 +165,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     
     # Plot
     f = plt.figure(figsize=figure_size)
-    plt.title(plot_title, fontsize=22)
+    plt.title(plot_title, fontsize=40) #normal 22
     ax = f.add_subplot(111)
     if number_to_compare > 8:
         ax.set_prop_cycle(cycler('color',\
@@ -180,9 +180,9 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     ax.set_xscale('log')
     plt.ylim(y_min-buffer, y_max+buffer)
     plt.yticks(np.arange(y_min-buffer, y_max+buffer, spacing), fontsize=14)
-    plt.ylabel(ylabel, fontsize=22)
-    plt.xlabel(xlabel, fontsize=22)
-    plt.tick_params(axis='both', which='major', labelsize=20)
+    plt.ylabel(ylabel, fontsize=40) #normal 22
+    plt.xlabel(xlabel, fontsize=40)
+    plt.tick_params(axis='both', which='major', labelsize=30) #normal 20
     if number_to_compare == 1: # plot uncertainty only if plotting one dataset
         ax.plot(unp.nominal_values(x[0]), unp.nominal_values(y[0]), lw=2, \
                 label=legend_label[0])
@@ -193,16 +193,16 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         for n in range(0,number_to_compare):
             ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
                     label=legend_label[n])
-    plt.legend(fontsize=15,loc='best')
+    plt.legend(fontsize=22,loc='best') #normal 15
     if publish:
         # Check for directory
         if not os.path.exists(DATAPATH):
             os.makedirs(DATAPATH)
         # Make file name    
         savename = name.replace(' ','-') + '_' + plot_title.replace(' ','-') \
-            + '_' + DATE + '.eps'
+            + '_' + DATE + '.png'
         # Save figure to .eps file
-        plt.savefig(DATAPATH+savename,dpi=300,format='eps',pad_inches=0)
+        plt.savefig(DATAPATH+savename,dpi=300,format='png',pad_inches=0)
     
 def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
     """

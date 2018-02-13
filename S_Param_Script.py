@@ -427,17 +427,17 @@ class AirlineData:
         
         return np.concatenate((resid1,resid2))
         
-    def _iterate_objective_function(self,params,data,L):
+    def _iterate_objective_function(self,params,L,freq,s11,s21,s12,s22):
         """
         Objective funtion to minimize from modified Baker-Jarvis (NIST) 
             iterative method (Houtz et al. 2016).
         """
-        sm11_complex = data[0]
-        sm21_complex = data[1]
-        sm12_complex = data[2]
-        sm22_complex = data[3]
+#        sm11_complex = data[0]
+#        sm21_complex = data[1]
+#        sm12_complex = data[2]
+#        sm22_complex = data[3]
         
-        freq = self.freq[test.freq>5e8]
+        freq = self.freq[self.freq>=freq]
 
         # Unpack parameters
         v = params.valuesdict()
@@ -512,14 +512,21 @@ class AirlineData:
 #                  ((np.angle(sm11_complex)-\
 #                  np.angle(s11_predicted))/np.pi)**2
         
-        obj_func_real = ((sm21_complex.real - s21_predicted.real) + \
-                         (sm12_complex.real - s12_predicted.real) + \
-                         (sm11_complex.real - s11_predicted.real)) #+ \
-#                         (sm22_complex.real - s22_predicted.real))
-        obj_func_imag = ((sm21_complex.imag - s21_predicted.imag) + \
-                         (sm12_complex.imag - s12_predicted.imag) + \
-                         (sm11_complex.imag - s11_predicted.imag)) #+ \
-#                         (sm22_complex.imag - s22_predicted.imag))
+#        obj_func_real = ((sm21_complex.real - s21_predicted.real) + \
+#                         (sm12_complex.real - s12_predicted.real) + \
+#                         (sm11_complex.real - s11_predicted.real)) #+ \
+##                         (sm22_complex.real - s22_predicted.real))
+#        obj_func_imag = ((sm21_complex.imag - s21_predicted.imag) + \
+#                         (sm12_complex.imag - s12_predicted.imag) + \
+#                         (sm11_complex.imag - s11_predicted.imag)) #+ \
+##                         (sm22_complex.imag - s22_predicted.imag))
+        
+        obj_func_real = ((s21[0] - np.absolute(s21_predicted)) + \
+                         (s12[0] - np.absolute(s12_predicted)) + \
+                         (s11[0] - np.absolute(s11_predicted)))
+        obj_func_imag = ((np.radians(s21[1]) - np.angle(s21_predicted)) + \
+                         (np.radians(s12[1]) - np.angle(s12_predicted)) + \
+                         (np.radians(s11[1]) - np.angle(s11_predicted)))
         
         return np.concatenate((obj_func_real,obj_func_imag))
 
@@ -716,30 +723,38 @@ class AirlineData:
             s22 = unp.nominal_values(self.s22)
             L = self.L
             
-        s11s = np.array((s11s[0][self.freq>=freq[0]],s11s[1][self.freq>=freq[0]]))
+        s11 = np.array((s11s[0][self.freq>=freq[0]],s11s[1][self.freq>=freq[0]]))
         s21 = np.array((s21[0][self.freq>=freq[0]],s21[1][self.freq>=freq[0]]))
         s12 = np.array((s12[0][self.freq>=freq[0]],s12[1][self.freq>=freq[0]]))
         s22 = np.array((s22[0][self.freq>=freq[0]],s22[1][self.freq>=freq[0]]))
-        global sm21_complex 
+#        global sm21_complex 
         # Cast measured sparams to complex
-        global sm11_complex
-        global sm21_complex
-        sm11_complex = 1j*(s11s[0])*\
-                           np.sin(np.radians(s11s[1])); \
-        sm11_complex += s11s[0]*\
-                            np.cos(np.radians(s11s[1]))
-        sm21_complex = 1j*(s21[0])*\
-                           np.sin(np.radians(s21[1])); \
-        sm21_complex += s21[0]*\
-                            np.cos(np.radians(s21[1]))
-        sm12_complex = 1j*(s12[0])*\
-                           np.sin(np.radians(s12[1])); \
-        sm12_complex += s12[0]*\
-                            np.cos(np.radians(s12[1]))
-        sm22_complex = 1j*(s22[0])*\
-                           np.sin(np.radians(s22[1])); \
-        sm22_complex += s22[0]*\
-                            np.cos(np.radians(s22[1]))
+#        global sm11_complex
+#        global sm21_complex
+#        sm11_complex = 1j*(s11s[0])*\
+#                           np.sin(np.radians(s11s[1])); \
+#        sm11_complex += s11s[0]*\
+#                            np.cos(np.radians(s11s[1]))
+#        sm21_complex = 1j*(s21[0])*\
+#                           np.sin(np.radians(s21[1])); \
+#        sm21_complex += s21[0]*\
+#                            np.cos(np.radians(s21[1]))
+#        sm12_complex = 1j*(s12[0])*\
+#                           np.sin(np.radians(s12[1])); \
+#        sm12_complex += s12[0]*\
+#                            np.cos(np.radians(s12[1]))
+#        sm22_complex = 1j*(s22[0])*\
+#                           np.sin(np.radians(s22[1])); \
+#        sm22_complex += s22[0]*\
+#                            np.cos(np.radians(s22[1]))
+#        sm11_complex = 1j*np.radians(s11s[1]); \
+#        sm11_complex += s11s[0]
+#        sm21_complex = 1j*np.radians(s21[1]); \
+#        sm21_complex += s21[0]
+#        sm12_complex = 1j*np.radians(s12[1]); \
+#        sm12_complex += s12[0]
+#        sm22_complex = 1j*np.radians(s22[1]); \
+#        sm22_complex += s22[0]
             
         # Create a set of Parameters
         params = Parameters()
@@ -752,14 +767,14 @@ class AirlineData:
 #            params.add('a_0i',value=0,min=0)
 #        else:
 #            params.add('a_0i',value=mu_imag) # Plug in 1 GHz mu
-#        params.add('a_0',value=mu_real,min=0)
+        params.add('a_0',value=mu_real,min=0)
 #        params.add('a_0',value=a_0,min=0)
-#        params.add('a_0i',value=mu_imag,max=0)
+        params.add('a_0i',value=mu_imag)
 #        params.add('a_0i',value=-np.abs(a_0i),max=0)
 #        params.add('a_1',value=a_1,min=0)
 #        params.add('a_2',value=a_2,min=0)
-        params.add('a_0',value=1,min=0)
-        params.add('a_0i',value=-0.001,max=0)
+#        params.add('a_0',value=1,min=0)
+#        params.add('a_0i',value=-0.001,max=0)
         params.add('a_1',value=0.0001,min=0)
         params.add('a_2',value=0.0002,min=0)
 #        params.add('a_0i',value=a_0i)
@@ -775,8 +790,8 @@ class AirlineData:
 #        params.add('b_2',value=b_2,min=0)
 #        params.add('b_3',value=b_3,min=0)
 #        params.add('b_4',value=b_4,min=0)
-        params.add('d_0',value=1,min=0)
-        params.add('d_0i',value=-0.01,max=0)
+#        params.add('d_0',value=1,min=0)
+#        params.add('d_0i',value=-0.01,max=0)
         params.add('a_3',value=0.0001,min=0)
         params.add('a_4',value=0.0002,min=0)
         params.add('a_3i',value=0.0003)
@@ -786,16 +801,18 @@ class AirlineData:
         params.add('b_3',value=1.0004,min=0)
         params.add('b_4',value=1.0005,min=0)
 #        params.add('d_0',value=d_0,min=0)
-#        params.add('d_0',value=ep_real,min=0) # Plug in 1 GHz eps
+        params.add('d_0',value=ep_real,min=0) # Plug in 1 GHz eps
 #        params.add('d_0',value=d_0,min=0)
 #        params.add('d_0i',value=d_0i)
-#        params.add('d_0i',value=ep_imag) # Plug in 1 GHz eps
+        params.add('d_0i',value=ep_imag) # Plug in 1 GHz eps
 #        params.add('d_0i',value=-np.abs(d_0i),max=0)
         
         # Fit data
-        data = [sm11_complex,sm21_complex,sm12_complex,sm22_complex]
+#        data = [sm11_complex,sm21_complex,sm12_complex,sm22_complex]
+#        minner = Minimizer(self._iterate_objective_function,\
+#                           params,fcn_args=(data,L),nan_policy='omit')
         minner = Minimizer(self._iterate_objective_function,\
-                           params,fcn_args=(data,L),nan_policy='omit')
+                           params,fcn_args=(L,freq[0],s11,s21,s12,s22),nan_policy='omit')
         global result
         result = minner.minimize()
 #        result = minner.emcee(steps=4000,nwalkers=1500,is_weighted=False)
@@ -833,21 +850,21 @@ class AirlineData:
         # Plot s-params for troubleshooting
         import matplotlib.pyplot as plt
         plt.figure()
-        plt.plot(freq, np.absolute(sm11_complex),label='Measured')
+        plt.plot(freq, s11[0],label='Measured')
         plt.plot(freq, np.absolute(s11_predicted),label='Predicted')
         plt.title('s11mag')
         plt.legend()
         plt.figure()
-        plt.plot(freq, np.angle(sm11_complex),label='Measured')
+        plt.plot(freq, np.radians(s11[1]),label='Measured')
         plt.plot(freq, np.angle(s11_predicted),label='Predicted')
         plt.title('s11phase')
         plt.figure()
-        plt.plot(freq, np.absolute(sm21_complex),label='Measured')
+        plt.plot(freq, s21[0],label='Measured')
         plt.plot(freq, np.absolute(s21_predicted),label='Predicted')
         plt.title('s21mag')
         plt.legend()
         plt.figure()
-        plt.plot(freq, np.angle(sm21_complex),label='Measured')
+        plt.plot(freq, np.radians(s21[1]),label='Measured')
         plt.plot(freq, np.angle(s21_predicted),label='Predicted')
         plt.title('s21phase')
         

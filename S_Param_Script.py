@@ -58,6 +58,8 @@ import uncertainties
 #Citation: Uncertainties: a Python package for calculations with uncertainties,
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
 from uncertainties import unumpy as unp
+# Nonlinear fitting
+from lmfit import minimize, Minimizer, Parameters, Parameter, report_fit
 # Plotting
 import permittivity_plot as pplot
 # Make relative path
@@ -378,6 +380,495 @@ class AirlineData:
             dims['D3'] = dims['D4'] - self.particle_diameter
         return dims
     
+    def _laurent_debye_equations_mu(self,params,freq,epsilon,mu):
+        v = params.valuesdict()
+        a_0 = v['a_0'] 
+        a_1 = v['a_1']
+        a_2 = v['a_2']
+        a_0i = v['a_0i'] 
+        a_1i = v['a_1i']
+        a_2i = v['a_2i']
+        b_1 = v['b_1']
+        b_2 = v['b_2']
+        
+        global mu_predicted
+        global mu_check
+        mu_check = mu
+        mu_predicted = self._mymu(freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2)
+#        mu.real = np.ones(len(mu_check))
+#        mu.imag = np.zeros(len(mu_check))
+        
+        # Residuals
+        resid1 = mu_predicted.real - mu.real
+        resid2 = (mu_predicted.imag + mu.imag)
+        
+        return np.concatenate((resid1,resid2))
+    
+    def _laurent_debye_equations_epsilon(self,params,freq,epsilon,mu):
+        """
+        """
+        # Unpack parameters
+        v = params.valuesdict()
+        a_3 = v['a_3']
+        a_4 = v['a_4']
+        a_3i = v['a_3i']
+        a_4i = v['a_4i']
+        b_3 = v['b_3']
+        b_4 = v['b_4']
+        d_0 = v['d_0']
+        d_0i = v['d_0i']
+        
+        # Equations
+        epsilon_predicted = self._myeps(freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4)
+                             
+        # Residuals
+        resid1 = epsilon_predicted.real - epsilon.real
+        resid2 = (epsilon_predicted.imag - epsilon.imag)
+        
+        return np.concatenate((resid1,resid2))
+        
+    def _iterate_objective_function(self,params,L,freq,s11,s21,s12,s22):
+        """
+        Objective funtion to minimize from modified Baker-Jarvis (NIST) 
+            iterative method (Houtz et al. 2016).
+        """
+#        sm11_complex = data[0]
+#        sm21_complex = data[1]
+#        sm12_complex = data[2]
+#        sm22_complex = data[3]
+        
+        freq = self.freq[self.freq>=freq]
+
+        # Unpack parameters
+        v = params.valuesdict()
+        a_0 = v['a_0'] 
+        a_1 = v['a_1']
+        a_2 = v['a_2']
+        a_0i = v['a_0i'] 
+        a_1i = v['a_1i']
+        a_2i = v['a_2i']
+        b_1 = v['b_1']
+        b_2 = v['b_2']
+        a_3 = v['a_3']
+        a_4 = v['a_4']
+        a_3i = v['a_3i']
+        a_4i = v['a_4i']
+        b_3 = v['b_3']
+        b_4 = v['b_4']
+        d_0 = v['d_0']
+        d_0i = v['d_0i']
+        
+        # Calculate predicted mu and epsilon
+        mu = self._mymu(freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2)
+             
+        epsilon = self._myeps(freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4)
+        
+        # Calculate predicted sparams
+        lam_0 = (C/freq)*100    # Free-space wavelength in cm
+        
+        small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
+                    (lam_0/LAM_C)**2)
+        
+        small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
+        
+        t = np.exp(-small_gam*L)
+        
+        big_gam = (small_gam_0*mu - small_gam) / (small_gam_0*mu + \
+                  small_gam)
+        
+        # Make parameters global for plotting (TEMP)
+        global s11_predicted
+        global s21_predicted
+        
+        # Use shorted S11 data if present
+        if self.shorted:
+            # Modified S11
+            s11_predicted = big_gam - ((1-big_gam**2)*t**2 / (1-big_gam*t**2))
+        else:
+            # Baker-Jarvis S11
+            s11_predicted = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
+        
+        # S21
+        s21_predicted = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
+        
+        s12_predicted = s21_predicted
+        s22_predicted = s11_predicted
+        
+#        obj_func_real = (np.absolute(sm21_complex)-np.absolute(s21_predicted))**2 \
+#            + (np.absolute(sm12_complex)-np.absolute(s12_predicted))**2 + \
+#            (np.absolute(sm11_complex)-np.absolute(s11_predicted))**2
+                  
+#        obj_func_imag = ((np.unwrap(np.angle(sm21_complex))-\
+#              np.unwrap(np.angle(s21_predicted)))/np.pi)**2 + \
+#                ((np.unwrap(np.angle(sm12_complex))-\
+#                np.unwrap(np.angle(s12_predicted)))/np.pi)**2 + \
+#                  ((np.unwrap(np.angle(sm11_complex))-\
+#                  np.unwrap(np.angle(s11_predicted)))/np.pi)**2
+                    
+#        obj_func_imag = ((np.angle(sm21_complex)-\
+#              np.angle(s21_predicted))/np.pi)**2 + \
+#                ((np.angle(sm12_complex)-\
+#                np.angle(s12_predicted))/np.pi)**2 + \
+#                  ((np.angle(sm11_complex)-\
+#                  np.angle(s11_predicted))/np.pi)**2
+        
+#        obj_func_real = ((sm21_complex.real - s21_predicted.real) + \
+#                         (sm12_complex.real - s12_predicted.real) + \
+#                         (sm11_complex.real - s11_predicted.real)) #+ \
+##                         (sm22_complex.real - s22_predicted.real))
+#        obj_func_imag = ((sm21_complex.imag - s21_predicted.imag) + \
+#                         (sm12_complex.imag - s12_predicted.imag) + \
+#                         (sm11_complex.imag - s11_predicted.imag)) #+ \
+##                         (sm22_complex.imag - s22_predicted.imag))
+        
+        obj_func_real = ((s21[0] - np.absolute(s21_predicted)) + \
+                         (s12[0] - np.absolute(s12_predicted)) + \
+                         (s11[0] - np.absolute(s11_predicted)))
+        obj_func_imag = ((np.radians(s21[1]) - np.angle(s21_predicted)) + \
+                         (np.radians(s12[1]) - np.angle(s12_predicted)) + \
+                         (np.radians(s11[1]) - np.angle(s11_predicted)))
+        
+        return np.concatenate((obj_func_real,obj_func_imag))
+
+    def _mymu(self,freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2):
+        mu = (a_0 + 1j*a_0i) + (a_1 + 1j*a_1i)/(1 + 1j*10e-9*b_1*2*np.pi\
+              *freq) + (a_2 + 1j*a_2i)/(1 + 1j*10e-12*b_2\
+              *2*np.pi*freq)**2
+        return mu
+    
+    def _myeps(self,freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4):
+        epsilon = (d_0 + 1j*d_0i) + (a_3 + 1j*a_3i)/(1 + 1j*10e-9*b_3*2*np.pi\
+                   *freq) + (a_4 + 1j*a_4i)/(1 + 1j*10e-12*b_4\
+                   *2*np.pi*freq)**2
+        return epsilon
+    
+    def _permittivity_iterate(self,corr=False):
+        """
+        
+        """
+        ## Get Initial Guess for Iteration Using NRW
+        # Get electromagnetic properties
+        global mu
+        freq = self.freq[self.freq>5e8]
+        if self.nrw:
+            epsilon = -1j*self.avg_lossfac;
+            epsilon += self.avg_dielec
+            epsilon = epsilon[self.freq>=freq[0]]
+            mu = self.mu[self.freq>=freq[0]]
+        else:
+            self.nrw = True
+            dielec, lossfac, losstan, mu = \
+                self._permittivity_calc('a')
+            # NRW epsilon
+#            epsilon = 1j*lossfac;
+#            epsilon += dielec
+            # Default epsilon
+            epsilon = -1j*unp.nominal_values(self.avg_lossfac);
+            epsilon += unp.nominal_values(self.avg_dielec)
+            epsilon = epsilon[self.freq>=freq[0]]
+            mu = mu[self.freq>=freq[0]]
+            self.nrw = False    # Reset to previous setting
+            
+        # Create a set of Parameters to the Laurent model
+        init_params_mu = Parameters()
+        init_params_eps = Parameters()
+        init_params_mu.add('a_0',value=1,min=0)
+        init_params_mu.add('a_1',value=0.01,min=0)
+        init_params_mu.add('a_2',value=0.02,min=0)
+        init_params_mu.add('a_0i',value=1.1)
+        init_params_mu.add('a_1i',value=0.0002)
+        init_params_mu.add('a_2i',value=1.3)
+        init_params_eps.add('a_3',value=0.01,min=0)
+        init_params_eps.add('a_4',value=0.02,min=0)
+        init_params_eps.add('a_3i',value=1.1)
+        init_params_eps.add('a_4i',value=1.2)
+        init_params_mu.add('b_1',value=0.0003,min=0)
+        init_params_mu.add('b_2',value=0.0004,min=0)
+        init_params_eps.add('b_3',value=0.0003,min=0)
+        init_params_eps.add('b_4',value=0.0004,min=0)
+        init_params_eps.add('d_0',value=1,min=0)
+        init_params_eps.add('d_0i',value=0.1)
+        
+        # Iterate to find parameters
+        miner_eps = Minimizer(self._laurent_debye_equations_epsilon,init_params_eps,\
+                          fcn_args=(freq,epsilon,mu))
+        init_result_eps = miner_eps.minimize()
+        miner_mu = Minimizer(self._laurent_debye_equations_mu,init_params_mu,\
+                          fcn_args=(freq,epsilon,mu))
+        init_result_mu = miner_mu.minimize()
+        
+        # Write report fit
+        report_fit(init_result_eps)
+        report_fit(init_result_mu)
+        
+        # Get parameter values
+        a_0 = init_result_mu.params['a_0']._val
+        a_1 = init_result_mu.params['a_1']._val
+        a_2 = init_result_mu.params['a_2']._val
+        a_0i = init_result_mu.params['a_0i']._val
+        a_1i = init_result_mu.params['a_1i']._val
+        a_2i = init_result_mu.params['a_2i']._val
+        a_3 = init_result_eps.params['a_3']._val
+        a_4 = init_result_eps.params['a_4']._val
+        a_3i = init_result_eps.params['a_3i']._val
+        a_4i = init_result_eps.params['a_4i']._val
+        b_1 = init_result_mu.params['b_1']._val
+        b_2 = init_result_mu.params['b_2']._val
+        b_3 = init_result_eps.params['b_3']._val
+        b_4 = init_result_eps.params['b_4']._val
+        d_0 = init_result_eps.params['d_0']._val
+        d_0i = init_result_eps.params['d_0i']._val
+        
+        # Calculate model EM parameters
+        global mu_iter
+        mu_iter = self._mymu(freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2)
+                        
+        epsilon_iter = self._myeps(freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4)
+        
+        # Plot                    
+        pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter.real],legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[-epsilon.imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+        
+        ## Re-fit using eps and mu at 1 GHz as basis for fit
+        # Find values at 1 GHz by finding index where freq is closest to 1 GHz
+        mu_real = mu_iter.real[np.where(test.freq == test.freq[np.abs(test.freq - 1e9).argmin()])][0]
+        mu_imag = mu_iter.imag[np.where(test.freq == test.freq[np.abs(test.freq - 1e9).argmin()])][0]
+        ep_real = epsilon_iter.real[np.where(test.freq == test.freq[np.abs(test.freq - 1e9).argmin()])][0]
+        ep_imag = epsilon_iter.imag[np.where(test.freq == test.freq[np.abs(test.freq - 1e9).argmin()])][0]
+        print(mu_real)
+        print(mu_imag)
+        print(ep_real)
+        print(ep_imag)
+        
+        # Create a set of Parameters to the Laurent model
+        #   Use fit mu and epsilon as starting values in the Laurent model
+        init_params2_mu = Parameters()
+        init_params2_eps = Parameters()
+        init_params2_mu.add('a_0',value=mu_real,min=0)
+        init_params2_mu.add('a_1',value=0.01,min=0)
+        init_params2_mu.add('a_2',value=0.02,min=0)
+        init_params2_mu.add('a_0i',value=mu_imag)
+        init_params2_mu.add('a_1i',value=0)
+        init_params2_mu.add('a_2i',value=0)
+        init_params2_eps.add('a_3',value=0.01,min=0)
+        init_params2_eps.add('a_4',value=0.02,min=0)
+        init_params2_eps.add('a_3i',value=0)
+        init_params2_eps.add('a_4i',value=0)
+        init_params2_mu.add('b_1',value=0.0003,min=0)
+        init_params2_mu.add('b_2',value=0.0004,min=0)
+        init_params2_eps.add('b_3',value=0.0003,min=0)
+        init_params2_eps.add('b_4',value=0.0004,min=0)
+        init_params2_eps.add('d_0',value=ep_real,min=0)
+        init_params2_eps.add('d_0i',value=ep_imag)
+        
+        # Iterate to find parameters
+        miner_eps2 = Minimizer(self._laurent_debye_equations_epsilon,init_params2_eps,\
+                          fcn_args=(freq,epsilon,mu))
+        init_result2_eps = miner_eps2.minimize()
+        miner_mu2 = Minimizer(self._laurent_debye_equations_mu,init_params2_mu,\
+                          fcn_args=(freq,epsilon,mu))
+        init_result2_mu = miner_mu2.minimize()
+        
+        # Write report fit
+        report_fit(init_result2_eps)
+        report_fit(init_result2_mu)
+        
+        # Get parameter values
+        a_0 = init_result2_mu.params['a_0']._val
+        a_1 = init_result2_mu.params['a_1']._val
+        a_2 = init_result2_mu.params['a_2']._val
+        a_0i = init_result2_mu.params['a_0i']._val
+        a_1i = init_result2_mu.params['a_1i']._val
+        a_2i = init_result2_mu.params['a_2i']._val
+        a_3 = init_result2_eps.params['a_3']._val
+        a_4 = init_result2_eps.params['a_4']._val
+        a_3i = init_result2_eps.params['a_3i']._val
+        a_4i = init_result2_eps.params['a_4i']._val
+        b_1 = init_result2_mu.params['b_1']._val
+        b_2 = init_result2_mu.params['b_2']._val
+        b_3 = init_result2_eps.params['b_3']._val
+        b_4 = init_result2_eps.params['b_4']._val
+        d_0 = init_result2_eps.params['d_0']._val
+        d_0i = init_result2_eps.params['d_0i']._val
+        
+        # Calculate model EM parameters
+        global mu_iter2
+        mu_iter2 = self._mymu(freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2)
+                        
+        epsilon_iter2 = self._myeps(freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4)
+        # Plot                    
+        pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter2.real],legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[-epsilon.imag,-epsilon_iter2.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[mu.real,mu_iter2.real],legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([freq,freq],[mu.imag,-mu_iter2.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+                
+        ## Perform Modified Baker-Jarvis iteration
+        # Check if using corrected S-params
+        if corr:
+            s11s = unp.nominal_values(self.corr_s11s)
+            s21 = unp.nominal_values(self.corr_s21)
+            s12 = unp.nominal_values(self.corr_s12)
+            s22 = unp.nominal_values(self.corr_s22)
+            L = self.Lcorr
+        else:
+            # Use shorted S11 if available
+            if self.shorted:
+                s11s = unp.nominal_values(self.s11_short)
+            else:
+                s11s = unp.nominal_values(self.s11)
+            s21 = unp.nominal_values(self.s21)
+            s12 = unp.nominal_values(self.s12)
+            s22 = unp.nominal_values(self.s22)
+            L = self.L
+            
+        s11 = np.array((s11s[0][self.freq>=freq[0]],s11s[1][self.freq>=freq[0]]))
+        s21 = np.array((s21[0][self.freq>=freq[0]],s21[1][self.freq>=freq[0]]))
+        s12 = np.array((s12[0][self.freq>=freq[0]],s12[1][self.freq>=freq[0]]))
+        s22 = np.array((s22[0][self.freq>=freq[0]],s22[1][self.freq>=freq[0]]))
+#        global sm21_complex 
+        # Cast measured sparams to complex
+#        global sm11_complex
+#        global sm21_complex
+#        sm11_complex = 1j*(s11s[0])*\
+#                           np.sin(np.radians(s11s[1])); \
+#        sm11_complex += s11s[0]*\
+#                            np.cos(np.radians(s11s[1]))
+#        sm21_complex = 1j*(s21[0])*\
+#                           np.sin(np.radians(s21[1])); \
+#        sm21_complex += s21[0]*\
+#                            np.cos(np.radians(s21[1]))
+#        sm12_complex = 1j*(s12[0])*\
+#                           np.sin(np.radians(s12[1])); \
+#        sm12_complex += s12[0]*\
+#                            np.cos(np.radians(s12[1]))
+#        sm22_complex = 1j*(s22[0])*\
+#                           np.sin(np.radians(s22[1])); \
+#        sm22_complex += s22[0]*\
+#                            np.cos(np.radians(s22[1]))
+#        sm11_complex = 1j*np.radians(s11s[1]); \
+#        sm11_complex += s11s[0]
+#        sm21_complex = 1j*np.radians(s21[1]); \
+#        sm21_complex += s21[0]
+#        sm12_complex = 1j*np.radians(s12[1]); \
+#        sm12_complex += s12[0]
+#        sm22_complex = 1j*np.radians(s22[1]); \
+#        sm22_complex += s22[0]
+            
+        # Create a set of Parameters
+        params = Parameters()
+#        params.add('a_0',value=a_0,min=0)
+#        if mu_real < 0:
+#            params.add('a_0',value=1,min=0.99,max=1.01)
+#        else:
+#            params.add('a_0',value=mu_real,min=0) # Plug in 1 GHz mu
+#        if mu_imag < 0:
+#            params.add('a_0i',value=0,min=0)
+#        else:
+#            params.add('a_0i',value=mu_imag) # Plug in 1 GHz mu
+        params.add('a_0',value=mu_real,min=0)
+#        params.add('a_0',value=a_0,min=0)
+        params.add('a_0i',value=mu_imag)
+#        params.add('a_0i',value=-np.abs(a_0i),max=0)
+#        params.add('a_1',value=a_1,min=0)
+#        params.add('a_2',value=a_2,min=0)
+#        params.add('a_0',value=1,min=0)
+#        params.add('a_0i',value=-0.001,max=0)
+        params.add('a_1',value=0.0001,min=0)
+        params.add('a_2',value=0.0002,min=0)
+#        params.add('a_0i',value=a_0i)
+#        params.add('a_1i',value=a_1i)
+#        params.add('a_2i',value=a_2i)
+        params.add('a_1i',value=0.0003)
+        params.add('a_2i',value=0.0004)
+#        params.add('a_3',value=a_3,min=0)
+#        params.add('a_4',value=a_4,min=0)
+#        params.add('a_3i',value=a_3i)
+#        params.add('a_4i',value=a_4i)
+#        params.add('b_1',value=b_1,min=0)
+#        params.add('b_2',value=b_2,min=0)
+#        params.add('b_3',value=b_3,min=0)
+#        params.add('b_4',value=b_4,min=0)
+#        params.add('d_0',value=1,min=0)
+#        params.add('d_0i',value=-0.01,max=0)
+        params.add('a_3',value=0.0001,min=0)
+        params.add('a_4',value=0.0002,min=0)
+        params.add('a_3i',value=0.0003)
+        params.add('a_4i',value=0.0004)
+        params.add('b_1',value=1.0004,min=0)
+        params.add('b_2',value=1.0005,min=0)
+        params.add('b_3',value=1.0004,min=0)
+        params.add('b_4',value=1.0005,min=0)
+#        params.add('d_0',value=d_0,min=0)
+        params.add('d_0',value=ep_real,min=0) # Plug in 1 GHz eps
+#        params.add('d_0',value=d_0,min=0)
+#        params.add('d_0i',value=d_0i)
+        params.add('d_0i',value=ep_imag) # Plug in 1 GHz eps
+#        params.add('d_0i',value=-np.abs(d_0i),max=0)
+        
+        # Fit data
+#        data = [sm11_complex,sm21_complex,sm12_complex,sm22_complex]
+#        minner = Minimizer(self._iterate_objective_function,\
+#                           params,fcn_args=(data,L),nan_policy='omit')
+        minner = Minimizer(self._iterate_objective_function,\
+                           params,fcn_args=(L,freq[0],s11,s21,s12,s22),nan_policy='omit')
+        global result
+        result = minner.minimize()
+#        result = minner.emcee(steps=4000,nwalkers=1500,is_weighted=False)
+        
+        report_fit(result)
+        
+        # Get new params
+        a_0 = result.params['a_0']._val
+        a_1 = result.params['a_1']._val
+        a_2 = result.params['a_2']._val
+        a_0i = result.params['a_0i']._val
+        a_1i = result.params['a_1i']._val
+        a_2i = result.params['a_2i']._val
+        a_3 = result.params['a_3']._val
+        a_4 = result.params['a_4']._val
+        a_3i = result.params['a_3i']._val
+        a_4i = result.params['a_4i']._val
+        b_1 = result.params['b_1']._val
+        b_2 = result.params['b_2']._val
+        b_3 = result.params['b_3']._val
+        b_4 = result.params['b_4']._val
+        d_0 = result.params['d_0']._val
+        d_0i = result.params['d_0i']._val
+        
+        # Calculate model EM parameters
+        mu_iter = self._mymu(freq,a_0,a_0i,a_1,a_1i,a_2,a_2i,b_1,b_2)
+                        
+        epsilon_iter = self._myeps(freq,d_0,d_0i,a_3,a_3i,a_4,a_4i,b_3,b_4)
+                             
+        # Plot
+        pplot.make_plot([freq,freq],[self.avg_dielec[self.freq>=freq[0]],epsilon_iter.real],legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[self.avg_lossfac[self.freq>=freq[0]],-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+        pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
+        pplot.make_plot([freq,freq],[mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
+        # Plot s-params for troubleshooting
+        import matplotlib.pyplot as plt
+        plt.figure()
+        plt.plot(freq, s11[0],label='Measured')
+        plt.plot(freq, np.absolute(s11_predicted),label='Predicted')
+        plt.title('s11mag')
+        plt.legend()
+        plt.figure()
+        plt.plot(freq, np.radians(s11[1]),label='Measured')
+        plt.plot(freq, np.angle(s11_predicted),label='Predicted')
+        plt.title('s11phase')
+        plt.figure()
+        plt.plot(freq, s21[0],label='Measured')
+        plt.plot(freq, np.absolute(s21_predicted),label='Predicted')
+        plt.title('s21mag')
+        plt.legend()
+        plt.figure()
+        plt.plot(freq, np.radians(s21[1]),label='Measured')
+        plt.plot(freq, np.angle(s21_predicted),label='Predicted')
+        plt.title('s21phase')
+        
+
     def _permittivity_calc(self,s_param,corr=False):
         """
         Return the complex permittivity and loss tangent from S-parameters \

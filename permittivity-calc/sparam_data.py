@@ -23,7 +23,7 @@ E_0 = 8.854187817620*10**-12 #Permittivity of vacuum (F/m)
 U_0 = 4*np.pi*10**-7 #Permeability of vacuum (V*s/A*m) 
 C = (1)*1/np.sqrt(E_0*U_0) #Speed of light (m/s)
 LAM_C = float('inf') #Cut-off wavelength = infinity
-DATAPATH = os.path.dirname(__file__) + '/data/'
+DATAPATH = os.path.abspath('..') + '/data/'
 
 
 class AirlineData:

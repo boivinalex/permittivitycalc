@@ -10,7 +10,8 @@ import os
 # Dataclass
 from sparam_data import AirlineData
 
-DATAPATH = os.path.dirname(__file__) + '/data/'
+# Get data folder path for example files
+DATAPATH = os.path.abspath('..') + '/data/'
 
 
 def multiple_meas(file_path=None,airline=None):

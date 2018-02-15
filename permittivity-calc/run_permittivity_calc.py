@@ -120,3 +120,18 @@ def run_example(flag='single'):
         classlist = [test,test2]
         perm_compare(classlist)
         return test, test2, classlist
+    
+#%% MAIN
+def main():
+    ## Single file example:
+    global test
+    global atm
+    test, atm = run_example()
+    ## Multiple file example:
+    #global test, test2, classlist
+    #test, test2, classlist = run_example(flag='multiple')
+    #pass    # Comment to run example
+    
+if __name__ == '__main__':
+    main()
+    #pass    # Comment to run example

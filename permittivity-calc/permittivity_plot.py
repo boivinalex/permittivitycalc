@@ -16,7 +16,7 @@ import datetime
 plt.style.use("ggplot")
 
 #%% GLOBAL VARIABLES
-DATAPATH = os.path.dirname(__file__) + '/figures/'
+DATAPATH = os.path.abspath('..') + '/figures/'
 DATE = str(datetime.date.today())
 
 #%% FUNCTIONS

@@ -1,55 +1,8 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Complex Permittivity Determination using New Non-Iterative Method from \
-S-Parameters
+"""Contains the AirlineData class object"""
 
-## To run wtih default settings use "var_name = run_default()" ##
-
-Alexandre Boivin
-University of Toronto Department of Earth Sciences, Solar System Exploration \
-Group
-PhD Research: Complex Permittivity Measurements of Planetary Regolith Analogs
-
-Based on MATLAB script by Dylan Hickson and Alexandre Boivin
-
-Dylan Hickson
-York University Lassonde School of Engineering
-MSc/PhD Research: Complex Permittivity Measurements of Granular Materials
-
-Created on Wed Jul  5 12:16:27 2017
-
-@author: alex
-
-Version History (all previous versions based in MATLAB):
-    Tue Jul 25 2017 - All version tracking now done with Git
-    Wed Jul 19 2017 - Python script Ver. 2.0, Permittivity Calc Ver. 5.0
-        - Scirpt re-wrote to enclose data in a Class including both raw and \
-            corrected S-parameter data and calculated permittivity data.
-        - Now uses new permmittivity plotting script permittivity_plot_V1.py \
-            to produce all plots including raw S-parameter plots.
-        - Supports plotting permittivity data from multiple Class instances.
-    Thu Feb 16 2017 - Python script Ver. 1.2, Permittivity Calc Ver. 4.2
-        - Fixed issue where NaN values in some files were causing errors
-    Tue Jun 20 2017 - Permittivity Calc Ver. 4.1.2
-        - Added new airline nomenclature and new length measurements
-    Sun Nov 13 2016 - Python script Ver. 1.1.1, Permittivity Calc Ver. 4.1.1
-        - Cut out data at 300kHz due to consistantly bad data at the first \
-            data point
-        - Fixed mistake in harmonic_resonances where n was going from 0 to 1 \
-            instead of from 1 to n cauing a divide by 0 error
-        - Changed x and y ticks on plots to look better and be more flexible
-    Wed Oct 05 2016 - Python script Version 1.1, Permitivity Calc Version 4.1
-        - Removed MATLAB-like clear due to errors in Spyder 3.0
-        - Plot resonances based on max frequency
-        - Disabled ability to choose both S-parameters in get_METAS_data if \
-            argument prompt is set to False for use with permittivity_compare\
-            script
-    Wed Sep 21 2016 - Python script Version 1.0, Permitivity Calc Version 4
-"""
-# File input
-import tkinter as tk
-from tkinter.filedialog import askopenfilename
-import codecs
+#File input
 import pickle
 # Array math
 import numpy as np
@@ -62,17 +15,17 @@ from uncertainties import unumpy as unp
 import permittivity_plot as pplot
 # Make relative path
 import os
+# Helper functions
+from helper_functions import get_METAS_data
 
-#%% GLOBAL VARIABLES
+# GLOBAL VARIABLES
 E_0 = 8.854187817620*10**-12 #Permittivity of vacuum (F/m) 
 U_0 = 4*np.pi*10**-7 #Permeability of vacuum (V*s/A*m) 
-C = (1)*1/np.sqrt(E_0*U_0) #Speed of light (m/s) 
-E_R_AIR = 1.00058986 #Dielectric Constant of Air (STP @ 0.9 MHz) 
-C_R_AIR = C / E_R_AIR #Speed of light in air
+C = (1)*1/np.sqrt(E_0*U_0) #Speed of light (m/s)
 LAM_C = float('inf') #Cut-off wavelength = infinity
-DATAPATH = os.path.dirname(__file__) + '/data/'
+DATAPATH = os.path.abspath('..') + '/data/'
 
-#%% CLASSES
+
 class AirlineData:
     """
     S-parameter data from METAS text file output
@@ -646,13 +599,17 @@ class AirlineData:
                                         (delta_lossfac/lossfac)**2))
         
         # Add measurement standard deviation error to measurement uncertainty
-        #   as calculated with multiple rexolite measurements
-        
+        #   in quadrature as calculated with multiple rexolite measurements.
+        #   Note 2 regions for lossfac and losstan
         delta_dielec = np.sqrt(delta_dielec**2 + 0.008**2)
+        
+        delta_lossfac[np.where(self.freq<10**8)] = \
+            np.sqrt(delta_lossfac[np.where(self.freq<10**8)]**2 + 0.009**2) 
+        delta_lossfac[np.where(self.freq>=10**8)] = \
+            np.sqrt(delta_lossfac[np.where(self.freq>=10**8)]**2 + 0.002**2)
         
         delta_losstan[np.where(self.freq<10**8)] = \
             np.sqrt(delta_losstan[np.where(self.freq<10**8)]**2 + 0.009**2)
-            
         delta_losstan[np.where(self.freq>=10**8)] = \
             np.sqrt(delta_losstan[np.where(self.freq>=10**8)]**2 + 0.002**2)
         
@@ -1005,221 +962,3 @@ class AirlineData:
                                    label=['Uncorrected','Corrected'])
         else:
             pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12)
-
-#%% FUCNTIONS
-def _prompt():
-    """Prompt for VNA Tools II text file"""
-    print('\n')
-    print('Select the VNA Tools II Output Data Table')
-    print('\n')
-    root = tk.Tk()
-    root.withdraw()
-    file = askopenfilename(filetypes=[('text files', '*.txt')],\
-                            title='Select the VNA Tools II Output Data Table')
-    root.update()
-    
-    return file
-    
-def _get_file(airline,file_path):
-    """Return the file path and airline name. Use prompts if needed."""
-    L_in = None
-    # Figure out the file path and the airline name
-    if file_path and airline:
-        if airline not in ('VAL','PAL','GAL','7','washer'):
-            raise Exception('Wrong airline name. You used %s' % (airline))
-        else:
-            airline = airline
-            file = file_path
-    elif file_path and not airline:
-        # Prompt for airline
-        airline = input('Are you using the "VAL", "PAL", "GAL", "7" mm, ' + \
-                        'or "custom" airline?: ')
-        if airline not in ('VAL','PAL','GAL','7','custom'):
-            raise Exception('Wrong input')
-        elif airline == 'custom':
-            L_in = input('Enter the length of the airline (cm): ')
-        file = file_path
-    elif airline and not file_path:
-        # Prompt for file
-        airline = airline
-        file = _prompt()
-    else:   # Prompt for both
-        # Airline
-        airline = input('Are you using the "VAL", "PAL", "GAL", "7" mm, ' + \
-                        'or "custom" airline?: ')
-        if airline not in ('VAL','PAL','GAL','7','custom'):
-            raise Exception('Wrong input')
-        elif airline == 'custom':
-            L_in = input('Enter the length of the airline (cm): ')
-        # File
-        file = _prompt()
-        
-    return airline, file, L_in
-    
-def get_METAS_data(airline=None,file_path=None):
-    """
-    Return data arrays from METAS VNA Tools II text file based on user input \
-    Frequencies must be in Hz. Recomeneded precision in VNA Tools II is f9.
-    
-    Arguments
-    ---------
-    airline (str): Airline used for measurement. Options are: 'VAL', \
-        'PAL', 'GAL', '7'. If not provided, will prompt user. Prompt will \
-        allow user to input a custom airline length.
-    
-    file_path (str): If a path is not given, will prompt user for file. \
-        Default: None
-    
-    Return
-    ------
-    L (float): Length of airline in cm.
-    
-    SparmArray (array): S-parameters and their uncertainties (if present)
-    """
-    
-    # Get the file path and the airline name
-    airline, file, L_in = _get_file(airline,file_path)
-
-    # Open the file and make array    
-    open_file = codecs.open(file, encoding="utf-8")
-    dataArray = np.loadtxt(open_file,delimiter="\t",skiprows=1)
-    open_file.close()
-    
-    # Coaxial Airline Length
-    if airline == '7':
-        L = 9.9873     # 7 mm airline - 10 cm
-    elif airline == 'VAL' or airline == 'PAL':
-        L = 14.979
-        #L = 14.9835    # 14mm airline - 15 cm 
-    elif airline == 'GAL':
-        L = 14.991 
-    elif airline == 'washer':
-        L = 0.15
-    else:
-        L = float(L_in)
-        
-    return L, airline, dataArray, file        
-
-def perm_compare(classlist,allplots=False,**kwargs):
-    """
-    Given a list of AirlineData instances, plot their permittivity results \
-        together using permittivity_plot_V1.py
-        
-    Arguments
-    ---------
-    classlist (list): List of instances of AirlineData
-    
-    allplots (bool): If True plot all of dielectric constant, loss factor and \
-        loss tangent. If Flase plot only the dielectric constant and the loss \
-        tangent. Default: False
-    """
-    freq = []
-    dielec = []
-    losstan = []
-    labels = []
-    for item in classlist:
-        freq.append(item.freq)
-        if item.normalize_density: # Check for normalize_density
-            dielec.append(item.norm_dielec)
-            losstan.append(item.norm_losstan)
-        else:
-            dielec.append(item.avg_dielec)
-            losstan.append(item.avg_losstan)
-        labels.append(item.name)
-    kwargs["legend_label"] = labels
-    if allplots:
-        lossfac = []
-        for item in classlist:
-            lossfac.append(item.avg_lossfac)
-        pplot.make_plot(freq,dielec,'d',**kwargs)
-        pplot.make_plot(freq,lossfac,'lf',**kwargs)
-        pplot.make_plot(freq,losstan,'lt',**kwargs)
-    else:
-        pplot.make_plot(freq,dielec,'d',**kwargs)
-        pplot.make_plot(freq,losstan,'lt',**kwargs)
-        
-def run_default(airline_name='VAL',**kwargs):
-    """
-    Run AirlineData on get_METAS_data with all the prompts and return the \
-        instance.
-    """
-    return AirlineData(*get_METAS_data(airline=airline_name),**kwargs)
-
-def run_example(flag='single'):
-    test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
-                        '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
-                         name='Alumina Vac 2.5hrs',date='2017/04/07')
-    if flag == 'single':
-        atm = AirlineData(*get_METAS_data(airline='VAL',\
-            file_path=DATAPATH + 'atm.txt'),bulk_density=None,\
-            temperature=None,name='Alumina atm',date=None,corr=True,\
-            solid_dielec=None,solid_losstan=None,particle_diameter=None,\
-            particle_density=None,nrw=False)
-        return test, atm
-    elif flag == 'multiple':
-        test2 = AirlineData(*get_METAS_data(),name='TRM')
-        classlist = [test,test2]
-        perm_compare(classlist)
-        return test, test2, classlist
-    
-def multiple_meas(file_path=None,airline=None):
-    """
-    Generate an instance of AirlineData for every file in a directory. Store \
-        the intances in a list, and plot them all using perm_compare.
-        
-    Arguments
-    ---------
-    file_path (str): Full path of any file in the source directory. \
-        (Optional - will produce file dialog box if not provided.)
-    
-    airlne (str): Name of airline used. Every measurement must have been made \
-        in the same airline. (Optional - will prompt if not provided.)
-        
-    Return
-    ------
-    class_list (lst): List of generated class instances of AirlineData.
-    """
-    # Use _get_file to get the filepath and airline name if not provided
-    if file_path:   # If file path provided as argument
-        file = file_path
-    elif not file_path:   # If file path not provided
-        print('\n')
-        print("Select any data file in the source folder. All .txt "+\
-              "files in the source folder must be METAS data tables.")
-        # Get the file path and the airline name
-        airline, file, L_in = _get_file(airline,file_path)
-    elif not airline:   # If file path is given but airline is not
-        airline, file, L_in = _get_file(airline,file_path)
-        
-    # Get directory path    
-    directory = os.path.dirname(file)
-    # Use a list to maintain order for plotting
-    class_list = []
-    # Iterate through all .txt files in the directory and run AirlineData
-    for file in os.listdir(directory):
-        if file.endswith(".txt"):
-            filename = os.path.splitext(file)[0]    # Use file name as plot label
-            # Append each new instance to class list
-            class_list.append(AirlineData(*get_METAS_data(airline,\
-                                os.path.join(directory, file)),name=filename))
-    
-    # Plot all files        
-    perm_compare(class_list)
-    
-    return class_list 
-        
-                
-#%% MAIN
-def main():
-    ## Single file example:
-    global test
-    global atm
-    test, atm = run_example()
-    ## Multiple file example:
-    #global test, test2, classlist
-    #test, test2, classlist = run_example(flag='multiple')
-    #pass    # Comment to run example
-    
-if __name__ == '__main__':
-    main()
-    #pass    # Comment to run example

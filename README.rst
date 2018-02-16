@@ -19,10 +19,10 @@ You can use permittivity-calc to:
 - Correct for the air gap when measuring solid samples after [Baker-Jarvis1993]_.
 - Plot data from multiple measurements together for comparison.
 
-Installation
+Requirements
 ------------
-*Requirements:*
-premittivity-calc was written for Python 3:
+
+premittivity-calc was written for Python 3 and tested on the following version of Python:
 
 - 3.5
 - 3.6
@@ -36,6 +36,9 @@ premittivity-calc uses the following packages:
 - matplotlib
 - seaborn
 - cycler
+
+Installation
+------------
 
 References
 ----------

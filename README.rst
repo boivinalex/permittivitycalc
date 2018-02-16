@@ -67,7 +67,7 @@ We recommend using `Anaconda`_ to manage your Python environments.
 
 Contributors
 ------------
-permittivity-calc was developed with the aid of these `contributers <https://github.com/cjtu/craterpy/graphs/contributors>`_.
+permittivity-calc was developed with the aid of these `contributors <https://github.com/cjtu/craterpy/graphs/contributors>`_.
 
 References
 ----------

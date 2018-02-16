@@ -65,6 +65,10 @@ We recommend using `Anaconda`_ to manage your Python environments.
 
 .. _`conda virtual environment`: https://conda.io/docs/using/envs
 
+Contributors
+------------
+permittivity-calc was developed with the aid of these `contributers <https://github.com/cjtu/craterpy/graphs/contributors>`_.
+
 References
 ----------
 .. [Baker-Jarvis1993] Baker-Jarvis, J., Janezic, M. D., Grosvenor Jr, J. H., & Geyer, R. G. (1993). Transmission/reflection and short-circuit line methods for measuring permittivity and permeability. NIST Technical Note 1355-R. Boulder, CO. http://doi.org/10.6028/NIST.TN.1355r

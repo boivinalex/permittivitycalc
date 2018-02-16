@@ -19,10 +19,13 @@ You can use permittivity-calc to:
 - Correct for the air gap when measuring solid samples after [Baker-Jarvis1993]_.
 - Plot data from multiple measurements together for comparison.
 
-Requirements
+Installation
 ------------
 
-premittivity-calc was written for Python 3 and tested on the following version of Python:
+Requirements
+^^^^^^^^^^^^
+
+premittivity-calc was written for Python 3 and tested on the following versions of Python:
 
 - 3.5
 - 3.6
@@ -37,8 +40,30 @@ premittivity-calc uses the following packages:
 - seaborn
 - cycler
 
-Installation
-------------
+Installing Anaconda
+^^^^^^^^^^^^^^^^^^^
+
+We recommend using `Anaconda`_ to manage your Python environments.
+
+.. _`Anaconda`: https://www.anaconda.com/distribution/
+
+1. `Install Anaconda <https://www.anaconda.com/download/>`_.
+
+2. Open a terminal window and create a `conda virtual environment`_ (name it anything you like, and set the python version to a compatible version in `Requirements`_)::
+
+    conda create --name your_env_name python=3.6
+
+3. Activate the environment (on Windows, omit "source")::
+
+    source activate your_env_name
+
+4. Clone or download this repository.
+
+5. Navigate to the permittivity-calc root directory and install with::
+
+	python setup.py install
+
+.. _`conda virtual environment`: https://conda.io/docs/using/envs
 
 References
 ----------

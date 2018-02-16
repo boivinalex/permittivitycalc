@@ -19,6 +19,24 @@ You can use permittivity-calc to:
 - Correct for the air gap when measuring solid samples after [Baker-Jarvis1993]_.
 - Plot data from multiple measurements together for comparison.
 
+Installation
+------------
+*Requirements:*
+premittivity-calc was written for Python 3:
+
+- 3.5
+- 3.6
+
+premittivity-calc uses the following packages:
+
+- tkinter
+- numpy 
+- uncertainties
+- scipy
+- matplotlib
+- seaborn
+- cycler
+
 References
 ----------
 .. [Baker-Jarvis1993] Baker-Jarvis, J., Janezic, M. D., Grosvenor Jr, J. H., & Geyer, R. G. (1993). Transmission/reflection and short-circuit line methods for measuring permittivity and permeability. NIST Technical Note 1355-R. Boulder, CO. http://doi.org/10.6028/NIST.TN.1355r

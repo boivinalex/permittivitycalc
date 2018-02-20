@@ -225,7 +225,7 @@ class AirlineData:
         # If appropriate data provided, correct for boundary effects
         if (solid_dielec and particle_diameter and particle_density and \
             bulk_density):
-            self.bcorr_dielec, self.bcorr_losstan = self.boundary_correct()
+            self.bcorr_dielec, self.bcorr_losstan = self._boundary_correct()
         # If normalize_density is True and bulk_density exists, do it
         #   Normalize the density to 1.60 g/cm^3
         if normalize_density and bulk_density:
@@ -775,7 +775,7 @@ class AirlineData:
             
         return corr_s11, corr_s21, corr_s12, corr_s22
     
-    def boundary_correct(self):
+    def _boundary_correct(self):
         """
         Correct calculated sprams for boundary effects in the airline after \
             Hickson et al., 2017. Requires the effective solid permittivity \
@@ -838,7 +838,7 @@ class AirlineData:
         samples_losstan = sample_permittivity.imag / sample_dielec
         return sample_dielec, samples_losstan
     
-    def air_gap_correction(self, Ds2, Ds3):
+    def _air_gap_correction(self, D2, D3):
         """
         Calculates air gap corrected complex permittivity for solid samples.
         
@@ -866,8 +866,8 @@ class AirlineData:
             measured_lossfac = unp.nominal_values(self.avg_lossfac)
         
         # Calculate L1, L2, and L3 terms
-        L1 = np.log(Ds2/self.airline_dimensions['D1']) + np.log(self.airline_dimensions['D4']/Ds3)
-        L2 = np.log(Ds3/Ds2)
+        L1 = np.log(D2/self.airline_dimensions['D1']) + np.log(self.airline_dimensions['D4']/D3)
+        L2 = np.log(D3/D2)
         L3 = np.log(self.airline_dimensions['D4']/self.airline_dimensions['D1'])
         
         # Calculate corr_dielec, corr_lossfac 

@@ -2,17 +2,39 @@
 """Contains useful functions and examples that use AirlineData"""
 
 #File input
-from helper_functions import get_METAS_data, _get_file
-# Plotting
-import permittivity_plot as pplot
+from helper_functions import _get_file, get_METAS_data, perm_compare
 # Make relative path
 import os
 # Dataclass
 from sparam_data import AirlineData
 
 # Get data folder path for example files
-DATAPATH = os.path.abspath('..') + '/data/'
+DATAPATH = os.path.abspath('..') + '/data/'     
 
+        
+def run_default(airline_name='VAL',**kwargs):
+    """
+    Run AirlineData on get_METAS_data with all the prompts and return the \
+        instance.
+    """
+    return AirlineData(*get_METAS_data(airline=airline_name),**kwargs)
+
+def run_example(flag='single'):
+    test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
+                        '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
+                         name='Alumina Vac 2.5hrs',date='2017/04/07')
+    if flag == 'single':
+        atm = AirlineData(*get_METAS_data(airline='VAL',\
+            file_path=DATAPATH + 'atm.txt'),bulk_density=None,\
+            temperature=None,name='Alumina atm',date=None,corr=True,\
+            solid_dielec=None,solid_losstan=None,particle_diameter=None,\
+            particle_density=None,nrw=False)
+        return test, atm
+    elif flag == 'multiple':
+        test2 = AirlineData(*get_METAS_data(),name='TRM')
+        classlist = [test,test2]
+        perm_compare(classlist)
+        return test, test2, classlist
 
 def multiple_meas(file_path=None,airline=None):
     """
@@ -58,69 +80,7 @@ def multiple_meas(file_path=None,airline=None):
     # Plot all files        
     perm_compare(class_list)
     
-    return class_list       
-
-def perm_compare(classlist,allplots=False,**kwargs):
-    """
-    Given a list of AirlineData instances, plot their permittivity results \
-        together using permittivity_plot_V1.py
-        
-    Arguments
-    ---------
-    classlist (list): List of instances of AirlineData
-    
-    allplots (bool): If True plot all of dielectric constant, loss factor and \
-        loss tangent. If Flase plot only the dielectric constant and the loss \
-        tangent. Default: False
-    """
-    freq = []
-    dielec = []
-    losstan = []
-    labels = []
-    for item in classlist:
-        freq.append(item.freq)
-        if item.normalize_density: # Check for normalize_density
-            dielec.append(item.norm_dielec)
-            losstan.append(item.norm_losstan)
-        else:
-            dielec.append(item.avg_dielec)
-            losstan.append(item.avg_losstan)
-        labels.append(item.name)
-    kwargs["legend_label"] = labels
-    if allplots:
-        lossfac = []
-        for item in classlist:
-            lossfac.append(item.avg_lossfac)
-        pplot.make_plot(freq,dielec,'d',**kwargs)
-        pplot.make_plot(freq,lossfac,'lf',**kwargs)
-        pplot.make_plot(freq,losstan,'lt',**kwargs)
-    else:
-        pplot.make_plot(freq,dielec,'d',**kwargs)
-        pplot.make_plot(freq,losstan,'lt',**kwargs)
-        
-def run_default(airline_name='VAL',**kwargs):
-    """
-    Run AirlineData on get_METAS_data with all the prompts and return the \
-        instance.
-    """
-    return AirlineData(*get_METAS_data(airline=airline_name),**kwargs)
-
-def run_example(flag='single'):
-    test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
-                        '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
-                         name='Alumina Vac 2.5hrs',date='2017/04/07')
-    if flag == 'single':
-        atm = AirlineData(*get_METAS_data(airline='VAL',\
-            file_path=DATAPATH + 'atm.txt'),bulk_density=None,\
-            temperature=None,name='Alumina atm',date=None,corr=True,\
-            solid_dielec=None,solid_losstan=None,particle_diameter=None,\
-            particle_density=None,nrw=False)
-        return test, atm
-    elif flag == 'multiple':
-        test2 = AirlineData(*get_METAS_data(),name='TRM')
-        classlist = [test,test2]
-        perm_compare(classlist)
-        return test, test2, classlist
+    return class_list 
     
 #%% MAIN
 def main():

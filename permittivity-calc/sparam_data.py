@@ -109,7 +109,7 @@ class AirlineData:
             file_path/air_atm.txt
             file_path/air_atm_shorted.txt
     """
-    def __init__(self,L,airline,dataArray,file,corr=True,bulk_density=None,\
+    def __init__(self,L,airline,dataArray,file,corr=False,bulk_density=None,\
                  temperature=None,name=None,date=None,solid_dielec=None,\
                  solid_losstan=None,particle_diameter=None,\
                  particle_density=None,nrw=False,shorted=False,\

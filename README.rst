@@ -19,6 +19,10 @@ You can use permittivity-calc to:
 - Correct for the air gap when measuring solid samples after [Baker-Jarvis1993]_.
 - Plot data from multiple measurements together for comparison.
 
+Usage
+-----
+For usage examples and a walkthrough on how to use permittivity-calc, see the `Tutorial <https://github.com/boivinalex/permittivity-calc/permittivity-calc/permittivity-calc_tutorial.ipynb>`_
+
 Installation
 ------------
 

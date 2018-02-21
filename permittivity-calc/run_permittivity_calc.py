@@ -24,10 +24,10 @@ def run_example():
         file_path=DATAPATH + 'rexolite_PAL.txt'),name='Rexolite')
     serpentine_example = AirlineData(*get_METAS_data(airline='VAL',\
         file_path=DATAPATH + 'serpentine_dry.txt'),bulk_density=1.6,\
-        name='Serpentine - 25$^\\circ$C',normalize_density=True,norm_eqn='LI')
+        name='Serpentine',normalize_density=True,norm_eqn='LI')
     return rexolite_example, serpentine_example
 
-def multiple_meas(file_path=None,airline=None):
+def multiple_meas(file_path=None,airline_name=None):
     """
     Generate an instance of AirlineData for every file in a directory. Store \
         the intances in a list, and plot them all using perm_compare.
@@ -52,9 +52,9 @@ def multiple_meas(file_path=None,airline=None):
         print("Select any data file in the source folder. All .txt "+\
               "files in the source folder must be METAS data tables.")
         # Get the file path and the airline name
-        airline, file, L_in = _get_file(airline,file_path)
-    elif not airline:   # If file path is given but airline is not
-        airline, file, L_in = _get_file(airline,file_path)
+        airline_name, file, L_in = _get_file(airline_name,file_path)
+    elif not airline_name:   # If file path is given but airline is not
+        airline_name, file, L_in = _get_file(airline_name,file_path)
         
     # Get directory path    
     directory = os.path.dirname(file)
@@ -65,7 +65,7 @@ def multiple_meas(file_path=None,airline=None):
         if file.endswith(".txt"):
             filename = os.path.splitext(file)[0]    # Use file name as plot label
             # Append each new instance to class list
-            class_list.append(AirlineData(*get_METAS_data(airline,\
+            class_list.append(AirlineData(*get_METAS_data(airline_name,\
                                 os.path.join(directory, file)),name=filename))
     
     # Plot all files        

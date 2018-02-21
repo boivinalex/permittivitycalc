@@ -7,6 +7,11 @@ from helper_functions import _get_file, get_METAS_data, perm_compare
 import os
 # Dataclass
 from sparam_data import AirlineData
+# Import uncertainties package
+import uncertainties 
+#Citation: Uncertainties: a Python package for calculations with uncertainties,
+#    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
+from uncertainties import unumpy as unp
 
 # Get data folder path for example files
 DATAPATH = os.path.abspath('..') + '/data/'     

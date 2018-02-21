@@ -19,22 +19,13 @@ def run_default(airline_name='VAL',**kwargs):
     """
     return AirlineData(*get_METAS_data(airline=airline_name),**kwargs)
 
-def run_example(flag='single'):
-    test = AirlineData(*get_METAS_data(airline='GAL',file_path=DATAPATH + \
-                        '2.5hrs.txt'),bulk_density=2.0,temperature=None,\
-                         name='Alumina Vac 2.5hrs',date='2017/04/07')
-    if flag == 'single':
-        atm = AirlineData(*get_METAS_data(airline='VAL',\
-            file_path=DATAPATH + 'atm.txt'),bulk_density=None,\
-            temperature=None,name='Alumina atm',date=None,corr=True,\
-            solid_dielec=None,solid_losstan=None,particle_diameter=None,\
-            particle_density=None,nrw=False)
-        return test, atm
-    elif flag == 'multiple':
-        test2 = AirlineData(*get_METAS_data(),name='TRM')
-        classlist = [test,test2]
-        perm_compare(classlist)
-        return test, test2, classlist
+def run_example():
+    rexolite_example = AirlineData(*get_METAS_data(airline='PAL',\
+        file_path=DATAPATH + 'rexolite_PAL.txt'),name='Rexolite')
+    serpentine_example = AirlineData(*get_METAS_data(airline='VAL',\
+        file_path=DATAPATH + 'serpentine_dry.txt'),bulk_density=1.6,\
+        name='Serpentine - 25$^\\circ$C',normalize_density=True,norm_eqn='LI')
+    return rexolite_example, serpentine_example
 
 def multiple_meas(file_path=None,airline=None):
     """
@@ -84,15 +75,11 @@ def multiple_meas(file_path=None,airline=None):
     
 #%% MAIN
 def main():
-    ## Single file example:
-    global test
-    global atm
-    test, atm = run_example()
-    ## Multiple file example:
-    #global test, test2, classlist
-    #test, test2, classlist = run_example(flag='multiple')
-    #pass    # Comment to run example
+    ## Run Examples
+    global rexolite_example
+    global serpentine_example
+    rexolite_example, serpentine_example = run_example()
     
 if __name__ == '__main__':
-    main()
-    #pass    # Comment to run example
+    main()  # Comment to supress example
+#    pass    # Uncomment to supress example

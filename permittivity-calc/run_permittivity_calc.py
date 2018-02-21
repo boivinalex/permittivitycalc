@@ -24,7 +24,7 @@ def run_example():
         file_path=DATAPATH + 'rexolite_PAL.txt'),name='Rexolite')
     serpentine_example = AirlineData(*get_METAS_data(airline='VAL',\
         file_path=DATAPATH + 'serpentine_dry.txt'),bulk_density=1.6,\
-        name='Serpentine',normalize_density=True,norm_eqn='LI')
+        name='Serpentine',normalize_density=False,norm_eqn='LI')
     return rexolite_example, serpentine_example
 
 def multiple_meas(file_path=None,airline_name=None):

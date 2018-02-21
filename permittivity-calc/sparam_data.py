@@ -6,7 +6,6 @@
 import pickle
 # Array math
 import numpy as np
-import scipy.stats as stats
 import uncertainties 
 #Citation: Uncertainties: a Python package for calculations with uncertainties,
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/

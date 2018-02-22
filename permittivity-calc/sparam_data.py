@@ -6,7 +6,6 @@
 import pickle
 # Array math
 import numpy as np
-import scipy.stats as stats
 import uncertainties 
 #Citation: Uncertainties: a Python package for calculations with uncertainties,
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
@@ -110,7 +109,7 @@ class AirlineData:
             file_path/air_atm.txt
             file_path/air_atm_shorted.txt
     """
-    def __init__(self,L,airline,dataArray,file,corr=True,bulk_density=None,\
+    def __init__(self,L,airline,dataArray,file,corr=False,bulk_density=None,\
                  temperature=None,name=None,date=None,solid_dielec=None,\
                  solid_losstan=None,particle_diameter=None,\
                  particle_density=None,nrw=False,shorted=False,\
@@ -124,48 +123,6 @@ class AirlineData:
         # Unpack data into arrays
         self.freq, self.s11, self.s21, self.s12, self.s22 = \
             self._unpack(dataArray)
-        # Perform ANOVA statistical test on forward and backwatd S-params
-        #   Warn if p-value < 0.05 (implies significant difference)
-        print(self.file)
-        # First, perform Shapiro-Wilk test for nomrlity
-        shapiro_s11mag = stats.shapiro(unp.nominal_values(self.s11[0]))
-        shapiro_s11pha = stats.shapiro(unp.nominal_values(self.s11[1]))
-        shapiro_s21mag = stats.shapiro(unp.nominal_values(self.s21[0]))
-        shapiro_s21pha = stats.shapiro(unp.nominal_values(self.s21[1]))
-        print('Shapiro-Wilk test (W, p-val)')
-        print(shapiro_s11mag)
-        print(shapiro_s11pha)
-        print(shapiro_s21mag)
-        print(shapiro_s21pha)
-        # Second, perform Bartlett test
-        bartlett_refmag = stats.bartlett(unp.nominal_values(self.s11[0]),\
-                                         unp.nominal_values(self.s22[0]))
-        bartlett_refpha = stats.bartlett(unp.nominal_values(self.s11[1]),\
-                                         unp.nominal_values(self.s22[1]))
-        bartlett_transmag = stats.bartlett(unp.nominal_values(self.s21[0]),\
-                                         unp.nominal_values(self.s12[0]))
-        bartlett_transpha = stats.bartlett(unp.nominal_values(self.s21[1]),\
-                                         unp.nominal_values(self.s12[1]))
-        print('Bartlett test (stat, p-val)')
-        print(bartlett_refmag)
-        print(bartlett_refpha)
-        print(bartlett_transmag)
-        print(bartlett_transpha)
-        # 1-way ANOVA test
-        f_val1mag, p_val1mag = stats.f_oneway(unp.nominal_values(self.s11[0]),\
-                                        unp.nominal_values(self.s22[0]))
-        f_val2mag, p_val2mag = stats.f_oneway(unp.nominal_values(self.s21[0]),\
-                                        unp.nominal_values(self.s12[0]))
-        f_val1pha, p_val1pha = stats.f_oneway(unp.nominal_values(self.s11[1]),\
-                                        unp.nominal_values(self.s22[1]))
-        f_val2pha, p_val2pha = stats.f_oneway(unp.nominal_values(self.s21[1]),\
-                                        unp.nominal_values(self.s12[1]))
-        print('Reflection (Mag,Phase) = '+str(p_val1mag)+', '+str(p_val1pha))
-        print('Transmission (Mag,Phase) = '+str(p_val2mag)+', '+str(p_val2pha))
-        if p_val1mag < 0.05 or p_val1pha < 0.05:
-            print('WARNING: SIGNIFICANT DIFFERENCE BETWEEN S11 AND S22!')
-        if p_val2mag < 0.05 or p_val2pha < 0.05:
-            print('WARNING: SIGNIFICANT DIFFERENCE BETWEEN S21 AND S12!')
         if self.shorted:
             #Get path of shorted file
             path = os.path.split(self.file)
@@ -225,7 +182,7 @@ class AirlineData:
         # If appropriate data provided, correct for boundary effects
         if (solid_dielec and particle_diameter and particle_density and \
             bulk_density):
-            self.bcorr_dielec, self.bcorr_losstan = self.boundary_correct()
+            self.bcorr_dielec, self.bcorr_losstan = self._boundary_correct()
         # If normalize_density is True and bulk_density exists, do it
         #   Normalize the density to 1.60 g/cm^3
         if normalize_density and bulk_density:
@@ -775,7 +732,7 @@ class AirlineData:
             
         return corr_s11, corr_s21, corr_s12, corr_s22
     
-    def boundary_correct(self):
+    def _boundary_correct(self):
         """
         Correct calculated sprams for boundary effects in the airline after \
             Hickson et al., 2017. Requires the effective solid permittivity \
@@ -838,7 +795,7 @@ class AirlineData:
         samples_losstan = sample_permittivity.imag / sample_dielec
         return sample_dielec, samples_losstan
     
-    def air_gap_correction(self, Ds2, Ds3):
+    def _air_gap_correction(self, D2, D3):
         """
         Calculates air gap corrected complex permittivity for solid samples.
         
@@ -866,8 +823,8 @@ class AirlineData:
             measured_lossfac = unp.nominal_values(self.avg_lossfac)
         
         # Calculate L1, L2, and L3 terms
-        L1 = np.log(Ds2/self.airline_dimensions['D1']) + np.log(self.airline_dimensions['D4']/Ds3)
-        L2 = np.log(Ds3/Ds2)
+        L1 = np.log(D2/self.airline_dimensions['D1']) + np.log(self.airline_dimensions['D4']/D3)
+        L2 = np.log(D3/D2)
         L3 = np.log(self.airline_dimensions['D4']/self.airline_dimensions['D1'])
         
         # Calculate corr_dielec, corr_lossfac 

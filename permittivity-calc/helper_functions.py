@@ -8,6 +8,8 @@ from tkinter.filedialog import askopenfilename
 import codecs
 # Array math
 import numpy as np
+# Plotting
+import permittivity_plot as pplot
 
 def _prompt():
     """Prompt for VNA Tools II text file"""
@@ -101,3 +103,41 @@ def get_METAS_data(airline=None,file_path=None):
         L = float(L_in)
         
     return L, airline, dataArray, file
+
+def perm_compare(classlist,allplots=False,**kwargs):
+    """
+    Given a list of AirlineData instances, plot their permittivity results \
+        together using permittivity_plot_V1.py
+        
+    Arguments
+    ---------
+    classlist (list): List of instances of AirlineData
+    
+    allplots (bool): If True plot all of dielectric constant, loss factor and \
+        loss tangent. If Flase plot only the dielectric constant and the loss \
+        tangent. Default: False
+    """
+    freq = []
+    dielec = []
+    losstan = []
+    labels = []
+    for item in classlist:
+        freq.append(item.freq)
+        if item.normalize_density: # Check for normalize_density
+            dielec.append(item.norm_dielec)
+            losstan.append(item.norm_losstan)
+        else:
+            dielec.append(item.avg_dielec)
+            losstan.append(item.avg_losstan)
+        labels.append(item.name)
+    kwargs["legend_label"] = labels
+    if allplots:
+        lossfac = []
+        for item in classlist:
+            lossfac.append(item.avg_lossfac)
+        pplot.make_plot(freq,dielec,'d',**kwargs)
+        pplot.make_plot(freq,lossfac,'lf',**kwargs)
+        pplot.make_plot(freq,losstan,'lt',**kwargs)
+    else:
+        pplot.make_plot(freq,dielec,'d',**kwargs)
+        pplot.make_plot(freq,losstan,'lt',**kwargs)

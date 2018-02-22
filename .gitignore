@@ -1,2 +1,4 @@
 __pycache__
 figures/
+.ipynb_checkpoints/
+*.p

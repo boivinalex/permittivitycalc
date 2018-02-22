@@ -1,16 +1,16 @@
-permittivity-calc
+permittivitycalc
 =================
 Scripts to calculate and plot the complex permittivity from S-parameter data acquired with transmission-line measurements
 
 Overview
 --------
-permittivity-calc is a Python package made to take S-parameter data output from METAS VNA Tools II (https://www.metas.ch/metas/en/home/fabe/hochfrequenz/vna-tools.html) and process it to calculate and plot the complex permittivity of a material measured in a coaxial transmission line.
+permittivitycalc is a Python package made to take S-parameter data output from METAS VNA Tools II (https://www.metas.ch/metas/en/home/fabe/hochfrequenz/vna-tools.html) and process it to calculate and plot the complex permittivity of a material measured in a coaxial transmission line.
 
-Currently, permittivity-calc uses the New Non-iterative Method for permittivity calculation from S-parameters from [Boughriet1997]_ which assumes that the material is non-magnetic (i.e. \mu = 1).
+Currently, permittivitycalc uses the New Non-iterative Method for permittivity calculation from S-parameters from [Boughriet1997]_ which assumes that the material is non-magnetic (i.e. \mu = 1).
 
-permittivity-calc can also use the Nicholson-Ross-Weir method to calculate the complex permittivity and permeability of a sample. This method, however, is unstable at multiples of one-half wavelength in the sample [NicolsonRoss1970]_ [Weir1974]_.
+permittivitycalc can also use the Nicholson-Ross-Weir method to calculate the complex permittivity and permeability of a sample. This method, however, is unstable at multiples of one-half wavelength in the sample [NicolsonRoss1970]_ [Weir1974]_.
 
-You can use permittivity-calc to:
+You can use permittivitycalc to:
 
 - Input and plot raw S-parameter data in tabular form with or without uncertainties.
 - Calculate and plot the complex permittivity with full propagation of uncertainties.
@@ -21,7 +21,7 @@ You can use permittivity-calc to:
 
 Usage
 -----
-For usage examples and a walkthrough on how to use permittivity-calc, see the `Tutorial <https://gist.github.com/boivinalex/175313bf8fdfa0dfd6a7501cf8a28087>`_
+For usage examples and a walkthrough on how to use permittivitycalc, see the `Tutorial <https://gist.github.com/boivinalex/175313bf8fdfa0dfd6a7501cf8a28087>`_
 
 Installation
 ------------
@@ -29,11 +29,11 @@ Installation
 Requirements
 ^^^^^^^^^^^^
 
-premittivity-calc was written for Python 3 and tested on the following versions of Python:
+permittivitycalc was written for Python 3 and tested on the following versions of Python:
 
 - 3.6
 
-premittivity-calc uses the following packages:
+permittivitycalc uses the following packages:
 
 - tkinter
 - numpy 
@@ -62,7 +62,7 @@ We recommend using `Anaconda`_ to manage your Python environments.
 
 4. Clone or download this repository.
 
-5. Navigate to the permittivity-calc root directory and install with::
+5. Navigate to the permittivitycalc root directory and install with::
 
 	python setup.py install
 
@@ -70,7 +70,7 @@ We recommend using `Anaconda`_ to manage your Python environments.
 
 Contributors
 ------------
-permittivity-calc was developed with the aid of these `contributors <https://github.com/boivinalex/permittivity-calc/graphs/contributors>`_.
+permittivitycalc was developed with the aid of these `contributors <https://github.com/boivinalex/permittivitycalc/graphs/contributors>`_.
 
 References
 ----------

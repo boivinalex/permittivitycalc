@@ -2,11 +2,11 @@
 """Contains useful functions and examples that use AirlineData"""
 
 #File input
-from helper_functions import _get_file, get_METAS_data, perm_compare
+from permittivitycalc.helper_functions import _get_file, get_METAS_data, perm_compare
 # Make relative path
 import os
 # Dataclass
-from sparam_data import AirlineData
+from permittivitycalc.sparam_data import AirlineData
 # Import uncertainties package
 import uncertainties 
 #Citation: Uncertainties: a Python package for calculations with uncertainties,

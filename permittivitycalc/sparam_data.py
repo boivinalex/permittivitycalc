@@ -11,11 +11,11 @@ import uncertainties
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
 from uncertainties import unumpy as unp
 # Plotting
-import permittivity_plot as pplot
+import permittivitycalc.permittivity_plot as pplot
 # Make relative path
 import os
 # Helper functions
-from helper_functions import get_METAS_data
+from permittivitycalc.helper_functions import get_METAS_data
 
 # GLOBAL VARIABLES
 E_0 = 8.854187817620*10**-12 #Permittivity of vacuum (F/m) 

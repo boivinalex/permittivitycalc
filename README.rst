@@ -21,7 +21,7 @@ You can use permittivity-calc to:
 
 Usage
 -----
-For usage examples and a walkthrough on how to use permittivity-calc, see the `Tutorial </permittivity-calc/permittivity-calc_tutorial.ipynb>`_
+For usage examples and a walkthrough on how to use permittivity-calc, see the `Tutorial <https://gist.github.com/boivinalex/175313bf8fdfa0dfd6a7501cf8a28087>`_
 
 Installation
 ------------
@@ -31,7 +31,6 @@ Requirements
 
 premittivity-calc was written for Python 3 and tested on the following versions of Python:
 
-- 3.5
 - 3.6
 
 premittivity-calc uses the following packages:

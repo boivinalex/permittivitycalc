@@ -203,6 +203,31 @@ class AirlineData:
             self.norm_losstan = self.norm_lossfac/self.norm_dielec
         elif normalize_density:
             raise Exception('Need bulk desnity to normalize to constant density')
+        # Calculate resonant frequencies from complex permittivity and permeability
+        # Follows D. Stillman Thesis (*need to confirm this*)
+        n = np.arange(0,15,1)
+        if self.corr:
+            measured_dielec = unp.nominal_values(self.corr_avg_dielec)
+            measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
+            L = self.Lcorr
+        else:
+            measured_dielec = unp.nominal_values(self.avg_dielec)
+            measured_lossfac = unp.nominal_values(self.avg_lossfac)
+            L = self.L
+        e_r = np.median(measured_dielec[1::]) # Exclude first data point
+        e_i = np.median(measured_lossfac[1::])
+        if nrw:
+            u_r = np.real(unp.nominal_values(self.mu))
+            u_r = np.median(u_r[1::])
+            u_i = np.imag(unp.nominal_values(self.mu))
+            u_i = np.median(u_i[1::])
+        else:
+            u_r = 1
+            u_i = 0
+        self.res_freq = ((2**(1/2))*C*100)/((2*L/n)*((((u_r*e_r - e_i*u_i)**2 + \
+                                           (u_i*e_r + e_i*u_r)**2)**(1/2)) + e_r*u_r - e_i*u_i)**(1/2))
+        
+        
             
     def __repr__(self):
         rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \

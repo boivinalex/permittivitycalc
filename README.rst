@@ -21,7 +21,7 @@ You can use permittivity-calc to:
 
 Usage
 -----
-For usage examples and a walkthrough on how to use permittivity-calc, see the `Tutorial <https://github.com/boivinalex/permittivity-calc/permittivity-calc/permittivity-calc_tutorial.ipynb>`_
+For usage examples and a walkthrough on how to use permittivity-calc, see the `Tutorial </permittivity-calc/permittivity-calc_tutorial.ipynb>`_
 
 Installation
 ------------

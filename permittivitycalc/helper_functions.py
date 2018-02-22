@@ -9,7 +9,7 @@ import codecs
 # Array math
 import numpy as np
 # Plotting
-import permittivity_plot as pplot
+import permittivitycalc.permittivity_plot as pplot
 
 def _prompt():
     """Prompt for VNA Tools II text file"""

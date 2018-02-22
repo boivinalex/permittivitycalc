@@ -26,7 +26,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name='permittivity-calc',  
+    name='permittivitycalc',  
 
     version='0.1.0',
 
@@ -34,7 +34,7 @@ setup(
 
     long_description=long_description,  
 
-    url='https://github.com/boivinalex/permittivity-calc',
+    url='https://github.com/boivinalex/permittivitycalc',
     
     author='Alexandre Boivin',  
 
@@ -53,8 +53,7 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     
-    install_requires=['tkinter',
-                      'numpy',
+    install_requires=['numpy',
                       'uncertainties',
                       'matplotlib',
                       'seaborn',

@@ -205,7 +205,7 @@ class AirlineData:
             raise Exception('Need bulk desnity to normalize to constant density')
         # Calculate resonant frequencies from complex permittivity and permeability
         # Follows D. Stillman Thesis (*need to confirm this*)
-        n = np.arange(0,15,1)
+        n = np.arange(1,15,1)
         if self.corr:
             measured_dielec = unp.nominal_values(self.corr_avg_dielec)
             measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)

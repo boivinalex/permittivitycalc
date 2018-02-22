@@ -28,7 +28,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='permittivity-calc',  
 
-    version='0.0.4dev0',
+    version='0.1.0dev0',
 
     description='Scripts to calculate and plot the complex permittivity from S-parameter data',  
 
@@ -41,16 +41,12 @@ setup(
     author_email='alex.boivin@mail.utoronto.ca',
     
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering',
         'Natural Language :: English',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
     ],
 
     keywords='python dielectric permittivity s-parameter data analysis',  
@@ -66,7 +62,7 @@ setup(
                       'scipy',
                       ],
                       
-    python_requires='>=3',
+    python_requires='=3.6',
 
 #    extras_require={
 #        'dev': ['check-manifest'],
@@ -74,8 +70,8 @@ setup(
 #    },
 
     package_data={  # Optional
-        'data': ['2.5hrs.txt',
-                 'atm.txt',
+        'data': ['rexolite_PAL',
+                 'serpentine_dry',
                  ],
     },
 

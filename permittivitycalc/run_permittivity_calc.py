@@ -14,7 +14,8 @@ import uncertainties
 from uncertainties import unumpy as unp
 
 # Get data folder path for example files
-DATAPATH = os.path.abspath('..') + '/data/'     
+PACKAGEPATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATAPATH = os.path.join(PACKAGEPATH, 'data')  
 
         
 def run_default(airline_name='VAL',**kwargs):
@@ -25,10 +26,12 @@ def run_default(airline_name='VAL',**kwargs):
     return AirlineData(*get_METAS_data(airline=airline_name),**kwargs)
 
 def run_example():
+    rexolite_path = os.path.join(DATAPATH, 'rexolite_PAL.txt')
+    serpentine_path = os.path.join(DATAPATH, 'serpentine_dry.txt')
     rexolite_example = AirlineData(*get_METAS_data(airline='PAL',\
-        file_path=DATAPATH + 'rexolite_PAL.txt'),name='Rexolite')
+        file_path=rexolite_path),name='Rexolite')
     serpentine_example = AirlineData(*get_METAS_data(airline='VAL',\
-        file_path=DATAPATH + 'serpentine_dry.txt'),bulk_density=1.6,\
+        file_path=serpentine_path),bulk_density=1.6,\
         name='Serpentine',normalize_density=False,norm_eqn='LI')
     return rexolite_example, serpentine_example
 

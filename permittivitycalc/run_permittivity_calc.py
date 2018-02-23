@@ -14,7 +14,7 @@ import uncertainties
 from uncertainties import unumpy as unp
 
 # Get data folder path for example files
-PACKAGEPATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PACKAGEPATH = os.path.dirname(os.path.abspath(__file__))
 DATAPATH = os.path.join(PACKAGEPATH, 'data')  
 
         

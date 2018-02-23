@@ -28,7 +28,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='permittivitycalc',  
 
-    version='0.1.3',
+    version='0.1.4',
 
     description='Scripts to calculate and plot the complex permittivity from S-parameter data',  
 
@@ -69,8 +69,8 @@ setup(
 #    },
 
     package_data={  # Optional
-        'data': ['rexolite_PAL',
-                 'serpentine_dry',
+        'data': ['rexolite_PAL.txt',
+                 'serpentine_dry.txt',
                  ],
     },
 

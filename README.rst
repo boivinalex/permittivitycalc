@@ -74,7 +74,7 @@ Manual Install
 
 1. (Optional) Fork `permittivitycalc on Github <https://github.com/boivinalex/permittivitycalc>`_
 
-2. Clone or download this repository.
+2. Clone or download the repository.
 
 3. Navigate to the permittivitycalc root directory and install with::
 

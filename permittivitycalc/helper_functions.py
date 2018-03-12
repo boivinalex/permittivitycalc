@@ -141,3 +141,4 @@ def perm_compare(classlist,allplots=False,**kwargs):
     else:
         pplot.make_plot(freq,dielec,'d',**kwargs)
         pplot.make_plot(freq,losstan,'lt',**kwargs)
+        

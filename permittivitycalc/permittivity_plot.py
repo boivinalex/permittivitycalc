@@ -4,7 +4,9 @@ Created on Thu Jun 22 14:24:19 2017
 
 @author: alex
 """
-
+# File input
+import tkinter as tk
+from tkinter.filedialog import askdirectory
 import numpy as np
 from uncertainties import unumpy as unp
 import matplotlib.pyplot as plt
@@ -16,10 +18,17 @@ import datetime
 plt.style.use("ggplot")
 
 #%% GLOBAL VARIABLES
-DATAPATH = os.path.abspath('..') + '/figures/'
 DATE = str(datetime.date.today())
 
 #%% FUNCTIONS
+def _dirprompt():
+    root = tk.Tk()
+    root.withdraw()
+    save_path = askdirectory(title='Select Directory to Save Figure')
+    root.update()
+    
+    return save_path
+
 def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
               plot_title=None, ylabel=None, xlabel=None, spacing=None, \
               buffer=None, xlim=None, ylim=None, figure_size=(16,10), \
@@ -196,13 +205,15 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     ax.legend(fontsize=22,loc='best')
     if publish:
         # Check for directory
-        if not os.path.exists(DATAPATH):
-            os.makedirs(DATAPATH)
-        # Make file name    
+#        if not os.path.exists(DATAPATH):
+#            os.makedirs(DATAPATH)
+#        # Make file name    
+        datapath = _dirprompt()
         savename = name.replace(' ','-') + '_' + plot_title.replace(' ','-') \
             + '_' + DATE + '.png'
+        filepath = os.path.join(datapath,savename)
         # Save figure to .eps file
-        plt.savefig(DATAPATH+savename,dpi=300,format='png',pad_inches=0)
+        plt.savefig(filepath,dpi=300,format='png',pad_inches=0)
     
 def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
     """

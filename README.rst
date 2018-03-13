@@ -1,5 +1,8 @@
-permittivitycalc
-=================
+permittivitycalc |PyPiBadge|
+============================
+.. |PyPiBadge| image:: https://badge.fury.io/py/permittivitycalc.svg
+    :target: https://badge.fury.io/py/permittivitycal
+
 Scripts to calculate and plot the complex permittivity from S-parameter data acquired with transmission-line measurements
 
 Overview
@@ -60,13 +63,25 @@ We recommend using `Anaconda`_ to manage your Python environments.
 
     source activate your_env_name
 
-4. Clone or download this repository.
+.. _`conda virtual environment`: https://conda.io/docs/using/envs
 
-5. Navigate to the permittivitycalc root directory and install with::
+Quick Install
+^^^^^^^^^^^^^
+
+Install permittivitycalc with pip::
+
+	pip install permittivitycalc
+
+Manual Install
+^^^^^^^^^^^^^^
+
+1. (Optional) Fork `permittivitycalc on Github <https://github.com/boivinalex/permittivitycalc>`_
+
+2. Clone or download the repository.
+
+3. Navigate to the permittivitycalc root directory and install with::
 
 	python setup.py install
-
-.. _`conda virtual environment`: https://conda.io/docs/using/envs
 
 Contributors
 ------------

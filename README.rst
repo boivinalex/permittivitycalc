@@ -1,7 +1,7 @@
 permittivitycalc |PyPiBadge| |DOIBadge|
 ============================
 .. |PyPiBadge| image:: https://badge.fury.io/py/permittivitycalc.svg
-    :target: https://badge.fury.io/py/permittivitycal
+    :target: https://badge.fury.io/py/permittivitycalc
 
 .. |DOIBadge| image:: https://zenodo.org/badge/98680301.svg
    :target: https://zenodo.org/badge/latestdoi/98680301

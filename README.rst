@@ -1,5 +1,8 @@
-permittivitycalc
-=================
+permittivitycalc |PyPiBadge|
+============================
+.. |PyPiBadge| image:: https://badge.fury.io/py/permittivitycalc.svg
+    :target: https://badge.fury.io/py/permittivitycal
+
 Scripts to calculate and plot the complex permittivity from S-parameter data acquired with transmission-line measurements
 
 Overview

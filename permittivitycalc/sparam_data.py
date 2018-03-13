@@ -11,7 +11,7 @@ import uncertainties
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
 from uncertainties import unumpy as unp
 # Plotting
-import permittivity_plot as pplot
+import permittivitycalc.permittivity_plot as pplot
 # Make relative path
 import os
 # Helper functions

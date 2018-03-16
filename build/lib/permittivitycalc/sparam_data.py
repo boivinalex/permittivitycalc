@@ -262,56 +262,7 @@ class AirlineData:
                 srep += 'Landau-Lifshitz-Looyenga equation'
             srep += ' is available.'
         return srep
-    
-    def _resonant_freq(self):
-        """
-        Calculate resonant frequencies from complex permittivity \ 
-            and/or permeability measurement.
-    
-        Follows 
         
-        
-        Arguments
-        ---------
-        s_param (str): Calculates complex permittivity using either \
-            the average ('a'), the forward ('f'), or the reverse ('r') \
-            S-Parameters.
-            
-        Return
-        ------
-        f_0 (array): Array of measured frequency values.
-        
-        dielec (array): Real part of the complex permittivity \
-            (dielectric constant).
-        
-        lossfac (array): Imaginary part of the complex permittivity \
-            (loss factor).
-        
-        losstan (array): Loss tangent. Defined as the ratio of the imaginary \
-            and the real part of the complex permittivity (lossfac/dielec).
-        """
-        
-        n = np.range(1,15,1)
-        if self.corr:
-            measured_dielec = unp.nominal_values(self.corr_avg_dielec)
-            measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
-            L = self.Lcorr
-        else:
-            measured_dielec = unp.nominal_values(self.avg_dielec)
-            measured_lossfac = unp.nominal_values(self.avg_lossfac)
-            L = self.L
-        e_r = np.median(measured_dielec[1::]) # Exclude first data point
-        e_i = np.median(measured_lossfac[1::])
-        if nrw:
-            u_r = np.real(unp.nominal_values(self.mu))
-            u_r = np.median(u_r[1::])
-            u_i = np.imag(unp.nominal_values(self.mu))
-            u_i = np.median(u_i[1::])
-        else:
-            u_r = 1
-            u_i = 0
-            
-            
     def _unpack(self,dataArray):
         """See if uncertainty in data and unpack to S-parameter arrays"""
         shorted_flag = False
@@ -490,7 +441,7 @@ class AirlineData:
         # Calculated effective electromagnetic parameters
         if self.nrw:
             # Calculate mu_r (relative permeability)
-            mu_r = (1+gam)/((a*(1-gam))*(np.sqrt((1/lam_0**2)-(1/LAM_Ca**2))))
+            mu_r = (1+gam)/((a*(1-gam))*(np.sqrt((1/lam_0**2)-(1/LAM_C**2))))
             mu_eff = mu_r
             # Calculate e_r (relative permittivity)
             ep_r = (mu_r*(((1-gam)**2)/((1+gam)**2))*(1-(lam_0**2/LAM_C**2))) \

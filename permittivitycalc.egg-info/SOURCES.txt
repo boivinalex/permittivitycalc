@@ -1,0 +1,14 @@
+README.rst
+setup.py
+permittivitycalc/__init__.py
+permittivitycalc/avg_sparam.py
+permittivitycalc/helper_functions.py
+permittivitycalc/permittivity_plot.py
+permittivitycalc/sparam_data.py
+permittivitycalc.egg-info/PKG-INFO
+permittivitycalc.egg-info/SOURCES.txt
+permittivitycalc.egg-info/dependency_links.txt
+permittivitycalc.egg-info/requires.txt
+permittivitycalc.egg-info/top_level.txt
+permittivitycalc/data/rexolite_PAL.txt
+permittivitycalc/data/serpentine_dry.txt

@@ -2,3 +2,6 @@ __pycache__
 figures/
 .ipynb_checkpoints/
 *.p
+build/
+dist/
+permittivitycalc.egg-info/

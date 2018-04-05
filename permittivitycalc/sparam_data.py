@@ -279,20 +279,35 @@ class AirlineData:
         """
         self.resonant_freq = f_r
         if f_r:
-            mid_pts = np.zeros(len(f_r)-1, dtype=float)
+            if self.corr:
+                dielec = unp.nominal_values(self.corr_avg_dielec)
+                lossfac = unp.nominal_values(self.corr_avg_lossfac)
+            else:
+                dielec = unp.nominal_values(self.avg_dielec)
+                lossfac = unp.nominal_values(self.avg_lossfac)
+            mid_pts  = np.zeros(len(f_r)-1, dtype=float)
+            f_0_mids = np.zeros(len(f_r)-1, dtype=float)
+            dielec_mids = np.zeros(len(f_r)-1, dtype=float)
+            delta_dielec_mids = np.zeros(len(f_r)-1, dtype=float)
+            loss_tan_mids = np.zeros(len(f_r)-1, dtype=float)
+            delta_loss_tan_mids = np.zeros(len(f_r)-1, dtype=float)
+            f_r = f_r[f_r < np.max(self.freq)]
             for i in range(0, len(f_r)):
                 if i != len(f_r):
                     # Find the midpoint frequencies between resonances
                     x = (f_r[i+1] - f_r[i])/2
                     mid_pts[i] = f_r[i] + x
                     # Find the closest corresponding frequency index in f_0
-                    tmp = np.abs(self.freq - mid_pts[i]);
-                    [idx idx] = min(tmp); % index of closest value
-                    f_0_mids(i) = f_0(idx);
-                    dielec_mids(i) = dielec(idx);
-                    loss_tan_mids(i) = losstan(idx);
-                    delta_dielec_mids(i) = delta_dielec(idx);
-                    delta_loss_tan_mids(i) = delta_losstan(idx);
+                    tmp = np.abs(self.freq - mid_pts[i])
+                    idx = np.argmin(tmp) # index of closest value
+                    f_0_mids[i] = self.freq[idx]
+                    dielec_mids[i] = dielec[idx]
+                    loss_tan_mids[i] = losstan[idx]                  
+            freq_avg_dielec = np.mean(dielec_mids[2:])
+            return freq_avg_dielec
+        else:
+            raise Exception('Must have calculated resonant frequencies first')
+        
     
             
     def _unpack(self,dataArray):

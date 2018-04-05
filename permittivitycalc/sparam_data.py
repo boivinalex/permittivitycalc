@@ -204,31 +204,6 @@ class AirlineData:
             self.norm_losstan = self.norm_lossfac/self.norm_dielec
         elif normalize_density:
             raise Exception('Need bulk desnity to normalize to constant density')
-        # Calculate resonant frequencies from complex permittivity and permeability
-        # Follows D. Stillman Thesis (*need to confirm this*)
-        n = np.arange(1,15,1)
-        if self.corr:
-            measured_dielec = unp.nominal_values(self.corr_avg_dielec)
-            measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
-            L = self.Lcorr
-        else:
-            measured_dielec = unp.nominal_values(self.avg_dielec)
-            measured_lossfac = unp.nominal_values(self.avg_lossfac)
-            L = self.L
-        e_r = np.median(measured_dielec[1::]) # Exclude first data point
-        e_i = np.median(measured_lossfac[1::])
-        if nrw:
-            u_r = np.real(unp.nominal_values(self.mu))
-            u_r = np.median(u_r[1::])
-            u_i = np.imag(unp.nominal_values(self.mu))
-            u_i = np.median(u_i[1::])
-        else:
-            u_r = 1
-            u_i = 0
-        self.res_freq = ((2**(1/2))*C*100)/((2*L/n)*((((u_r*e_r - e_i*u_i)**2 + \
-                                           (u_i*e_r + e_i*u_r)**2)**(1/2)) + e_r*u_r - e_i*u_i)**(1/2))
-        
-        
             
     def __repr__(self):
         rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \
@@ -265,30 +240,11 @@ class AirlineData:
     
     def _resonant_freq(self):
         """
-        Calculate resonant frequencies from complex permittivity \ 
-            and/or permeability measurement.
+        Calculate and return array of resonant frequencies from complex permittivity \ 
+        and/or permeability measurement.
     
-        Follows 
-        
-        
-        Arguments
-        ---------
-        s_param (str): Calculates complex permittivity using either \
-            the average ('a'), the forward ('f'), or the reverse ('r') \
-            S-Parameters.
-            
-        Return
-        ------
-        f_0 (array): Array of measured frequency values.
-        
-        dielec (array): Real part of the complex permittivity \
-            (dielectric constant).
-        
-        lossfac (array): Imaginary part of the complex permittivity \
-            (loss factor).
-        
-        losstan (array): Loss tangent. Defined as the ratio of the imaginary \
-            and the real part of the complex permittivity (lossfac/dielec).
+        Follows David Stillman PhD Thesis / NIST Technical Note 1355 ??
+
         """
         
         n = np.range(1,15,1)
@@ -302,7 +258,7 @@ class AirlineData:
             L = self.L
         e_r = np.median(measured_dielec[1::]) # Exclude first data point
         e_i = np.median(measured_lossfac[1::])
-        if nrw:
+        if self.nrw:
             u_r = np.real(unp.nominal_values(self.mu))
             u_r = np.median(u_r[1::])
             u_i = np.imag(unp.nominal_values(self.mu))
@@ -311,6 +267,33 @@ class AirlineData:
             u_r = 1
             u_i = 0
             
+        res_freq = ((2**(1/2))*C*100)/((2*L/n)*((((u_r*e_r - e_i*u_i)**2 + \
+                                     (u_i*e_r + e_i*u_r)**2)**(1/2)) + e_r*u_r - e_i*u_i)**(1/2))
+        return res_freq
+    
+    def _freq_avg(self):
+        """
+        Calculate an average dielectric constant and loss tangent from midpoint \
+        values between resonant frequencies. 
+        
+        """
+        self.resonant_freq = f_r
+        if f_r:
+            mid_pts = np.zeros(len(f_r)-1, dtype=float)
+            for i in range(0, len(f_r)):
+                if i != len(f_r):
+                    # Find the midpoint frequencies between resonances
+                    x = (f_r[i+1] - f_r[i])/2
+                    mid_pts[i] = f_r[i] + x
+                    # Find the closest corresponding frequency index in f_0
+                    tmp = np.abs(self.freq - mid_pts[i]);
+                    [idx idx] = min(tmp); % index of closest value
+                    f_0_mids(i) = f_0(idx);
+                    dielec_mids(i) = dielec(idx);
+                    loss_tan_mids(i) = losstan(idx);
+                    delta_dielec_mids(i) = delta_dielec(idx);
+                    delta_loss_tan_mids(i) = delta_losstan(idx);
+    
             
     def _unpack(self,dataArray):
         """See if uncertainty in data and unpack to S-parameter arrays"""
@@ -490,7 +473,7 @@ class AirlineData:
         # Calculated effective electromagnetic parameters
         if self.nrw:
             # Calculate mu_r (relative permeability)
-            mu_r = (1+gam)/((a*(1-gam))*(np.sqrt((1/lam_0**2)-(1/LAM_Ca**2))))
+            mu_r = (1+gam)/((a*(1-gam))*(np.sqrt((1/lam_0**2)-(1/LAM_C**2))))
             mu_eff = mu_r
             # Calculate e_r (relative permittivity)
             ep_r = (mu_r*(((1-gam)**2)/((1+gam)**2))*(1-(lam_0**2/LAM_C**2))) \

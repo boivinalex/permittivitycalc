@@ -180,6 +180,7 @@ class AirlineData:
         self.particle_diameter = particle_diameter
         self.particle_density = particle_density
         self.airline_dimensions = self._dims()
+        self.res_freq = self._resonant_freq()
         # If appropriate data provided, correct for boundary effects
         if (solid_dielec and particle_diameter and particle_density and \
             bulk_density):
@@ -277,7 +278,7 @@ class AirlineData:
         values between resonant frequencies. 
         
         """
-        self.resonant_freq = f_r
+        f_r = self.resonant_freq
         if f_r:
             if self.corr:
                 dielec = unp.nominal_values(self.corr_avg_dielec)

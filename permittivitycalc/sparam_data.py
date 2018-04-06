@@ -248,7 +248,7 @@ class AirlineData:
 
         """
         
-        n = np.range(1,15,1)
+        n = np.arange(1,15,1)
         if self.corr:
             measured_dielec = unp.nominal_values(self.corr_avg_dielec)
             measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)

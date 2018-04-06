@@ -280,7 +280,8 @@ class AirlineData:
         
         """
         f_r = self.res_freq
-        if self.res_freq:
+        test = True
+        if test:
             if self.corr:
                 dielec = unp.nominal_values(self.corr_avg_dielec)
                 lossfac = unp.nominal_values(self.corr_avg_lossfac)

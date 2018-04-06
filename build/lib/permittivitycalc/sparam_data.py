@@ -181,6 +181,7 @@ class AirlineData:
         self.particle_density = particle_density
         self.airline_dimensions = self._dims()
         self.res_freq = self._resonant_freq()
+        self.freq_avg_dielec = self._freq_avg()
         # If appropriate data provided, correct for boundary effects
         if (solid_dielec and particle_diameter and particle_density and \
             bulk_density):
@@ -278,7 +279,7 @@ class AirlineData:
         values between resonant frequencies. 
         
         """
-        f_r = self.resonant_freq
+        f_r = self.res_freq
         if f_r:
             if self.corr:
                 dielec = unp.nominal_values(self.corr_avg_dielec)
@@ -303,7 +304,7 @@ class AirlineData:
                     idx = np.argmin(tmp) # index of closest value
                     f_0_mids[i] = self.freq[idx]
                     dielec_mids[i] = dielec[idx]
-                    loss_tan_mids[i] = losstan[idx]                  
+                    #loss_tan_mids[i] = losstan[idx]                  
             freq_avg_dielec = np.mean(dielec_mids[2:])
             return freq_avg_dielec
         else:

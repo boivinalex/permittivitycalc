@@ -283,14 +283,16 @@ class AirlineData:
         test = True
         if test:
             if self.corr:
-                dielec = unp.nominal_values(self.corr_avg_dielec)
-                lossfac = unp.nominal_values(self.corr_avg_lossfac)
+                #dielec = unp.nominal_values(self.corr_avg_dielec)
+                dielec = self.corr_avg_dielec
+                lossfac = self.corr_avg_lossfac
             else:
-                dielec = unp.nominal_values(self.avg_dielec)
-                lossfac = unp.nominal_values(self.avg_lossfac)
+                dielec = self.avg_dielec
+                lossfac = self.avg_lossfac
             mid_pts  = np.zeros(len(f_r)-1, dtype=float)
             f_0_mids = np.zeros(len(f_r)-1, dtype=float)
-            dielec_mids = np.zeros(len(f_r)-1, dtype=float)
+#            dielec_mids = np.zeros(len(f_r)-1, dtype=float)
+            dielec_mids = []
             delta_dielec_mids = np.zeros(len(f_r)-1, dtype=float)
             loss_tan_mids = np.zeros(len(f_r)-1, dtype=float)
             delta_loss_tan_mids = np.zeros(len(f_r)-1, dtype=float)
@@ -304,7 +306,8 @@ class AirlineData:
                     tmp = np.abs(self.freq - mid_pts[i])
                     idx = np.argmin(tmp) # index of closest value
                     f_0_mids[i] = self.freq[idx]
-                    dielec_mids[i] = dielec[idx]
+#                    dielec_mids[i] = dielec[idx]
+                    dielec_mids.append(dielec[idx])
                     #loss_tan_mids[i] = losstan[idx]                  
             freq_avg_dielec = np.mean(dielec_mids[2:])
             return freq_avg_dielec

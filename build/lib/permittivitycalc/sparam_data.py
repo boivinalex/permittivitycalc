@@ -296,7 +296,7 @@ class AirlineData:
             delta_loss_tan_mids = np.zeros(len(f_r)-1, dtype=float)
             f_r = f_r[f_r < np.max(self.freq)]
             for i in range(0, len(f_r)):
-                if i != len(f_r):
+                if i != (len(f_r)-1):
                     # Find the midpoint frequencies between resonances
                     x = (f_r[i+1] - f_r[i])/2
                     mid_pts[i] = f_r[i] + x

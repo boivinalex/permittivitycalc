@@ -310,7 +310,7 @@ class AirlineData:
                     dielec_mids.append(dielec[idx])
                     #loss_tan_mids[i] = losstan[idx]                  
             freq_avg_dielec = np.mean(dielec_mids[2:])
-            return freq_avg_dielec
+            return dielec_mids
         else:
             raise Exception('Must have calculated resonant frequencies first')
         

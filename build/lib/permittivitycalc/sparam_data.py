@@ -168,6 +168,10 @@ class AirlineData:
                             self._permittivity_calc('a',True)
             except:
                 pass
+        self.res_freq = self._resonant_freq()
+        self.freq_avg_dielec, self.freq_avg_losstan, self.freq_avg_dielec_std, \
+            self.freq_avg_losstan_std = self._freq_avg()
+            
         # Optional attributes
         self.name = name
         self.bulk_density = bulk_density
@@ -180,8 +184,6 @@ class AirlineData:
         self.particle_diameter = particle_diameter
         self.particle_density = particle_density
         self.airline_dimensions = self._dims()
-        self.res_freq = self._resonant_freq()
-        self.freq_avg_dielec = self._freq_avg()
         # If appropriate data provided, correct for boundary effects
         if (solid_dielec and particle_diameter and particle_density and \
             bulk_density):
@@ -275,44 +277,55 @@ class AirlineData:
     
     def _freq_avg(self):
         """
-        Calculate an average dielectric constant and loss tangent from midpoint \
-        values between resonant frequencies. 
+        Calculate an average dielectric constant and loss tangent across all measured frequencies \ 
+        from midpoint frequency values between resonant frequencies as described in: \
+            Hickson et al., 2018
+        
+        Return
+        ------
+        freq_avg_dielec (uncertainties.core.AffineScalarFunc): Average dielectric \
+        constant calculated from midpoint frequency values between resonant \
+        frequencies. Skips first two values due to large uncertainty. 
+        
+        freq_avg_dielec_std (float): Standard deviation of freq_avg_dielec from above.
+        
+        freq_avg_losstan (uncertainties.core.AffineScalarFunc): Average loss \
+        tangent calculated from midpoint frequency values between resonant \
+        frequencies. Skips first two values due to large uncertainty. 
+        
+        freq_avg_losstan_std (float): Standard deviation of freq_avg_losstan from above.
         
         """
         f_r = self.res_freq
-        test = True
-        if test:
-            if self.corr:
-                #dielec = unp.nominal_values(self.corr_avg_dielec)
-                dielec = self.corr_avg_dielec
-                lossfac = self.corr_avg_lossfac
-            else:
-                dielec = self.avg_dielec
-                lossfac = self.avg_lossfac
-            mid_pts  = np.zeros(len(f_r)-1, dtype=float)
-            f_0_mids = np.zeros(len(f_r)-1, dtype=float)
-#            dielec_mids = np.zeros(len(f_r)-1, dtype=float)
-            dielec_mids = []
-            delta_dielec_mids = np.zeros(len(f_r)-1, dtype=float)
-            loss_tan_mids = np.zeros(len(f_r)-1, dtype=float)
-            delta_loss_tan_mids = np.zeros(len(f_r)-1, dtype=float)
-            f_r = f_r[f_r < np.max(self.freq)]
-            for i in range(0, len(f_r)):
-                if i != (len(f_r)-1):
-                    # Find the midpoint frequencies between resonances
-                    x = (f_r[i+1] - f_r[i])/2
-                    mid_pts[i] = f_r[i] + x
-                    # Find the closest corresponding frequency index in f_0
-                    tmp = np.abs(self.freq - mid_pts[i])
-                    idx = np.argmin(tmp) # index of closest value
-                    f_0_mids[i] = self.freq[idx]
-#                    dielec_mids[i] = dielec[idx]
-                    dielec_mids.append(dielec[idx])
-                    #loss_tan_mids[i] = losstan[idx]                  
-            freq_avg_dielec = np.mean(dielec_mids[2:])
-            return dielec_mids
+        if self.corr:
+            dielec = self.corr_avg_dielec
+            lossfac = self.corr_avg_lossfac
         else:
-            raise Exception('Must have calculated resonant frequencies first')
+            dielec = self.avg_dielec
+            lossfac = self.avg_lossfac
+        mid_pts  = np.zeros(len(f_r)-1, dtype=int)
+        f_0_mids = np.zeros(len(f_r)-1, dtype=int)
+        dielec_mids = []
+        loss_tan_mids = []
+        f_r = f_r[f_r < np.max(self.freq)]
+        for i in range(0, len(f_r)):
+            if i != (len(f_r)-1):
+                # Find the midpoint frequencies between resonances
+                x = (f_r[i+1] - f_r[i])/2
+                mid_pts[i] = f_r[i] + x
+                # Find the closest corresponding frequency index in f_0
+                tmp = np.abs(self.freq - mid_pts[i])
+                idx = np.argmin(tmp) # index of closest value
+                f_0_mids[i] = self.freq[idx]
+                dielec_mids.append(dielec[idx])
+                loss_tan_mids.append(lossfac[idx]/dielec[idx])        
+        # Calculate averages past first two values 
+        freq_avg_dielec  = np.mean(dielec_mids[2:])
+        std_dielec = np.std(unp.nominal_values(dielec_mids[2:]))
+        freq_avg_losstan = np.mean(loss_tan_mids[2:])
+        std_losstan = np.std(unp.nominal_values(loss_tan_mids[2:]))
+        
+        return freq_avg_dielec, freq_avg_losstan, std_dielec, std_losstan
         
     
             

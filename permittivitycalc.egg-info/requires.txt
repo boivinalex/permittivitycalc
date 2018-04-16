@@ -1,6 +1,0 @@
-numpy
-uncertainties
-matplotlib
-seaborn
-cycler
-scipy

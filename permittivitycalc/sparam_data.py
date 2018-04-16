@@ -58,6 +58,8 @@ class AirlineData:
         corrected S-parameters. Examples: corr_s11, corr_avg_losstan. Only \
         created if corr = True.
         
+    res_freq (array): Resonant frequencies in the sample.
+        
     name (str): (Optional) Name of measurement to be used in plots.
     
     bulk_density (float): (Optional) Bulk density of material. Nessesary for \
@@ -168,6 +170,10 @@ class AirlineData:
                             self._permittivity_calc('a',True)
             except:
                 pass
+        self.res_freq = self._resonant_freq()
+        self.freq_avg_dielec, self.freq_avg_losstan, self.freq_avg_dielec_std, \
+            self.freq_avg_losstan_std = self._freq_avg()
+            
         # Optional attributes
         self.name = name
         self.bulk_density = bulk_density
@@ -204,31 +210,6 @@ class AirlineData:
             self.norm_losstan = self.norm_lossfac/self.norm_dielec
         elif normalize_density:
             raise Exception('Need bulk desnity to normalize to constant density')
-        # Calculate resonant frequencies from complex permittivity and permeability
-        # Follows D. Stillman Thesis (*need to confirm this*)
-        n = np.arange(1,15,1)
-        if self.corr:
-            measured_dielec = unp.nominal_values(self.corr_avg_dielec)
-            measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
-            L = self.Lcorr
-        else:
-            measured_dielec = unp.nominal_values(self.avg_dielec)
-            measured_lossfac = unp.nominal_values(self.avg_lossfac)
-            L = self.L
-        e_r = np.median(measured_dielec[1::]) # Exclude first data point
-        e_i = np.median(measured_lossfac[1::])
-        if nrw:
-            u_r = np.real(unp.nominal_values(self.mu))
-            u_r = np.median(u_r[1::])
-            u_i = np.imag(unp.nominal_values(self.mu))
-            u_i = np.median(u_i[1::])
-        else:
-            u_r = 1
-            u_i = 0
-        self.res_freq = ((2**(1/2))*C*100)/((2*L/n)*((((u_r*e_r - e_i*u_i)**2 + \
-                                           (u_i*e_r + e_i*u_r)**2)**(1/2)) + e_r*u_r - e_i*u_i)**(1/2))
-        
-        
             
     def __repr__(self):
         rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \
@@ -262,7 +243,96 @@ class AirlineData:
                 srep += 'Landau-Lifshitz-Looyenga equation'
             srep += ' is available.'
         return srep
+    
+    def _resonant_freq(self):
+        """
+        Calculate and return array of resonant frequencies from complex permittivity \ 
+        and/or permeability measurement.
+    
+        Follows David Stillman PhD Thesis / NIST Technical Note 1355 ??
+
+        """
         
+        n = np.arange(1,40) # Max number of resonances (overkill)
+        if self.corr:
+            measured_dielec = unp.nominal_values(self.corr_avg_dielec)
+            measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
+            L = self.Lcorr
+        else:
+            measured_dielec = unp.nominal_values(self.avg_dielec)
+            measured_lossfac = unp.nominal_values(self.avg_lossfac)
+            L = self.L
+        e_r = np.median(measured_dielec[1::]) # Exclude first data point
+        e_i = np.median(measured_lossfac[1::])
+        if self.nrw:
+            u_r = np.real(unp.nominal_values(self.mu))
+            u_r = np.median(u_r[1::])
+            u_i = np.imag(unp.nominal_values(self.mu))
+            u_i = np.median(u_i[1::])
+        else:
+            u_r = 1
+            u_i = 0
+        
+        res_freq = ((2**(1/2))*C*100)/((2*L/n)*((((u_r*e_r - e_i*u_i)**2 + \
+                    (u_i*e_r + e_i*u_r)**2)**(1/2)) + e_r*u_r - e_i*u_i)**(1/2))
+        # Restrict res_freq to max freq
+        res_freq = res_freq[res_freq<=np.max(self.freq)]
+        return res_freq
+    
+    def _freq_avg(self):
+        """
+        Calculate an average dielectric constant and loss tangent across all measured frequencies \ 
+        from midpoint frequency values between resonant frequencies as described in: \
+            Hickson et al., 2018
+        
+        Return
+        ------
+        freq_avg_dielec (uncertainties.core.AffineScalarFunc): Average dielectric \
+        constant calculated from midpoint frequency values between resonant \
+        frequencies. Skips first two values due to large uncertainty. 
+        
+        freq_avg_dielec_std (float): Standard deviation of freq_avg_dielec from above.
+        
+        freq_avg_losstan (uncertainties.core.AffineScalarFunc): Average loss \
+        tangent calculated from midpoint frequency values between resonant \
+        frequencies. Skips first two values due to large uncertainty. 
+        
+        freq_avg_losstan_std (float): Standard deviation of freq_avg_losstan from above.
+        
+        """
+        f_r = self.res_freq
+        if self.corr:
+            dielec = self.corr_avg_dielec
+            lossfac = self.corr_avg_lossfac
+        else:
+            dielec = self.avg_dielec
+            lossfac = self.avg_lossfac
+        mid_pts  = np.zeros(len(f_r)-1, dtype=int)
+        f_0_mids = np.zeros(len(f_r)-1, dtype=int)
+        dielec_mids = []
+        loss_tan_mids = []
+        f_r = f_r[f_r < np.max(self.freq)]
+        for i in range(0, len(f_r)):
+            if i != (len(f_r)-1):
+                # Find the midpoint frequencies between resonances
+                x = (f_r[i+1] - f_r[i])/2
+                mid_pts[i] = f_r[i] + x
+                # Find the closest corresponding frequency index in f_0
+                tmp = np.abs(self.freq - mid_pts[i])
+                idx = np.argmin(tmp) # index of closest value
+                f_0_mids[i] = self.freq[idx]
+                dielec_mids.append(dielec[idx])
+                loss_tan_mids.append(lossfac[idx]/dielec[idx])        
+        # Calculate averages past first two values 
+        freq_avg_dielec  = np.mean(dielec_mids[2:])
+        std_dielec = np.std(unp.nominal_values(dielec_mids[2:]))
+        freq_avg_losstan = np.mean(loss_tan_mids[2:])
+        std_losstan = np.std(unp.nominal_values(loss_tan_mids[2:]))
+        
+        return freq_avg_dielec, freq_avg_losstan, std_dielec, std_losstan
+        
+    
+            
     def _unpack(self,dataArray):
         """See if uncertainty in data and unpack to S-parameter arrays"""
         shorted_flag = False

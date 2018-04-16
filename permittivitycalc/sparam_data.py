@@ -58,6 +58,8 @@ class AirlineData:
         corrected S-parameters. Examples: corr_s11, corr_avg_losstan. Only \
         created if corr = True.
         
+    res_freq (array): Resonant frequencies in the sample.
+        
     name (str): (Optional) Name of measurement to be used in plots.
     
     bulk_density (float): (Optional) Bulk density of material. Nessesary for \

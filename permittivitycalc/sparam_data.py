@@ -251,7 +251,7 @@ class AirlineData:
 
         """
         
-        n = np.arange(1,15,1)
+        n = np.arange(1,40) # Max number of resonances (overkill)
         if self.corr:
             measured_dielec = unp.nominal_values(self.corr_avg_dielec)
             measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
@@ -270,9 +270,11 @@ class AirlineData:
         else:
             u_r = 1
             u_i = 0
-            
+        
         res_freq = ((2**(1/2))*C*100)/((2*L/n)*((((u_r*e_r - e_i*u_i)**2 + \
-                                     (u_i*e_r + e_i*u_r)**2)**(1/2)) + e_r*u_r - e_i*u_i)**(1/2))
+                    (u_i*e_r + e_i*u_r)**2)**(1/2)) + e_r*u_r - e_i*u_i)**(1/2))
+        # Restrict res_freq to max freq
+        res_freq = res_freq[res_freq<=np.max(self.freq)]
         return res_freq
     
     def _freq_avg(self):

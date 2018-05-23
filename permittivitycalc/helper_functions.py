@@ -31,8 +31,9 @@ def _get_file(airline,file_path):
     if file_path and airline:
         if airline not in ('VAL','PAL','GAL','7','washer'):
             raise Exception('Wrong airline name. You used %s' % (airline))
+        elif airline == 'custom':
+            L_in = input('Enter the length of the airline (cm): ')
         else:
-            airline = airline
             file = file_path
     elif file_path and not airline:
         # Prompt for airline
@@ -44,8 +45,12 @@ def _get_file(airline,file_path):
             L_in = input('Enter the length of the airline (cm): ')
         file = file_path
     elif airline and not file_path:
+        # Check airline
+        if airline not in ('VAL','PAL','GAL','7','custom'):
+            raise Exception('Wrong input')
+        elif airline == 'custom':
+            L_in = input('Enter the length of the airline (cm): ')
         # Prompt for file
-        airline = airline
         file = _prompt()
     else:   # Prompt for both
         # Airline

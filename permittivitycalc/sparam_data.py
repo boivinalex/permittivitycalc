@@ -1064,12 +1064,12 @@ def multiple_meas(file_path=None,airline_name=None):
     
     return class_list 
 
-def run_default(airline_name='VAL',**kwargs):
+def run_default(airline_name='VAL',file_path=None,**kwargs):
     """
     Run AirlineData on get_METAS_data with all the prompts and return the \
         instance.
     """
-    return AirlineData(*get_METAS_data(airline=airline_name),**kwargs)
+    return AirlineData(*get_METAS_data(airline_name,file_path),**kwargs)
 
 def run_example():
     rexolite_path = os.path.join(DATAPATH, 'rexolite_PAL.txt')

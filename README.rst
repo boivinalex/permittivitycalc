@@ -1,5 +1,8 @@
-permittivitycalc |PyPiBadge| |DOIBadge|
+permittivitycalc |TravisCI| |PyPiBadge| |DOIBadge|
 ============================
+.. |TravisCI| image:: https://travis-ci.org/boivinalex/permittivitycalc.svg?branch=test_dev
+    :target: https://travis-ci.org/boivinalex/permittivitycalc
+
 .. |PyPiBadge| image:: https://badge.fury.io/py/permittivitycalc.svg
     :target: https://badge.fury.io/py/permittivitycalc
 

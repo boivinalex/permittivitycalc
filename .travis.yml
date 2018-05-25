@@ -1,6 +1,9 @@
 language: python
 python:
   - "3.6"
+os:
+  - linux
+  - osx
 install:
   - python setup.py install
 script:

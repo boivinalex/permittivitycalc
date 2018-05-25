@@ -15,6 +15,7 @@ install:
   - "conda create -q -n test-environment python=%PYTHON_VERSION%"
   - activate test-environment
   - conda install --yes --file requirements.txt
+  - conda install --yes pytest
   - conda list
   - python setup.py install
 

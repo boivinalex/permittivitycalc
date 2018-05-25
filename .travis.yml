@@ -20,14 +20,13 @@ install:
   - conda config --set always_yes yes --set changeps1 no --set auto_update_conda false
   # Use the latest conda
   - conda update conda --no-pin -q
-  - if test x"$CONDA_CANARY" = xtrue ; then conda update -n root -c conda-canary conda; fi
   - if test x"$MINICONDA_VERSION" = x"4.1.11" ; then CONDA_BUILD_CONSTRAINT='=2.1.5'; else CONDA_BUILD_CONSTRAINT='' ; fi
   - conda install -n root conda-build$CONDA_BUILD_CONSTRAINT psutil
   - conda info -a
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       OS_PACKAGES=libffi ;
     fi ;
-    conda create -q -n test-environment python="$TRAVIS_PYTHON_VERSION" anaconda $OS_PACKAGES
+    conda create -q -n test-environment python="3.6" anaconda $OS_PACKAGES
   - source activate test-environment
   - printenv | sort
   - unset CONDA_ENV_PATH # because the older conda in miniconda sets this, confusing some tests

@@ -11,7 +11,7 @@ matrix:
 
 env:
   global:
-  - COVERAGE=false  # Coverage support with codecov
+  - COVERAGE=true  # Coverage support with codecov
   - FLAKE8=false  # Flake8 style checker
 
 

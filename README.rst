@@ -4,7 +4,7 @@ permittivitycalc
 +-------------------------+---------------+-----------------+---------------+
 | Continuous Integration  | Code Coverage | PyPi Package    | Citation      |
 +=========================+===============+=================+===============+
-| |TravisCI| |Appveyor|  | |Codecov|     | |PyPiBadge|     | |DOIBadge|    |
+| |TravisCI| |Appveyor|   | |Codecov|     | |PyPiBadge|     | |DOIBadge|    |
 +-------------------------+---------------+-----------------+---------------+
 
 .. |TravisCI| image:: https://travis-ci.org/boivinalex/permittivitycalc.svg?branch=test_dev

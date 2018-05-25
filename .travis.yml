@@ -1,56 +1,46 @@
 language: python
-
 matrix:
   include:
-    - os: linux
-      sudo: required
-      python: 3.6
-    - os: osx
-      language: generic
-      env: TRAVIS_PYTHON_VERSION=3.6
-
+  - os: linux
+    sudo: required
+    python: 3.6
+  - os: osx
+    language: generic
+    env: TRAVIS_PYTHON_VERSION=3.6
 env:
   global:
-  - COVERAGE=true  # Coverage support with codecov
-  - FLAKE8=false  # Flake8 style checker
-
-
+  - COVERAGE=true
+  - FLAKE8=false
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh ;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
-    fi ;
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH=$HOME/miniconda/bin:$PATH
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda config --set anaconda_upload no
-  - conda update -q conda
-  - conda config --add channels conda-forge
-  - conda info -a
-  - conda create -q -n test-env python=$TRAVIS_PYTHON_VERSION
-
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+  -O miniconda.sh ; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+  -O miniconda.sh ; fi ;
+- bash miniconda.sh -b -p $HOME/miniconda
+- export PATH=$HOME/miniconda/bin:$PATH
+- hash -r
+- conda config --set always_yes yes --set changeps1 no
+- conda config --set anaconda_upload no
+- conda update -q conda
+- conda config --add channels conda-forge
+- conda info -a
+- conda create -q -n test-env python=$TRAVIS_PYTHON_VERSION
 install:
-  # Activate conda environment tes-env
-  - export PATH=$HOME/miniconda/bin:$PATH
-  - source activate test-env
-  # Install from file
-  - pip install -r requirements.txt
-  - conda list
-  # Install
-  - python setup.py install
-
+- export PATH=$HOME/miniconda/bin:$PATH
+- source activate test-env
+- pip install -r requirements.txt
+- conda list
+- python setup.py install
 script:
-  # Run tests with the --cov flag to check coverage
-  - if  [[ "$COVERAGE" == "true" ]]; then
-    conda install --yes pytest-cov codecov;
-    py.test --cov=./;
-    fi
-
+- if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
+  --cov=./; fi
 after_success:
-  # Tries to upload coverage to codecov, but does not fail build if upload fails
-  - if [[ "$COVERAGE" == "true" ]]; then
-    codecov || echo "codecov upload failed";
-    fi
-  - echo "Build success"
+- if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
+- echo "Build success"
+deploy:
+  provider: pypi
+  user: boivinalex
+  password:
+    secure: SY//dya737T6xKYA2bUXNb62B3lrUFBdGlsUXdRtDUolTzIFibpXyUevZxcQ1mDCgsGR5oRI6ABUXsE8tqwuBjBGd3DU+Tzt0fnAhb6RUTM8HPyVRRPYAnriZE/yVCroBI4XRmZ3+VgKsFrZAAKkw12eMK/BIrtpNXjC3V7LdcgKB2pisveEwsTlDZchTW3iQTlZ6Wo+iTwM21mEDeriuJFZff+i0yOYksk1ylDO/1+nOHRqKYtNZVWWXfZngWLNqCWgt1o0T+sHmyf2hz2QrvpzUA6vgl/ZhyqjBG4Kh+4IBCSVgEeU+8YZrwmFHf/enZvgNIeBAfGsnwPkoXeBi7THOzqsisx5KmkWmjSysLZi4TuvChpbLUHIhwq/U8PrbyjfuktuEtqmtiu6cA0GNQysS/gbM8QW2GnfobPJSxnIqizyjIn1KYTHDGCgy1WZe+xVD/XEkC//ESliAWc5Cp2FvUAnLY0s51WFSbBpSZOw4aEeOr6pSdg+zoVXdZeyeXdvI6EASrT0UEzj2bW/mAakrlrPSpRI2JjNSbw9PoXQ0qhWmFEgkoTGnaFz/YER5OYy1tdZLzMqm3HURe2RghYtKy0zDndJ/rr0fMRjGyT+hlYQ01noWUX6AAxRX5aB5t4Z8kjZ72dTXiX0Wo96UXDLcelyTl5vp3C9mi5rWZQ=
+  on:
+    tags: true
+    branch: test_dev

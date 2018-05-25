@@ -307,8 +307,8 @@ class AirlineData:
         else:
             dielec = self.avg_dielec
             lossfac = self.avg_lossfac
-        mid_pts  = np.zeros(len(f_r)-1, dtype=int)
-        f_0_mids = np.zeros(len(f_r)-1, dtype=int)
+        mid_pts  = np.zeros(len(f_r)-1)#, dtype=int)
+        f_0_mids = np.zeros(len(f_r)-1)#, dtype=int)
         dielec_mids = []
         loss_tan_mids = []
         f_r = f_r[f_r < np.max(self.freq)]

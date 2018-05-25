@@ -7,7 +7,7 @@ os:
   - linux
   - osx
 install:
-- printenv | sort
+  - printenv | sort
   - MINICONDA_PYVERSION=3 ;
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       MINICONDA_OS=Linux ;

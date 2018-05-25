@@ -1,37 +1,58 @@
 language: python
+
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      python: 3.6
+    - os: osx
+      language: generic
+      env: TRAVIS_PYTHON_VERSION=3.6
+
 env:
-  - MINICONDA_VERSION=latest TRAVIS_PYTHON_VERSION=3.6
-os:
-  - linux
-  - osx
-install:
-  - printenv | sort
-  - MINICONDA_PYVERSION=3 ;
+  global:
+  - COVERAGE=false  # Coverage support with codecov
+  - FLAKE8=false  # Flake8 style checker
+
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
+    fi
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      MINICONDA_OS=Linux ;
-    else
-      MINICONDA_OS=MacOSX ;
-    fi ;
-    echo "Fetching Python $MINICONDA_PYVERSION miniconda for $MINICONDA_OS" ;
-    wget https://repo.continuum.io/miniconda/Miniconda$MINICONDA_PYVERSION-$MINICONDA_VERSION-$MINICONDA_OS-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p "$HOME"/miniconda
-  - source "$HOME"/miniconda/bin/activate root
-  - printenv | sort
-  - conda config --set always_yes yes --set changeps1 no --set auto_update_conda false
-  # Use the latest conda
-  - conda update conda --no-pin -q
-  - if test x"$MINICONDA_VERSION" = x"4.1.11" ; then CONDA_BUILD_CONSTRAINT='=2.1.5'; else CONDA_BUILD_CONSTRAINT='' ; fi
-  - conda install -n root conda-build$CONDA_BUILD_CONSTRAINT psutil
-  - conda info -a
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      OS_PACKAGES=libffi ;
-    fi ;
-    conda create -q -n test-environment python="3.6" anaconda $OS_PACKAGES
-  - source activate test-environment
-  - printenv | sort
-  - unset CONDA_ENV_PATH # because the older conda in miniconda sets this, confusing some tests
-  - export PATH=`echo "$PATH" | sed -e s@"$HOME"/miniconda/bin:@@g`
-  - printenv | sort
+    wget wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    fi
+
+   - bash miniconda.sh -b -p $HOME/miniconda
+   - export PATH=$HOME/miniconda/bin:$PATH
+   - hash -r
+   - conda config --set always_yes yes --set changeps1 no
+   - conda config --set anaconda_upload no
+   - conda update -q conda
+   - conda config --add channels conda-forge
+   - conda info -a
+   - conda create -q -n test-env python=$TRAVIS_PYTHON_VERSION
+
+install:
+  # Activate conda environment tes-env
+  - export PATH=$HOME/miniconda/bin:$PATH
+  - source activate test-env
+  # Install from file
+  - pip install -r requirements.txt
+  - conda list
+  # Install
   - python setup.py install
+
 script:
-  - py.test
+  # Run tests with the --cov flag to check coverage
+  - if  [[ "$COVERAGE" == "true" ]]; then
+    conda install --yes pytest-cov codecov;
+    py.test --cov=./;
+    fi
+
+after_success:
+  # Tries to upload coverage to codecov, but does not fail build if upload fails
+  - if [[ "$COVERAGE" == "true" ]]; then
+    codecov || echo "codecov upload failed";
+    fi
+  - echo "Build success"

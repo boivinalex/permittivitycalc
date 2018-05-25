@@ -1,11 +1,9 @@
 language: python
-matrix:
-  include:
-    - os: linux
-      python: "3.6"
-    - os: osx
-      language: generic
-      env: TRAVIS_PYTHON_VERSION=3.6
+python:
+  - 3.6
+os:
+  - linux
+  - osx
 install:
   - python setup.py install
 script:

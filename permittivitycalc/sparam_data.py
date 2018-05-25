@@ -265,9 +265,9 @@ class AirlineData:
         e_r = np.median(measured_dielec[1::]) # Exclude first data point
         e_i = np.median(measured_lossfac[1::])
         if self.nrw:
-            u_r = np.real(unp.nominal_values(self.mu))
+            u_r = np.real(self.mu)
             u_r = np.median(u_r[1::])
-            u_i = np.imag(unp.nominal_values(self.mu))
+            u_i = np.imag(self.mu)
             u_i = np.median(u_i[1::])
         else:
             u_r = 1

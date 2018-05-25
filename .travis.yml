@@ -1,6 +1,4 @@
 language: python
-python:
-  - "3.6"
 env:
   - MINICONDA_VERSION=latest TRAVIS_PYTHON_VERSION=3.6
 os:

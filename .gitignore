@@ -5,3 +5,7 @@ figures/
 build/
 dist/
 permittivitycalc.egg-info/
+.coverage
+.pytest_cache/
+coverage.xml
+miniconda.sh

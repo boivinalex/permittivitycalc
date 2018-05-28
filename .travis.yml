@@ -28,25 +28,25 @@ install:
 jobs:
   include:
   - stage: test
-      os: linux
-      sudo: required
-      python: 3.6
-      script:
-      - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
-      - --cov=./; fi
-      after_success:
-      - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
-      - echo "Build success"
+    os: linux
+    sudo: required
+    python: 3.6
+    script:
+    - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
+    - --cov=./; fi
+    after_success:
+    - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
+    - echo "Build success"
   - stage: test
-      os: osx
-      language: generic
-      env: TRAVIS_PYTHON_VERSION=3.6
-      script:
-      - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
-      - --cov=./; fi
-      after_success:
-      - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
-      - echo "Build success"
+    os: osx
+    language: generic
+    env: TRAVIS_PYTHON_VERSION=3.6
+    script:
+    - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
+    - --cov=./; fi
+    after_success:
+    - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
+    - echo "Build success"
   - stage: deploy
     script: skip
     deploy:

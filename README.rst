@@ -7,13 +7,13 @@ permittivitycalc
 |  |TravisCI| |Appveyor|  |   |Codecov|   |   |PyPiBadge|   |   |DOIBadge|  |
 +-------------------------+---------------+-----------------+---------------+
 
-.. |TravisCI| image:: https://travis-ci.org/boivinalex/permittivitycalc.svg?branch=test_dev
+.. |TravisCI| image:: https://travis-ci.org/boivinalex/permittivitycalc.svg?branch=master
     :target: https://travis-ci.org/boivinalex/permittivitycalc
 
-.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/xh0t09l9hnnpn0po?svg=true
+.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/xh0t09l9hnnpn0po/branch/master?svg=true
 	:target: https://ci.appveyor.com/project/boivinalex/permittivitycalc
 
-.. |Codecov| image:: https://codecov.io/gh/boivinalex/permittivitycalc/branch/test_dev/graph/badge.svg
+.. |Codecov| image:: https://codecov.io/gh/boivinalex/permittivitycalc/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/boivinalex/permittivitycalc
 
 .. |PyPiBadge| image:: https://badge.fury.io/py/permittivitycalc.svg

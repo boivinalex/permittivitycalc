@@ -61,7 +61,8 @@ jobs:
       on:
         tags: true
         all_branches: true
-  - stage: deploy
+  - stage: GitHub Release
+    python: 3.6
     script: skip
     deploy:
       provider: releases

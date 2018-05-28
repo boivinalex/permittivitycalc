@@ -36,11 +36,11 @@ install:
 jobs:
   include:
     - script:
-      if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
-      --cov=./; fi
-      after_success:
-        if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
-        echo "Build success"
+    - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
+    - --cov=./; fi
+    - after_success:
+    - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
+    - echo "Build success"
     - stage: deploy
       script: skip
       deploy:

@@ -265,9 +265,9 @@ class AirlineData:
         e_r = np.median(measured_dielec[1::]) # Exclude first data point
         e_i = np.median(measured_lossfac[1::])
         if self.nrw:
-            u_r = np.real(unp.nominal_values(self.mu))
+            u_r = np.real(self.mu)
             u_r = np.median(u_r[1::])
-            u_i = np.imag(unp.nominal_values(self.mu))
+            u_i = np.imag(self.mu)
             u_i = np.median(u_i[1::])
         else:
             u_r = 1
@@ -307,8 +307,8 @@ class AirlineData:
         else:
             dielec = self.avg_dielec
             lossfac = self.avg_lossfac
-        mid_pts  = np.zeros(len(f_r)-1, dtype=int)
-        f_0_mids = np.zeros(len(f_r)-1, dtype=int)
+        mid_pts  = np.zeros(len(f_r)-1)#, dtype=int)
+        f_0_mids = np.zeros(len(f_r)-1)#, dtype=int)
         dielec_mids = []
         loss_tan_mids = []
         f_r = f_r[f_r < np.max(self.freq)]
@@ -1064,12 +1064,12 @@ def multiple_meas(file_path=None,airline_name=None):
     
     return class_list 
 
-def run_default(airline_name='VAL',**kwargs):
+def run_default(airline_name='VAL',file_path=None,**kwargs):
     """
     Run AirlineData on get_METAS_data with all the prompts and return the \
         instance.
     """
-    return AirlineData(*get_METAS_data(airline=airline_name),**kwargs)
+    return AirlineData(*get_METAS_data(airline_name,file_path),**kwargs)
 
 def run_example():
     rexolite_path = os.path.join(DATAPATH, 'rexolite_PAL.txt')

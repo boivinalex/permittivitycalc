@@ -30,6 +30,9 @@ install:
 - pip install -r requirements.txt
 - conda list
 - python setup.py install
+- rm -r build
+- rm -r dist
+- rm -r permittivitycalc.egg-info
 script:
 - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
   --cov=./; fi

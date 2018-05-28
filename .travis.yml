@@ -33,7 +33,7 @@ jobs:
     python: 3.6
     script:
     - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
-    - --cov=./; fi
+      --cov=./; fi
     after_success:
     - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
     - echo "Build success"
@@ -43,7 +43,7 @@ jobs:
     env: TRAVIS_PYTHON_VERSION=3.6
     script:
     - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
-    - --cov=./; fi
+      --cov=./; fi
     after_success:
     - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
     - echo "Build success"

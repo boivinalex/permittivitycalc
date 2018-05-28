@@ -57,5 +57,5 @@ jobs:
         secure: SY//dya737T6xKYA2bUXNb62B3lrUFBdGlsUXdRtDUolTzIFibpXyUevZxcQ1mDCgsGR5oRI6ABUXsE8tqwuBjBGd3DU+Tzt0fnAhb6RUTM8HPyVRRPYAnriZE/yVCroBI4XRmZ3+VgKsFrZAAKkw12eMK/BIrtpNXjC3V7LdcgKB2pisveEwsTlDZchTW3iQTlZ6Wo+iTwM21mEDeriuJFZff+i0yOYksk1ylDO/1+nOHRqKYtNZVWWXfZngWLNqCWgt1o0T+sHmyf2hz2QrvpzUA6vgl/ZhyqjBG4Kh+4IBCSVgEeU+8YZrwmFHf/enZvgNIeBAfGsnwPkoXeBi7THOzqsisx5KmkWmjSysLZi4TuvChpbLUHIhwq/U8PrbyjfuktuEtqmtiu6cA0GNQysS/gbM8QW2GnfobPJSxnIqizyjIn1KYTHDGCgy1WZe+xVD/XEkC//ESliAWc5Cp2FvUAnLY0s51WFSbBpSZOw4aEeOr6pSdg+zoVXdZeyeXdvI6EASrT0UEzj2bW/mAakrlrPSpRI2JjNSbw9PoXQ0qhWmFEgkoTGnaFz/YER5OYy1tdZLzMqm3HURe2RghYtKy0zDndJ/rr0fMRjGyT+hlYQ01noWUX6AAxRX5aB5t4Z8kjZ72dTXiX0Wo96UXDLcelyTl5vp3C9mi5rWZQ=
       distributions: "sdist bdist_wheel"
       on:
-        tags: false
-        branch: test_dev
+        tags: true
+        all_branches: true

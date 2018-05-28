@@ -48,9 +48,9 @@ jobs:
     - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
     - echo "Build success"
   - stage: deploy
+    python: 3.6
     script: skip
     deploy:
-      env: TRAVIS_PYTHON_VERSION=3.6
       provider: pypi
       user: boivinalex
       password:

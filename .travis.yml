@@ -1,12 +1,4 @@
 language: python
-matrix:
-  include:
-  - os: linux
-    sudo: required
-    python: 3.6
-  - os: osx
-    language: generic
-    env: TRAVIS_PYTHON_VERSION=3.6
 env:
   global:
   - COVERAGE=true
@@ -35,20 +27,34 @@ install:
 - rm -r permittivitycalc.egg-info
 jobs:
   include:
-    - script:
-    - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
-    - --cov=./; fi
-    - after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
-    - echo "Build success"
-    - stage: deploy
-      script: skip
-      deploy:
-        provider: pypi
-        user: boivinalex
-        password:
-          secure: SY//dya737T6xKYA2bUXNb62B3lrUFBdGlsUXdRtDUolTzIFibpXyUevZxcQ1mDCgsGR5oRI6ABUXsE8tqwuBjBGd3DU+Tzt0fnAhb6RUTM8HPyVRRPYAnriZE/yVCroBI4XRmZ3+VgKsFrZAAKkw12eMK/BIrtpNXjC3V7LdcgKB2pisveEwsTlDZchTW3iQTlZ6Wo+iTwM21mEDeriuJFZff+i0yOYksk1ylDO/1+nOHRqKYtNZVWWXfZngWLNqCWgt1o0T+sHmyf2hz2QrvpzUA6vgl/ZhyqjBG4Kh+4IBCSVgEeU+8YZrwmFHf/enZvgNIeBAfGsnwPkoXeBi7THOzqsisx5KmkWmjSysLZi4TuvChpbLUHIhwq/U8PrbyjfuktuEtqmtiu6cA0GNQysS/gbM8QW2GnfobPJSxnIqizyjIn1KYTHDGCgy1WZe+xVD/XEkC//ESliAWc5Cp2FvUAnLY0s51WFSbBpSZOw4aEeOr6pSdg+zoVXdZeyeXdvI6EASrT0UEzj2bW/mAakrlrPSpRI2JjNSbw9PoXQ0qhWmFEgkoTGnaFz/YER5OYy1tdZLzMqm3HURe2RghYtKy0zDndJ/rr0fMRjGyT+hlYQ01noWUX6AAxRX5aB5t4Z8kjZ72dTXiX0Wo96UXDLcelyTl5vp3C9mi5rWZQ=
-        distributions: "sdist bdist_wheel"
-        on:
-          tags: false
-          branch: test_dev
+  - stage: test
+      os: linux
+      sudo: required
+      python: 3.6
+      script:
+      - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
+      - --cov=./; fi
+      after_success:
+      - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
+      - echo "Build success"
+  - stage: test
+      os: osx
+      language: generic
+      env: TRAVIS_PYTHON_VERSION=3.6
+      script:
+      - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; py.test
+      - --cov=./; fi
+      after_success:
+      - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed"; fi
+      - echo "Build success"
+  - stage: deploy
+    script: skip
+    deploy:
+      provider: pypi
+      user: boivinalex
+      password:
+        secure: SY//dya737T6xKYA2bUXNb62B3lrUFBdGlsUXdRtDUolTzIFibpXyUevZxcQ1mDCgsGR5oRI6ABUXsE8tqwuBjBGd3DU+Tzt0fnAhb6RUTM8HPyVRRPYAnriZE/yVCroBI4XRmZ3+VgKsFrZAAKkw12eMK/BIrtpNXjC3V7LdcgKB2pisveEwsTlDZchTW3iQTlZ6Wo+iTwM21mEDeriuJFZff+i0yOYksk1ylDO/1+nOHRqKYtNZVWWXfZngWLNqCWgt1o0T+sHmyf2hz2QrvpzUA6vgl/ZhyqjBG4Kh+4IBCSVgEeU+8YZrwmFHf/enZvgNIeBAfGsnwPkoXeBi7THOzqsisx5KmkWmjSysLZi4TuvChpbLUHIhwq/U8PrbyjfuktuEtqmtiu6cA0GNQysS/gbM8QW2GnfobPJSxnIqizyjIn1KYTHDGCgy1WZe+xVD/XEkC//ESliAWc5Cp2FvUAnLY0s51WFSbBpSZOw4aEeOr6pSdg+zoVXdZeyeXdvI6EASrT0UEzj2bW/mAakrlrPSpRI2JjNSbw9PoXQ0qhWmFEgkoTGnaFz/YER5OYy1tdZLzMqm3HURe2RghYtKy0zDndJ/rr0fMRjGyT+hlYQ01noWUX6AAxRX5aB5t4Z8kjZ72dTXiX0Wo96UXDLcelyTl5vp3C9mi5rWZQ=
+      distributions: "sdist bdist_wheel"
+      on:
+        tags: false
+        branch: test_dev

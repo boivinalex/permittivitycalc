@@ -2,7 +2,7 @@ permittivitycalc
 ================
 
 +-------------------------+---------------+-----------------+---------------+
-| Continuous Integration  | Code Coverage | PyPi Package    | Citation      |
+| Continuous Integration  | Code Coverage | PyPI Package    | Citation      |
 +=========================+===============+=================+===============+
 |  |TravisCI| |Appveyor|  |   |Codecov|   |   |PyPiBadge|   |   |DOIBadge|  |
 +-------------------------+---------------+-----------------+---------------+

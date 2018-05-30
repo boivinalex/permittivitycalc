@@ -7,15 +7,19 @@ Created on Thu Jun 22 14:24:19 2017
 # File input
 import tkinter as tk
 from tkinter.filedialog import askdirectory
+# Array math
 import numpy as np
 from uncertainties import unumpy as unp
-import matplotlib
-matplotlib.use('Agg')
+# System
+import os
+import datetime
+# Plotting
+if os.name == 'nt': # Fix appveyor biuld by changing backend if using Windows
+    import matplotlib
+    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from cycler import cycler
-import os
-import datetime
 
 plt.style.use("ggplot")
 

@@ -8,6 +8,8 @@ Created on Wed May 23 16:03:51 2018
 
 import os
 import unittest
+from unittest.mock import patch
+from unittest.mock import Mock
 import permittivitycalc.helper_functions as hf
 
 
@@ -31,6 +33,22 @@ class helper_functions_TestCase(unittest.TestCase):
         self.assertIsNotNone(fake_file)
         assert os.path.isfile(real_file[1])
         assert not os.path.isfile(fake_file[1])
+        
+    def test_get_file_wrong_airline(self):
+        """Test wrong airline"""
+        kwargs = {"airline":'wrong',"file_path":self.file_path}
+        self.assertRaises(Exception,hf._get_file,**kwargs)
+    
+    @patch('builtins.input',return_value=5)    
+    def test_get_file_custom_airline(self,mock):
+        """Test custom airline"""
+        custom_line = hf._get_file('custom',self.file_path)
+        self.assertIsNotNone(custom_line)
+
+    @patch('builtins.input',return_value='VAL')
+    def test_get_file_no_airline(self,mock):
+        noline = hf._get_file(file_path=self.file_path)
+        self.assertIsNotNone(noline)
         
     def test_get_metas_data(self):
         """Test data import"""

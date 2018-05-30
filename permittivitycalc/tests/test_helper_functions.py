@@ -50,6 +50,15 @@ class helper_functions_TestCase(unittest.TestCase):
         noline = hf._get_file(file_path=self.file_path)
         self.assertIsNotNone(noline)
         
+    @patch('builtins.input',return_value='wrong')
+    def test_get_file_no_airline_wrong_input(self,mock):
+        self.assertRaises(Exception,hf._get_file,file_path=self.file_path)
+        
+    @patch('builtins.input',side_effect=['custom',5])    
+    def test_get_file_no_airline_custom(self,mock):
+        noline = hf._get_file(file_path=self.file_path)
+        self.assertIsNotNone(noline)
+        
     def test_get_metas_data(self):
         """Test data import"""
         try:

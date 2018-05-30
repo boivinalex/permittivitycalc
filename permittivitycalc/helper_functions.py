@@ -24,7 +24,7 @@ def _prompt():
     
     return file
     
-def _get_file(airline,file_path):
+def _get_file(airline=None,file_path=None):
     """Return the file path and airline name. Use prompts if needed."""
     L_in = None
     # Figure out the file path and the airline name

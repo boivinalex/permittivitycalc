@@ -102,9 +102,7 @@ def get_METAS_data(airline=None,file_path=None):
         L = 14.979
         #L = 14.9835    # 14mm airline - 15 cm 
     elif airline == 'GAL':
-        L = 14.991 
-    elif airline == 'washer':
-        L = 0.15
+        L = 14.991
     else:
         L = float(L_in)
         

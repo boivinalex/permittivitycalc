@@ -138,7 +138,7 @@ class sparam_data_TestCase(unittest.TestCase):
         plt.close('all')
             
     def test_draw_plots_normalized(self):
-        """Test draw_plots"""
+        """Test draw_plots with normalized data"""
         try:
             self.normdataset.draw_plots(normalized=True)
         except Exception as e:
@@ -146,11 +146,13 @@ class sparam_data_TestCase(unittest.TestCase):
         plt.close('all')
 
     def test_draw_plots_corr_notdefault(self):
+        """Test draw_plots fails when corr and not default_setting"""
         with self.assertRaises(Exception):
             self.dataset1.draw_plots(corr=True,default_setting=False)
 
     @patch('builtins.input',return_value='a')
     def test_draw_plots_notdefault_a(self,mock):
+        """Test draw_plots average plot"""
         try:
             self.dataset1.draw_plots(default_setting=False)
         except Exception as e:
@@ -159,6 +161,7 @@ class sparam_data_TestCase(unittest.TestCase):
 
     @patch('builtins.input',return_value='f')
     def test_draw_plots_notdefault_f(self,mock):
+        """Test draw_plots forward plot"""
         try:
             self.dataset1.draw_plots(default_setting=False)
         except Exception as e:
@@ -167,6 +170,7 @@ class sparam_data_TestCase(unittest.TestCase):
 
     @patch('builtins.input',return_value='r')
     def test_draw_plots_notdefault_r(self,mock):
+        """Test draw_plots backwards plot"""
         try:
             self.dataset1.draw_plots(default_setting=False)
         except Exception as e:
@@ -175,6 +179,7 @@ class sparam_data_TestCase(unittest.TestCase):
 
     @patch('builtins.input',return_value='b')
     def test_draw_plots_notdefault_b(self,mock):
+        """Test draw_plots both plots"""
         try:
             self.dataset1.draw_plots(default_setting=False)
         except Exception as e:
@@ -183,13 +188,35 @@ class sparam_data_TestCase(unittest.TestCase):
 
     @patch('builtins.input',return_value='wrong')
     def test_draw_plots_notdefault_wrong(self,mock):
+        """Test draw_plots fails for wrong plot type"""
         with self.assertRaises(Exception):
             self.dataset1.draw_plots(default_setting=False)
          
     def test_s_param_plots(self):
-        """Test draw_plots"""
+        """Test s_param_plots"""
         try:
             self.dataset1.s_param_plot()
+        except Exception as e:
+            raise
+        plt.close('all')
+
+    def test_multiple_meas(self):
+        """Test multiple_meas"""
+        try:
+            dataset_list = pc.multiple_meas(file_path=self.file_path,airline_name='VAL')
+            self.assertIsNotNone(dataset_list)
+            assert len(dataset_list) == 2
+        except Exception as e:
+            raise
+        plt.close('all')
+
+    def test_multiple_meas_nofile(self): #FIX THIS
+        """Test multiple_meas"""
+        try:
+            with patch('permittivitycalc.helper_functions._get_file',return_value=['VAL',self.file_path,None]):
+                dataset_list = pc.multiple_meas(airline_name='VAL')
+                self.assertIsNotNone(dataset_list)
+                assert len(dataset_list) == 2
         except Exception as e:
             raise
         plt.close('all')

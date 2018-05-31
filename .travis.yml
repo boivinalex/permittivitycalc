@@ -14,12 +14,12 @@ before_install:
 - conda config --set anaconda_upload no
 - conda update -q conda
 - conda config --add channels conda-forge
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then conda install python.app; fi
 - conda info -a
 - conda create -q -n test-env python=$TRAVIS_PYTHON_VERSION
 install:
 - export PATH=$HOME/miniconda/bin:$PATH
 - source activate test-env
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then conda install python.app; fi
 - pip install -r requirements.txt
 - conda list
 - python setup.py install

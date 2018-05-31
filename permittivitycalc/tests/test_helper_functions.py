@@ -24,6 +24,7 @@ class helper_functions_TestCase(unittest.TestCase):
         self.fake_path = os.path.join(self.data_path, 'fake.txt')
         self.dataset1 = pc.run_default(airline_name='VAL',file_path=self.file_path)
         self.dataset2 = pc.run_default(airline_name='VAL',file_path=self.file_path2)
+        self.normdataset = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path2),bulk_density=1.6,name='Serpentine',normalize_density=True)
         
     def test_get_file(self):
         """Test file import"""
@@ -72,24 +73,71 @@ class helper_functions_TestCase(unittest.TestCase):
         with patch('permittivitycalc.helper_functions._prompt',return_value=self.file_path):
             nofile = hf._get_file(airline='custom')
             self.assertIsNotNone(nofile)
+
+    @patch('builtins.input',return_value='VAL')
+    def test_get_file_nofile_noline(self,mock):
+        with patch('permittivitycalc.helper_functions._prompt',return_value=self.file_path):
+            file = hf._get_file()
+            self.assertIsNotNone(file)
+
+    @patch('builtins.input',side_effect=['custom',5])
+    def test_get_file_nofile_noline_custom(self,mock):
+        with patch('permittivitycalc.helper_functions._prompt',return_value=self.file_path):
+            file = hf._get_file()
+            self.assertIsNotNone(file)
+
+    @patch('builtins.input',return_value='wrong')
+    def test_get_file_nofile_noline_wrong(self,mock):
+        self.assertRaises(Exception,hf._get_file)
         
     def test_get_metas_data(self):
         """Test data import"""
-        try:
-            real_file = hf.get_METAS_data('VAL',self.file_path)
-            self.assertIsNotNone(real_file)
-            assert len(real_file) == 4
-        except Exception as e:
-            raise
+        real_file = hf.get_METAS_data('VAL',self.file_path)
+        self.assertIsNotNone(real_file)
+        assert len(real_file) == 4
         kwargs = {"airline":'VAL',"file_path":self.fake_path}
         self.assertRaises(FileNotFoundError,hf.get_METAS_data,**kwargs)
-        
+
+    @patch('builtins.input',return_value='7')
+    def test_get_metas_data_prompt_for_7line(self,mock):
+        file = hf.get_METAS_data(file_path=self.file_path)
+        self.assertIsNotNone(file)
+
+    @patch('builtins.input',return_value='GAL')
+    def test_get_metas_data_prompt_for_galline(self,mock):
+        file = hf.get_METAS_data(file_path=self.file_path)
+        self.assertIsNotNone(file)
+
+    @patch('builtins.input',side_effect=['custom',5])
+    def test_get_metas_data_prompt_for_customline(self,mock):
+        file = hf.get_METAS_data(file_path=self.file_path)
+        self.assertIsNotNone(file)
+
     def test_perm_compare(self):
         datasets = [self.dataset1,self.dataset2]
         try:
             hf.perm_compare(datasets)
         except Exception as e:
             raise
+
+    def test_perm_compare_allplots(self):
+        datasets = [self.dataset1,self.dataset2]
+        try:
+            hf.perm_compare(datasets,allplots=True)
+        except Exception as e:
+            raise
+
+    def test_perm_compare_norm(self):
+        datasets = [self.dataset1,self.normdataset]
+        try:
+            hf.perm_compare(datasets)
+        except Exception as e:
+            raise
+
+    def test_perm_compare_fail(self):
+        fake = 5
+        datasets = [self.dataset1,fake]
+        self.assertRaises(Exception,hf.perm_compare,datasets)
 
 if __name__ == '__main__':
     unittest.main()

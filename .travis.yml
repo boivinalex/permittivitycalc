@@ -19,11 +19,9 @@ before_install:
 install:
 - export PATH=$HOME/miniconda/bin:$PATH
 - source activate test-env
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then conda install python.app; fi
 - conda install --file requirements.txt
 - conda list
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pythonw setup.py install; 
-  else python setup.py install; fi
+- python setup.py install
 - rm -r build
 - rm -r dist
 - rm -r permittivitycalc.egg-info

@@ -15,7 +15,7 @@ import os
 import datetime
 import platform
 # Plotting
-if os.environ.get('DISPLAY','') == '' and platform.system() != 'Darwin':
+if os.environ.get('DISPLAY','') == '':
     print('no display found. Using non-interactive Agg backend')
     import matplotlib
     matplotlib.use('Agg')

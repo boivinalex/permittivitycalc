@@ -13,8 +13,9 @@ from uncertainties import unumpy as unp
 # System
 import os
 import datetime
+import platform
 # Plotting
-if os.environ.get('DISPLAY','') == '':
+if os.environ.get('DISPLAY','') == '' and platform.system() != 'Darwin':
     print('no display found. Using non-interactive Agg backend')
     import matplotlib
     matplotlib.use('Agg')

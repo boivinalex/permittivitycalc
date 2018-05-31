@@ -8,7 +8,13 @@ Created on Thu May 24 18:39:15 2018
 
 import os
 import unittest
+from unittest.mock import patch
 import permittivitycalc as pc
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
+    import matplotlib
+    matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 
 class sparam_data_TestCase(unittest.TestCase):
@@ -21,6 +27,13 @@ class sparam_data_TestCase(unittest.TestCase):
         self.fake_path = os.path.join(self.data_path, 'fake.txt')
         self.dataset1 = pc.run_default(airline_name='VAL',file_path=self.file_path)
 #        self.dataset2 = pc.run_default(airline_name='VAL',file_path=self.file_path2)
+        self.normdataset = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path),bulk_density=1.6,name='Serpentine',normalize_density=True)
+
+    def test_repr(self):
+        self.assertIsNotNone(self.dataset1.__repr__())
+
+    def test_str(self):
+        self.assertIsNotNone(self.dataset1.__str__())
 
     def test_file_import(self):
         """Test file import"""
@@ -52,13 +65,30 @@ class sparam_data_TestCase(unittest.TestCase):
         with self.assertRaises(Exception):
             pc.AirlineData(*pc.get_METAS_data(airline='VAL',\
                             file_path=self.file_path),normalize_density=True)
+
+
+    def test_shorted(self):
+        """Test fail to locate shorted sample"""
+        with self.assertRaises(Exception):
+            pc.AirlineData(*pc.get_METAS_data(airline='VAL',\
+                            file_path=self.file_path),shorted=True)
+
             
-    def test_boundary_corrent(self):
+    def test_boundary_correct(self):
         """Test boundary correction"""
         test = pc.AirlineData\
                 (*pc.get_METAS_data(airline='VAL',file_path=self.file_path)\
                  ,normalize_density=True,bulk_density=3.5,solid_dielec=9\
                  ,particle_diameter=0.01,particle_density=3)
+        self.assertIsNotNone(test.bcorr_dielec)
+        self.assertIsNotNone(test.bcorr_losstan)
+
+    def test_boundary_correct_with_losstan(self):
+        """Test boundary correction"""
+        test = pc.AirlineData\
+                (*pc.get_METAS_data(airline='VAL',file_path=self.file_path)\
+                 ,normalize_density=True,bulk_density=3.5,solid_dielec=9\
+                 ,solid_losstan=0.1,particle_diameter=0.01,particle_density=3)
         self.assertIsNotNone(test.bcorr_dielec)
         self.assertIsNotNone(test.bcorr_losstan)
         
@@ -71,6 +101,15 @@ class sparam_data_TestCase(unittest.TestCase):
         assert len(self.dataset1.airline_dimensions) == 2
         test = pc.AirlineData\
                 (*pc.get_METAS_data(airline='VAL',file_path=self.file_path)\
+                 ,particle_diameter=0.01)
+        assert len(test.airline_dimensions) == 4
+
+    def test_dims_gal(self):
+        """Test that the proper number of airline dimentions are calculated"""
+        self.assertIsNotNone(self.dataset1.airline_dimensions)
+        assert len(self.dataset1.airline_dimensions) == 2
+        test = pc.AirlineData\
+                (*pc.get_METAS_data(airline='GAL',file_path=self.file_path)\
                  ,particle_diameter=0.01)
         assert len(test.airline_dimensions) == 4
         
@@ -96,13 +135,64 @@ class sparam_data_TestCase(unittest.TestCase):
             self.dataset1.draw_plots()
         except Exception as e:
             raise
+        plt.close('all')
             
+    def test_draw_plots_normalized(self):
+        """Test draw_plots"""
+        try:
+            self.normdataset.draw_plots(normalized=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+
+    def test_draw_plots_corr_notdefault(self):
+        with self.assertRaises(Exception):
+            self.dataset1.draw_plots(corr=True,default_setting=False)
+
+    @patch('builtins.input',return_value='a')
+    def test_draw_plots_notdefault_a(self,mock):
+        try:
+            self.dataset1.draw_plots(default_setting=False)
+        except Exception as e:
+            raise
+        plt.close('all')
+
+    @patch('builtins.input',return_value='f')
+    def test_draw_plots_notdefault_f(self,mock):
+        try:
+            self.dataset1.draw_plots(default_setting=False)
+        except Exception as e:
+            raise
+        plt.close('all')
+
+    @patch('builtins.input',return_value='r')
+    def test_draw_plots_notdefault_r(self,mock):
+        try:
+            self.dataset1.draw_plots(default_setting=False)
+        except Exception as e:
+            raise
+        plt.close('all')
+
+    @patch('builtins.input',return_value='b')
+    def test_draw_plots_notdefault_b(self,mock):
+        try:
+            self.dataset1.draw_plots(default_setting=False)
+        except Exception as e:
+            raise
+        plt.close('all')
+
+    @patch('builtins.input',return_value='wrong')
+    def test_draw_plots_notdefault_wrong(self,mock):
+        with self.assertRaises(Exception):
+            self.dataset1.draw_plots(default_setting=False)
+         
     def test_s_param_plots(self):
         """Test draw_plots"""
         try:
             self.dataset1.s_param_plot()
         except Exception as e:
             raise
+        plt.close('all')
         
 if __name__ == '__main__':
     unittest.main()

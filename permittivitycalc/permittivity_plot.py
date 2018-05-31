@@ -14,7 +14,8 @@ from uncertainties import unumpy as unp
 import os
 import datetime
 # Plotting
-if os.name == 'nt': # Fix appveyor biuld by changing backend if using Windows
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
     import matplotlib
     matplotlib.use('Agg')
 import matplotlib.pyplot as plt

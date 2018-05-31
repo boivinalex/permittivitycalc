@@ -58,6 +58,20 @@ class helper_functions_TestCase(unittest.TestCase):
     def test_get_file_no_airline_custom(self,mock):
         noline = hf._get_file(file_path=self.file_path)
         self.assertIsNotNone(noline)
+
+    def test_get_file_no_file(self):
+        with patch('permittivitycalc.helper_functions._prompt',return_value=self.file_path):
+            nofile = hf._get_file(airline='VAL')
+            self.assertIsNotNone(nofile)
+
+    def test_get_file_no_file_wrong_airline(self):
+        self.assertRaises(Exception,hf._get_file,airline='wrong')
+
+    @patch('builtins.input',return_value=5)
+    def test_get_file_no_file_custom_airline(self,mock):
+        with patch('permittivitycalc.helper_functions._prompt',return_value=self.file_path):
+            nofile = hf._get_file(airline='custom')
+            self.assertIsNotNone(nofile)
         
     def test_get_metas_data(self):
         """Test data import"""

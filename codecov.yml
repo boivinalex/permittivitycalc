@@ -1,4 +1,4 @@
 ignore:
-  - "**/setup.py"
+  - "setup.py"
   - "**/tests/.*"
   - "**/__init__.py"

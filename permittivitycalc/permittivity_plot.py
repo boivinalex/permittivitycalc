@@ -7,15 +7,21 @@ Created on Thu Jun 22 14:24:19 2017
 # File input
 import tkinter as tk
 from tkinter.filedialog import askdirectory
+# Array math
 import numpy as np
 from uncertainties import unumpy as unp
-import matplotlib
-matplotlib.use('Agg')
+# System
+import os
+import datetime
+import platform
+# Plotting
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
+    import matplotlib
+    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from cycler import cycler
-import os
-import datetime
 
 plt.style.use("ggplot")
 

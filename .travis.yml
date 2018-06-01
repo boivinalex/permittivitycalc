@@ -19,7 +19,7 @@ before_install:
 install:
 - export PATH=$HOME/miniconda/bin:$PATH
 - source activate test-env
-- pip install -r requirements.txt
+- conda install --file requirements.txt
 - conda list
 - python setup.py install
 - rm -r build

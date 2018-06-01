@@ -24,15 +24,16 @@ def _prompt():
     
     return file
     
-def _get_file(airline,file_path):
+def _get_file(airline=None,file_path=None):
     """Return the file path and airline name. Use prompts if needed."""
     L_in = None
     # Figure out the file path and the airline name
     if file_path and airline:
-        if airline not in ('VAL','PAL','GAL','7','washer'):
+        if airline not in ('VAL','PAL','GAL','7','washer','custom'):
             raise Exception('Wrong airline name. You used %s' % (airline))
         elif airline == 'custom':
             L_in = input('Enter the length of the airline (cm): ')
+            file = file_path
         else:
             file = file_path
     elif file_path and not airline:
@@ -101,9 +102,7 @@ def get_METAS_data(airline=None,file_path=None):
         L = 14.979
         #L = 14.9835    # 14mm airline - 15 cm 
     elif airline == 'GAL':
-        L = 14.991 
-    elif airline == 'washer':
-        L = 0.15
+        L = 14.991
     else:
         L = float(L_in)
         

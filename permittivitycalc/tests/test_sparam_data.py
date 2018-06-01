@@ -210,16 +210,35 @@ class sparam_data_TestCase(unittest.TestCase):
             raise
         plt.close('all')
 
-    def test_multiple_meas_nofile(self): #FIX THIS
-        """Test multiple_meas"""
+    @patch('builtins.input',return_value='VAL')
+    def test_multiple_meas(self,mock):
+        """Test multiple_meas with no airline"""
         try:
-            with patch('permittivitycalc.helper_functions._get_file',return_value=['VAL',self.file_path,None]):
+            dataset_list = pc.multiple_meas(file_path=self.file_path)
+            self.assertIsNotNone(dataset_list)
+            assert len(dataset_list) == 2
+        except Exception as e:
+            raise
+        plt.close('all')
+
+    def test_multiple_meas_nofile(self):
+        """Test multiple_meas with no file_path given"""
+        try:
+            with patch('permittivitycalc.helper_functions._prompt') as mock:
+                mock.return_value = self.file_path
+                file = mock.return_value
                 dataset_list = pc.multiple_meas(airline_name='VAL')
                 self.assertIsNotNone(dataset_list)
                 assert len(dataset_list) == 2
         except Exception as e:
             raise
         plt.close('all')
+
+    def test_run_example(self):
+        dataset_list = pc.run_example()
+        self.assertIsNotNone(dataset_list)
+        assert len(dataset_list) == 2
+
         
 if __name__ == '__main__':
     unittest.main()

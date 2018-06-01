@@ -9,7 +9,7 @@ Created on Wed May 23 16:03:51 2018
 import os
 import unittest
 from unittest.mock import patch
-from unittest.mock import Mock
+from unittest.mock import MagicMock
 import permittivitycalc.helper_functions as hf
 
 
@@ -25,7 +25,22 @@ class helper_functions_TestCase(unittest.TestCase):
         self.dataset1 = pc.run_default(airline_name='VAL',file_path=self.file_path)
         self.dataset2 = pc.run_default(airline_name='VAL',file_path=self.file_path2)
         self.normdataset = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path2),bulk_density=1.6,name='Serpentine',normalize_density=True)
-        
+    
+    # #patch tkinter modules
+    # @patch('tkinter.Tk') 
+    # @patch('tkinter.Tk.withdraw')
+    # @patch('tkinter.Tk.update')
+    # def test_prompt(self,mock1,mock2,mock3):
+    #     """Test _prompt"""
+    #     with patch('tkinter.filedialog.askopenfilename',autospec=True) as mock:   # patch askopenfilename
+    #         with patch('os.fspath',return_value=self.file_path,autospec=True): # patch os.fspath used by tkinter to split path wirh os.path.split
+    #             #set return value for askopenfilename
+    #             mock().return_value = self.file_path
+    #             #run function
+    #             result = hf._prompt()
+    #             print(self.file_path)
+    #             self.assertEqual(result,self.file_path)
+
     def test_get_file(self):
         """Test file import"""
         real_file = hf._get_file('VAL',self.file_path)

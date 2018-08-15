@@ -140,7 +140,7 @@ class AirlineData:
                 dataArray2 = get_METAS_data(airline=self.airline_name,file_path=path_shorted)
                 self.freq_short, self.s11_short = self._unpack(dataArray2[2])
             else:
-                raise Exception('Shorted file does not exists.')
+                raise Exception('Shorted file does not exists. Sould be in the form: orig-filename_shorted.txt')
         # Calculate permittivity
         if nrw:
             self.avg_dielec, self.avg_lossfac, self.avg_losstan, self.mu = \

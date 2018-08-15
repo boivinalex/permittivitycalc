@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 """Contains the AirlineData class object"""
 
-#File input
-import pickle
 # Array math
 import numpy as np
 import uncertainties 
@@ -30,100 +28,159 @@ class AirlineData:
     """
     S-parameter data from METAS text file output
     
-    Attributes:
-    ----------
-    L (float): Length of airline in cm.
-    
-    airline_name (str): Name of airline used for measurement.
-    
-    file (str): Input file path.
-    
-    corr (bool): (Optional) If True, also correct S-parameter data and \
-        produce corr_* arrays. Default = True.
-    
-    freq (array): Frequency points.
-    
-    s11, s21, s12, s22 (array): Mag and Phase S-Parameters.
-    
-    *_dielec (array): Real part of the permittivity. Can be avg_dielec, \
-        forward_dielec, or reverse_dielec for average, forward, or \
-        reverse permittivity.
-    
-    *_lossfac (array): Imaginary part of the permittivity. Same as above.
-    
-    *_losstan (array): Loss tangent. Same as above.
-    
-    corr_* (array): De-embeded version of S-parameters or permittivity data. \
-        Only average S-parameters are used for permittivity calculations with \
-        corrected S-parameters. Examples: corr_s11, corr_avg_losstan. Only \
-        created if corr = True.
+    Parameters:
+    -----------
+    L : float 
+        Length of airline in cm.
         
-    res_freq (array): Resonant frequencies in the sample.
+    airline : {'VAL','PAL','GAL','7','custom'} 
+        Name of airline used for measurement.
         
-    name (str): (Optional) Name of measurement to be used in plots.
-    
-    bulk_density (float): (Optional) Bulk density of material. Nessesary for \
-        bulk density normalization.
+    dataArray : array
+        Array containing raw measurement data.
         
-    normalize_density (bool): (Optional) If True, use either Lichtenecker or \
-        Landau-Lifshitz-Looyenga equation to normalize the real part of the \
-        permittivity to a constant density of 1.60 g/cm^3. Default: False
+    file : str 
+        Input file path.
         
-    norm_eqn (str): For use with normalize_density = True. Equation to be \
-        used for normalization. Options are 'LI' (default) for the \
-        Lichtenecker equation and 'LLL' for the Landau-Lifshitz-Looyenga \
-        equation. LI used alpha = 1.92 (Olhoeft, 1985) and LLL uses \
-        alpha = 0.307 (Hickson et al., 2017, Lunar samples).
-        
-    temperature (str or float): (Optional) Temperature of measurement.
-    
-    date (str): (Optional) Measurement date.
-    
-    solid_dielec (float): (Optional) The solid dielectric constant \
-        of the material.
-        
-    solid_losstan (float): (Optional) The solid loss tangent of the material.
-        
-    particle_diameter (float): (Optional) The average particle diameter in \
-        the airline in cm.
-        
-    particle_density (float): (Optional) The average (solid) particle density \
-        of the material in g/cm^3.
-        
-    airline_dimensions (dict): dimensions of the airline in cm. D1 is the \
-        diameter of the inner conductor and D4 is the diameter of the outer \
-        conductor. D2 and D3 bound the sample-airline boundary regions if \
-        particle_diameter is provided. airline_dimensions is generated \
-        automatically for airlines VAL, PAL, and GAL. Empty otherwise.
-        
-    bcorr (complex array): Avg complex permittivity corrected for boundary \
-        effects. Computed automatically if solid_dielec, particle_diameter, \
-        particle_density, and bulk_density are present. solid_losstan is \
-        optional.
-    
-    nrw (bool): If True, use Nicholson, Rross, Weir (NRW) algorithm to \
-        calculate permittivity and magnetic permeability.
-        
-    shorted (bool): If True, automatically load Shorted S11 data. File name \
-        must have the following format and be in the same folder as original \
-        file: file_path/file_name_shorted.txt
+    corr : bool, optional
+        Default = False. If True, also correct S-parameter data and 
+            produce corr_* arrays. 
+            
+    nrw : bool, optional 
+        Default = False. If True, use Nicholson, Rross, Weir (NRW) algorithm to 
+            calculate permittivity and magnetic permeability. 
+            
+    shorted : bool, optional
+        Default = False. If True, automatically load Shorted S11 data. File 
+            name must have the following format and be in the same folder as 
+            original file: file_path/file_name_shorted.txt
         
         Example:
-            file_path/air_atm.txt
-            file_path/air_atm_shorted.txt
+            - file_path/air_atm.txt
+            - file_path/air_atm_shorted.txt
+            
+    normalize_density : bool, optional 
+        Default = False. If True, use either Lichtenecker or 
+            Landau-Lifshitz-Looyenga equation to normalize the real part of the 
+            permittivity to a constant density of 1.60 g/cm^3. Requires that
+            bulk_density be given.
+        
+    norm_eqn : {'LI','LLL'}, optional 
+        Default = 'LI'. For use with normalize_density. Equation to be used for 
+            normalization. Options are 'LI' for the Lichtenecker 
+            equation and 'LLL' for the Landau-Lifshitz-Looyenga equation. 
+            LI used alpha = 1.92 (Olhoeft, 1985) and LLL uses 
+            alpha = 0.307 (Hickson et al., 2017, Lunar samples).
+            
+    name : str, optional 
+        Name of measurement to be used in plots.
+            
+    bulk_density : float, optional
+        Bulk density of material.
+        
+    solid_dielec : float, optional 
+        The solid dielectric constant of the material.
+        
+    solid_losstan : float, optional
+        The solid loss tangent of the material.
+        
+    particle_diameter : float, optional
+        The average particle diameter in the airline in cm.
+        
+    particle_density : float, optional
+        The average (solid) particle density of the material in g/cm^3.
+        
+    temperature : str or float, optional 
+        Temperature of measurement.
+        
+    date : str, optional
+        Date measurement was made.
+            
+    freq_cutoff : float, optional
+        Default: 4e8. Starting frequency for forward and reverse difference 
+            calculations.
+    
+    Attributes:
+    ----------
+    freq : array 
+        Frequency points.
+    
+    s11, s21, s12, s22 : array 
+        Mag and Phase S-Parameters.
+    
+    *_dielec : array 
+        Real part of the permittivity. Can be avg_dielec, forward_dielec, or 
+            reverse_dielec for average, forward (S11,S21), or reverse (S22,S12) 
+            permittivity.
+    
+    *_lossfac : array 
+        Imaginary part of the permittivity. Same as above.
+    
+    *_losstan : array 
+        Loss tangent. Same as above.
+    
+    corr_* : array 
+        De-embeded version of S-parameters or permittivity data. Only average 
+            S-parameters are used for permittivity calculations with corrected 
+            S-parameters. Examples: corr_s11, corr_avg_losstan. Only created 
+            if corr = True.
+            
+    norm_* : array
+        Bulk density normalized permittivity data. Uses averaged permittivity 
+        data. Only created if normalize_density = True.
+        
+    res_freq : array 
+        Resonant frequencies in the sample.
+        
+    airline_dimensions : dict 
+        Dimensions of the airline in cm. D1 is the diameter of the inner 
+            conductor and D4 is the diameter of the outer conductor. D2 and D3 
+            bound the sample-airline boundary regions if particle_diameter is 
+            provided. airline_dimensions is generated automatically for 
+            airlines VAL, PAL, and GAL. Empty otherwise.
+        
+    bcorr : complex array 
+        Avg complex permittivity corrected for boundary effects. Computed 
+        automatically if solid_dielec, particle_diameter, particle_density, 
+        and bulk_density are present. solid_losstan is optional.
+        
+    real_part_diff_array, imag_part_diff_array : array
+        Absolute difference of forward and reverse results for the real and 
+            imaginary parts of the permittivity.
+            
+    max_real_diff, max_imag_diff, min_real_diff, min_imag_diff : float
+        Maximum and minimum differences of the forward and reverse results for 
+            the real and imaginary parts of the permittivity.
     """
     def __init__(self,L,airline,dataArray,file,name=None,date=None,\
                  freq_cutoff=4e8,nrw=False,shorted=False,corr=False,\
                  normalize_density=False,norm_eqn='LI',bulk_density=None,\
                  solid_dielec=None,solid_losstan=None,particle_diameter=None,\
                  particle_density=None,temperature=None):
+        # Required Attributes
         self.L = L
         self.airline_name = airline
         self.file = file
-        self.corr = corr
+        
+        # Optional attributes
+        self.name = name
+        self.date = date
+        self.freq_cutoff = freq_cutoff
         self.nrw = nrw
         self.shorted = shorted
-        self.freq_cutoff = freq_cutoff
+        self.corr = corr
+        self.normalize_density = normalize_density
+        self.norm_eqn = norm_eqn
+        self.bulk_density = bulk_density
+        self.solid_dielec = solid_dielec
+        self.solid_losstan = solid_losstan
+        self.particle_diameter = particle_diameter
+        self.particle_density = particle_density
+        self.temperature = temperature
+        
+        # Get the airline dimnetions
+        self.airline_dimensions = self._dims()
+        
         # Unpack data into arrays
         self.freq, self.s11, self.s21, self.s12, self.s22 = \
             self._unpack(dataArray)
@@ -142,6 +199,7 @@ class AirlineData:
                 self.freq_short, self.s11_short = self._unpack(dataArray2[2])
             else:
                 raise Exception('Shorted file does not exists. Sould be in the form: orig-filename_shorted.txt')
+        
         # Calculate permittivity
         if nrw:
             self.forward_dielec, self.forward_lossfac, self.forward_losstan, \
@@ -160,6 +218,7 @@ class AirlineData:
             self.avg_dielec = (self.forward_dielec + self.reverse_dielec)/2
             self.avg_lossfac = (self.forward_lossfac + self.reverse_lossfac)/2
             self.avg_losstan = self.avg_lossfac/self.avg_dielec
+
         # Try to calculate corrected (de-embedded) permittivity
         # Fail if NaNs in data
         if corr:
@@ -197,22 +256,7 @@ class AirlineData:
                         self.corr_avg_losstan = self.corr_avg_lossfac/self.corr_avg_dielec
             except:
                 raise Warning('S-parameter correction failed. Using uncorrected data. Check if NaNs in data.')
-        self.res_freq = self._resonant_freq()
-        self.freq_avg_dielec, self.freq_avg_losstan, self.freq_avg_dielec_std, \
-            self.freq_avg_losstan_std = self._freq_avg()
             
-        # Optional attributes
-        self.name = name
-        self.bulk_density = bulk_density
-        self.normalize_density = normalize_density
-        self.norm_eqn = norm_eqn
-        self.temperature = temperature
-        self.date = date
-        self.solid_dielec = solid_dielec
-        self.solid_losstan = solid_losstan
-        self.particle_diameter = particle_diameter
-        self.particle_density = particle_density
-        self.airline_dimensions = self._dims()
         # Calculate percentage difference between forward and reverse permittivity
         self.real_part_diff_array, self.imag_part_diff_array, self.tand_part_diff_array,\
             self.max_real_diff, self.max_imag_diff, self.max_tand_diff, \
@@ -229,6 +273,7 @@ class AirlineData:
             'ε′′: {:.2%} '.format(self.med_imag_diff) + \
             'tanδ: {:.2%} \n'.format(self.med_tand_diff)
         print(diff_results)
+        
         # Combine Type A and Type B Uncertainty (if it exists)
         if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw:
             self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
@@ -239,12 +284,17 @@ class AirlineData:
                     self.corr_avg_losstan = self._calcTotalUncertainty(\
                     self.corr_avg_dielec,self.corr_avg_lossfac,\
                     self.corr_avg_losstan)
-        # If appropriate data provided, correct for boundary effects
-        if (solid_dielec and particle_diameter and particle_density and \
-            bulk_density):
-            self.bcorr_dielec, self.bcorr_losstan = self._boundary_correct()
-        # If normalize_density is True and bulk_density exists, do it
-        #   Normalize the density to 1.60 g/cm^3
+                    
+        # Calculare resonant frequencies in sample
+        self.res_freq = self._resonant_freq()
+        
+        # Calculate an average real permittivity and loss tan value from 
+        #   midpoint frequency values between resonant frequencies.
+        self.freq_avg_dielec, self.freq_avg_losstan, self.freq_avg_dielec_std, \
+            self.freq_avg_losstan_std = self._freq_avg()
+            
+        # If normalize_density is True and bulk_density exists, normalize the
+        #   density to 1.60 g/cm^3
         if normalize_density and bulk_density:
             complex_dielec = 1j*unp.nominal_values(self.avg_lossfac);
             complex_dielec += unp.nominal_values(self.avg_dielec)
@@ -263,6 +313,11 @@ class AirlineData:
             self.norm_losstan = self.norm_lossfac/self.norm_dielec
         elif normalize_density:
             raise Exception('Need bulk desnity to normalize to constant density')
+                    
+        # If appropriate data provided, correct for boundary effects
+        if (solid_dielec and particle_diameter and particle_density and \
+            bulk_density):
+            self.bcorr_dielec, self.bcorr_losstan = self._boundary_correct()
             
     def __repr__(self):
         rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \

@@ -194,6 +194,22 @@ class AirlineData:
         self.particle_diameter = particle_diameter
         self.particle_density = particle_density
         self.airline_dimensions = self._dims()
+        # Calculate percentage difference between forward and reverse permittivity
+        self.real_part_diff_array, self.imag_part_diff_array, self.tand_part_diff_array,\
+            self.max_real_diff, self.max_imag_diff, self.max_tand_diff, \
+            self.med_real_diff, self.med_imag_diff, self.med_tand_diff = \
+            self._absdiff()
+        # Print maximum and median difference as percentages
+        diff_results = '\n' + str(self.name) + '\n' + \
+            'The maximum precentage difference between forward (S11/S21) and reverse (S22/S12) calculated permittivity is: \n' + \
+            'ε′: {:.2%} '.format(self.max_real_diff) + \
+            'ε′′: {:.2%} '.format(self.max_imag_diff) + \
+            'tanδ: {:.2%} \n'.format(self.max_tand_diff) + \
+            'The median precentage difference between forward (S11/S21) and reverse (S22/S12) calculated permittivity is: \n' + \
+            'ε′: {:.2%} '.format(self.med_real_diff) + \
+            'ε′′: {:.2%} '.format(self.med_imag_diff) + \
+            'tanδ: {:.2%} \n'.format(self.med_tand_diff)
+        print(diff_results)
         # If appropriate data provided, correct for boundary effects
         if (solid_dielec and particle_diameter and particle_density and \
             bulk_density):
@@ -252,6 +268,94 @@ class AirlineData:
             srep += ' is available.'
         return srep
     
+    def _unpack(self,dataArray):
+        """See if uncertainty in data and unpack to S-parameter arrays"""
+        shorted_flag = False
+        if dataArray.shape[1] == 17: # Has unc so use unumpy
+            freq = dataArray[:,0]
+            s11 = unp.uarray([dataArray[:,1],dataArray[:,3]],\
+                                     [dataArray[:,2],dataArray[:,4]])
+            s21 = unp.uarray([dataArray[:,5],dataArray[:,7]],\
+                                     [dataArray[:,6],dataArray[:,8]])
+            s12 = unp.uarray([dataArray[:,9],dataArray[:,11]],\
+                                      [dataArray[:,10],dataArray[:,12]])
+            s22 = unp.uarray([dataArray[:,13],dataArray[:,15]],\
+                                     [dataArray[:,14],dataArray[:,16]])
+        elif dataArray.shape[1] == 9: # No unc
+            freq = dataArray[:,0]
+            s11 = np.array([dataArray[:,1],dataArray[:,2]])
+            s21 = np.array([dataArray[:,3],dataArray[:,4]])
+            s12 = np.array([dataArray[:,5],dataArray[:,6]])
+            s22 = np.array([dataArray[:,7],dataArray[:,8]])
+        elif self.shorted and dataArray.shape[1] == 5:
+            shorted_flag = True
+            freq = dataArray[:,0]
+            s11 = unp.uarray([dataArray[:,1],dataArray[:,3]],\
+                                     [dataArray[:,2],dataArray[:,4]])
+        else:
+            raise Exception('Input file has the wrong number of columns')
+        
+        if shorted_flag:
+            return freq, s11
+        else:
+            return freq, s11, s21, s12, s22
+    
+    def _dims(self):
+        """
+        Determine the dimensions of the airline used in cm.
+        """
+        dims = {}
+        # Store inner and outer diameters in a dictionary
+        if self.airline_name in ('VAL','PAL'):
+            dims['D1'] = 6.205
+            dims['D4'] = 14.285
+        elif self.airline_name == 'GAL':
+            dims['D1'] = 6.19
+            dims['D4'] = 14.32
+        # If particle diameter is known, calculate D2 and D3 for boundary 
+        #   effect correction   
+        if dims and self.particle_diameter:
+            dims['D2'] = dims['D1'] + self.particle_diameter
+            dims['D3'] = dims['D4'] - self.particle_diameter
+        return dims
+    
+    def _absdiff(self):
+        """
+        Calculate the absolute max and median differences in calculated forward 
+            (S11,S21) and reverse (S22,S12) permittivity. Use corrected 
+            S-parameters if present.
+        """
+        if self.corr:
+            real_part_diff = np.abs(unp.nominal_values(self.corr_forward_dielec) \
+                            - unp.nominal_values(self.corr_reverse_dielec))
+            imag_part_diff = np.abs(unp.nominal_values(self.corr_forward_lossfac) \
+                            - unp.nominal_values(self.corr_reverse_lossfac))
+            tand_part_diff = np.abs(unp.nominal_values(self.corr_forward_losstan) \
+                            - unp.nominal_values(self.corr_reverse_losstan))
+        else:
+            real_part_diff = np.abs(unp.nominal_values(self.forward_dielec) \
+                            - unp.nominal_values(self.reverse_dielec))
+            imag_part_diff = np.abs(unp.nominal_values(self.forward_lossfac) \
+                            - unp.nominal_values(self.reverse_lossfac))
+            tand_part_diff = np.abs(unp.nominal_values(self.forward_losstan) \
+                            - unp.nominal_values(self.reverse_losstan))
+            
+        if self.freq_cutoff:
+            real_part_diff = real_part_diff[self.freq >= self.freq_cutoff]
+            imag_part_diff = imag_part_diff[self.freq >= self.freq_cutoff]
+            tand_part_diff = tand_part_diff[self.freq >= self.freq_cutoff]
+        
+        max_real_diff = np.max(real_part_diff)
+        max_imag_diff = np.max(imag_part_diff)
+        max_tand_diff = np.max(tand_part_diff)
+        avg_real_diff = np.median(real_part_diff)
+        avg_imag_diff = np.median(imag_part_diff)
+        avg_tand_diff = np.median(tand_part_diff)
+        
+        return real_part_diff, imag_part_diff, tand_part_diff, max_real_diff, \
+            max_imag_diff, max_tand_diff, avg_real_diff, avg_imag_diff, \
+            avg_tand_diff
+            
     def _resonant_freq(self):
         """
         Calculate and return array of resonant frequencies from complex permittivity \ 
@@ -338,59 +442,6 @@ class AirlineData:
         std_losstan = np.std(unp.nominal_values(loss_tan_mids[2:]))
         
         return freq_avg_dielec, freq_avg_losstan, std_dielec, std_losstan
-        
-    
-            
-    def _unpack(self,dataArray):
-        """See if uncertainty in data and unpack to S-parameter arrays"""
-        shorted_flag = False
-        if dataArray.shape[1] == 17: # Has unc so use unumpy
-            freq = dataArray[:,0]
-            s11 = unp.uarray([dataArray[:,1],dataArray[:,3]],\
-                                     [dataArray[:,2],dataArray[:,4]])
-            s21 = unp.uarray([dataArray[:,5],dataArray[:,7]],\
-                                     [dataArray[:,6],dataArray[:,8]])
-            s12 = unp.uarray([dataArray[:,9],dataArray[:,11]],\
-                                      [dataArray[:,10],dataArray[:,12]])
-            s22 = unp.uarray([dataArray[:,13],dataArray[:,15]],\
-                                     [dataArray[:,14],dataArray[:,16]])
-        elif dataArray.shape[1] == 9: # No unc
-            freq = dataArray[:,0]
-            s11 = np.array([dataArray[:,1],dataArray[:,2]])
-            s21 = np.array([dataArray[:,3],dataArray[:,4]])
-            s12 = np.array([dataArray[:,5],dataArray[:,6]])
-            s22 = np.array([dataArray[:,7],dataArray[:,8]])
-        elif self.shorted and dataArray.shape[1] == 5:
-            shorted_flag = True
-            freq = dataArray[:,0]
-            s11 = unp.uarray([dataArray[:,1],dataArray[:,3]],\
-                                     [dataArray[:,2],dataArray[:,4]])
-        else:
-            raise Exception('Input file has the wrong number of columns')
-        
-        if shorted_flag:
-            return freq, s11
-        else:
-            return freq, s11, s21, s12, s22
-    
-    def _dims(self):
-        """
-        Determine the dimensions of the airline used in cm.
-        """
-        dims = {}
-        # Store inner and outer diameters in a dictionary
-        if self.airline_name in ('VAL','PAL'):
-            dims['D1'] = 6.205
-            dims['D4'] = 14.285
-        elif self.airline_name == 'GAL':
-            dims['D1'] = 6.19
-            dims['D4'] = 14.32
-        # If particle diameter is known, calculate D2 and D3 for boundary 
-        #   effect correction   
-        if dims and self.particle_diameter:
-            dims['D2'] = dims['D1'] + self.particle_diameter
-            dims['D3'] = dims['D4'] - self.particle_diameter
-        return dims
     
     def _permittivity_calc(self,s_param,corr=False):
         """
@@ -1018,6 +1069,56 @@ class AirlineData:
                                    label=['Uncorrected','Corrected'])
         else:
             pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12)
+            
+    def difference_plot(self):
+        """
+        Plots the absolute difference between both ε′ and ε′′ calculated from 
+            forward (S11,S21) and reverse (S22,S12) S-Paramaters.
+        """
+        import matplotlib.pyplot as plt
+        
+        if self.freq_cutoff:
+            freq = self.freq[self.freq>=self.freq_cutoff]
+        else:
+            freq = self.freq
+            
+        real_diff = self.real_part_diff_array
+        imag_diff = self.imag_part_diff_array
+        
+        f,ax = plt.subplots(2, sharex=True, figsize=(18, 15))
+        ax[0].loglog(freq,real_diff,'ko-',label='|$\epsilon^\prime[S_{11},S_{21}]$ - $\epsilon^\prime[S_{22},S_{12}]$|')
+        ax[0].set_title('Difference in $\epsilon^\prime$', fontsize=40)
+        ax[0].legend(fontsize=30,loc=2)
+        ax[0].set_ylim(10e-7, 1)
+        ax[0].tick_params(axis='both', which='major', width=2, labelsize=30)
+        ax[0].tick_params(axis='both', which='minor', width=1.5)
+        ax[1].loglog(freq,imag_diff,'ko-',label='|$\epsilon^{\prime\prime}[S_{11},S_{21}]$ - $\epsilon^{\prime\prime}[S_{22},S_{12}]$|')
+        ax[1].set_title('Difference in $\epsilon^{\prime\prime}$', fontsize=40)
+        ax[1].legend(fontsize=30,loc=2)
+        ax[1].set_xlabel('Frequency',fontsize=40)
+        ax[1].set_ylim(10e-7, 1)
+        ax[1].tick_params(axis='both', which='major', width=2, labelsize=30)
+        ax[1].tick_params(axis='both', which='minor', width=1.5)
+        if self.freq_cutoff:
+            from matplotlib.ticker import LogLocator, EngFormatter, NullFormatter
+            majorLocator = LogLocator(subs=(1.0,4.0))
+            majorFormatter = EngFormatter(unit='Hz') # Format major ticks with units
+            minorLocator = LogLocator(subs='all') # Use all interger multiples of the log base for minor ticks 
+            minorFormatter =  NullFormatter() # No minor tick labels 
+            for n in range(0,2):
+                # Apply x ticks
+                ax[n].get_xaxis().set_major_locator(majorLocator)
+                ax[n].get_xaxis().set_major_formatter(majorFormatter)
+                ax[n].get_xaxis().set_minor_locator(minorLocator)
+                ax[n].get_xaxis().set_minor_formatter(minorFormatter)
+                # Format the actual tick marks
+                ax[n].tick_params(which='both', width=1, labelsize=30)
+                ax[n].tick_params(which='major', length=7)
+                ax[n].tick_params(which='minor', length=4)
+                # Use smaller line width for minor tick grid lines
+                ax[n].grid(b=True, which='major', color='w', linewidth=1.0)
+                ax[n].grid(b=True, which='minor', color='w', linewidth=0.5)
+        plt.show()
             
 #%% Functions
             

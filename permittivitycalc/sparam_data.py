@@ -143,15 +143,22 @@ class AirlineData:
                 raise Exception('Shorted file does not exists. Sould be in the form: orig-filename_shorted.txt')
         # Calculate permittivity
         if nrw:
-            self.avg_dielec, self.avg_lossfac, self.avg_losstan, self.mu = \
-                self._permittivity_calc('a')
+            self.forward_dielec, self.forward_lossfac, self.forward_losstan, \
+                self.forward_mu = self._permittivity_calc('f')
+            self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan, \
+                self.reverse_mu = self._permittivity_calc('r')
+            self.avg_dielec = (self.forward_dielec + self.reverse_dielec)/2
+            self.avg_lossfac = (self.forward_lossfac + self.reverse_lossfac)/2
+            self.avg_mu = (self.forward_mu + self.reverse_mu)/2
+            self.avg_losstan = self.avg_lossfac/self.avg_dielec
         else:
-            self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
-                self._permittivity_calc('a')
             self.forward_dielec, self.forward_lossfac, self.forward_losstan = \
                 self._permittivity_calc('f')
             self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan = \
                 self._permittivity_calc('r')
+            self.avg_dielec = (self.forward_dielec + self.reverse_dielec)/2
+            self.avg_lossfac = (self.forward_lossfac + self.reverse_lossfac)/2
+            self.avg_losstan = self.avg_lossfac/self.avg_dielec
         # Try to calculate corrected permittivity if array length is 601 only
         # Also check for NaNs and don't run if any
         if corr and len(self.freq) == 601:
@@ -265,9 +272,9 @@ class AirlineData:
         e_r = np.median(measured_dielec[1::]) # Exclude first data point
         e_i = np.median(measured_lossfac[1::])
         if self.nrw:
-            u_r = np.real(self.mu)
+            u_r = np.real(self.avg_mu)
             u_r = np.median(u_r[1::])
-            u_i = np.imag(self.mu)
+            u_i = np.imag(self.avg_mu)
             u_i = np.median(u_i[1::])
         else:
             u_r = 1
@@ -399,7 +406,7 @@ class AirlineData:
         Arguments
         ---------
         s_param (str): Calculates complex permittivity using either \
-            the average ('a'), the forward ('f'), or the reverse ('r') \
+            the forward ('f') (S11,S21), or the reverse ('r') (S22 S12) \
             S-Parameters.
             
         Return
@@ -435,12 +442,7 @@ class AirlineData:
         #   support complex numbers at the time of writing.
         #   Later, uncertainties may be propagated through and compared with
         #   those calculated in Boughriet et al.
-        if s_param == 'a':
-            s_r = (unp.nominal_values(s11) + \
-                   unp.nominal_values(s22))/2
-            s_t = (unp.nominal_values(s21) + \
-                   unp.nominal_values(s12))/2
-        elif s_param == 'f':
+        if s_param == 'f':
             s_r = unp.nominal_values(s11)
             s_t = unp.nominal_values(s21)
         else:

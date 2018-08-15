@@ -59,11 +59,12 @@ class AirlineData:
             - file_path/air_atm.txt
             - file_path/air_atm_shorted.txt
             
-    normalize_density : bool, optional 
+    normalize_density : bool or float or int, optional 
         Default = False. If True, use either Lichtenecker or 
-            Landau-Lifshitz-Looyenga equation to normalize the real part of the 
-            permittivity to a constant density of 1.60 g/cm^3. Requires that
-            bulk_density be given.
+            Landau-Lifshitz-Looyenga equation to normalize the complex 
+            permittivity to a constant density of 1.60 g/cm^3. If float or int 
+            is given, normalize to the density provided in g/cm^3. Requires 
+            that bulk_density be given.
         
     norm_eqn : {'LI','LLL'}, optional 
         Default = 'LI'. For use with normalize_density. Equation to be used for 
@@ -293,20 +294,29 @@ class AirlineData:
         self.freq_avg_dielec, self.freq_avg_losstan, self.freq_avg_dielec_std, \
             self.freq_avg_losstan_std = self._freq_avg()
             
-        # If normalize_density is True and bulk_density exists, normalize the
-        #   density to 1.60 g/cm^3
-        if normalize_density and bulk_density:
-            complex_dielec = 1j*unp.nominal_values(self.avg_lossfac);
-            complex_dielec += unp.nominal_values(self.avg_dielec)
+        # If normalize_density is not False and bulk_density exists, normalize
+        if self.normalize_density and self.bulk_density:
+            if self.corr:   #use corrected data is present
+                complex_dielec = 1j*unp.nominal_values(self.corr_avg_lossfac);
+                complex_dielec += unp.nominal_values(self.corr_avg_dielec)
+            else:
+                complex_dielec = 1j*unp.nominal_values(self.avg_lossfac);
+                complex_dielec += unp.nominal_values(self.avg_dielec)
+            # If normalize_density is True, normalize to to 1.60 g/cm^3
+            #   If normalize_density is a value, normalize to that value
+            if isinstance(self.normalize_density, bool):
+                norm_val = 1.60
+            elif isinstance(self.normalize_density, (float,int)):
+                norm_val = self.normalize_density
             if self.norm_eqn == 'LI':
                 # Lichtenecker equation
-                #   alpha from Olhoeft, 1985
-                norm_complex_dielec = complex_dielec*(1.92)**\
-                    (1.60-self.bulk_density)
+                #   alpha from Carrier et al., 1991
+                norm_complex_dielec = complex_dielec*((1.92)**\
+                    (norm_val-self.bulk_density))
             elif self.norm_eqn == 'LLL':
                 # Landau-Lifshitz-Looyenga equation
                 #   alpha from Hickson et al., 2018
-                norm_complex_dielec = complex_dielec*((1.60*0.307 + 1)**3 / \
+                norm_complex_dielec = complex_dielec*((norm_val*0.307 + 1)**3 / \
                                             (self.bulk_density*0.307 + 1)**3)
             self.norm_dielec = np.real(norm_complex_dielec)
             self.norm_lossfac = np.imag(norm_complex_dielec)

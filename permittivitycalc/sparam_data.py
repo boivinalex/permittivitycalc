@@ -210,6 +210,16 @@ class AirlineData:
             'ε′′: {:.2%} '.format(self.med_imag_diff) + \
             'tanδ: {:.2%} \n'.format(self.med_tand_diff)
         print(diff_results)
+        # Combine Type A and Type B Uncertainty (if it exists)
+        if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw:
+            self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
+                self._calcTotalUncertainty(self.avg_dielec,self.avg_lossfac,\
+                self.avg_losstan)
+            if corr:
+                self.corr_avg_dielec, self.corr_avg_lossfac,\
+                    self.corr_avg_losstan = self._calcTotalUncertainty(\
+                    self.corr_avg_dielec,self.corr_avg_lossfac,\
+                    self.corr_avg_losstan)
         # If appropriate data provided, correct for boundary effects
         if (solid_dielec and particle_diameter and particle_density and \
             bulk_density):
@@ -341,16 +351,20 @@ class AirlineData:
                             - unp.nominal_values(self.reverse_losstan))
             
         if self.freq_cutoff:
-            real_part_diff = real_part_diff[self.freq >= self.freq_cutoff]
-            imag_part_diff = imag_part_diff[self.freq >= self.freq_cutoff]
-            tand_part_diff = tand_part_diff[self.freq >= self.freq_cutoff]
+            real_part_diff_calc = real_part_diff[self.freq >= self.freq_cutoff]
+            imag_part_diff_calc = imag_part_diff[self.freq >= self.freq_cutoff]
+            tand_part_diff_calc = tand_part_diff[self.freq >= self.freq_cutoff]
+        else:
+            real_part_diff_calc = real_part_diff
+            imag_part_diff_calc = imag_part_diff
+            tand_part_diff_calc = tand_part_diff
         
-        max_real_diff = np.max(real_part_diff)
-        max_imag_diff = np.max(imag_part_diff)
-        max_tand_diff = np.max(tand_part_diff)
-        avg_real_diff = np.median(real_part_diff)
-        avg_imag_diff = np.median(imag_part_diff)
-        avg_tand_diff = np.median(tand_part_diff)
+        max_real_diff = np.max(real_part_diff_calc)
+        max_imag_diff = np.max(imag_part_diff_calc)
+        max_tand_diff = np.max(tand_part_diff_calc)
+        avg_real_diff = np.median(real_part_diff_calc)
+        avg_imag_diff = np.median(imag_part_diff_calc)
+        avg_tand_diff = np.median(tand_part_diff_calc)
         
         return real_part_diff, imag_part_diff, tand_part_diff, max_real_diff, \
             max_imag_diff, max_tand_diff, avg_real_diff, avg_imag_diff, \
@@ -588,13 +602,14 @@ class AirlineData:
         # Calculate uncertainties
         # Check for uncertainties and make sure not using NRW
         if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw: 
-            delta_dielec, delta_lossfac, delta_losstan = \
+            delta_dielec, delta_lossfac = \
                 self._calc_uncertainties(s_param,nrows,sign,x,s_reflect,\
                                          s_trans,gam,lam_og,new_t,mu_eff,\
-                                         ep_eff,lam_0,dielec,lossfac,losstan,corr)
+                                         ep_eff,lam_0,dielec,lossfac,losstan,\
+                                         corr)
             dielec = unp.uarray(dielec,delta_dielec)
             lossfac = unp.uarray(lossfac,delta_lossfac)
-            losstan = unp.uarray(losstan,delta_losstan)
+            losstan = losstan = lossfac/dielec
         
         if self.nrw:
             return dielec,lossfac,losstan,complex_mu
@@ -685,9 +700,7 @@ class AirlineData:
         deff_dL = deff_dT*dT_dd
         
         # Combine partial derivatives for overal measurement uncertainty
-        # In Boughriet, 1997 the last term (length uncertainty) isn't squared. 
-        #   Mistake???? Answer: Yes Reason: Sqaured in older references
-            
+        # Final Type B Uncertainty
         delta_dielec = abs((1 - ((lam_0**2)/(LAM_C**2)))\
             *np.sqrt((((np.real(deff_dS_reflect_mag))*err_s_r[0])**2) + \
             (((np.real(deff_dS_reflect_phase))*err_s_r[1])**2) + \
@@ -702,25 +715,43 @@ class AirlineData:
             (((np.imag(deff_dS_trans_phase))*err_s_t[1])**2) + \
             (((np.imag(deff_dL))*delta_length)**2)))
         
-        delta_losstan = abs(losstan*np.sqrt((delta_dielec/dielec)**2 +\
-                                        (delta_lossfac/lossfac)**2))
+        return delta_dielec, delta_lossfac
+    
+    def _calcTotalUncertainty(self,dielec,lossfac,losstan):
+        # Type A Uncertainty. Note 2 regions for lossfac and losstan
+        dielec_TypeA = np.where(self.real_part_diff_array > 0.008,\
+                                self.real_part_diff_array,0.008)
+        lossfac_TypeA_high = np.where(\
+                self.imag_part_diff_array[np.where(self.freq<10**8)] > 0.009, \
+                self.imag_part_diff_array[np.where(self.freq<10**8)], 0.009)
+        lossfac_TypeA_low = np.where(\
+                self.imag_part_diff_array[np.where(self.freq>=10**8)] > 0.002, \
+                self.imag_part_diff_array[np.where(self.freq>=10**8)], 0.002)
+        lossfac_TypeA = np.concatenate((lossfac_TypeA_high,lossfac_TypeA_low))
+        losstan_TypeA_high = np.where(\
+                self.tand_part_diff_array[np.where(self.freq<10**8)] > 0.009, \
+                self.tand_part_diff_array[np.where(self.freq<10**8)], 0.009)
+        losstan_TypeA_low = np.where(\
+                self.tand_part_diff_array[np.where(self.freq>=10**8)] > 0.002, \
+                self.tand_part_diff_array[np.where(self.freq>=10**8)], 0.002)
+        losstan_TypeA = np.concatenate((losstan_TypeA_high,losstan_TypeA_low))
         
-        # Add measurement standard deviation error to measurement uncertainty
-        #   in quadrature as calculated with multiple rexolite measurements.
-        #   Note 2 regions for lossfac and losstan
-        delta_dielec = np.sqrt(delta_dielec**2 + 0.008**2)
+        # Type B Uncertainty
+        delta_dielec = unp.std_devs(dielec)
+        delta_lossfac = unp.std_devs(lossfac)
+        delta_losstan = unp.std_devs(losstan)
         
-        delta_lossfac[np.where(self.freq<10**8)] = \
-            np.sqrt(delta_lossfac[np.where(self.freq<10**8)]**2 + 0.009**2) 
-        delta_lossfac[np.where(self.freq>=10**8)] = \
-            np.sqrt(delta_lossfac[np.where(self.freq>=10**8)]**2 + 0.002**2)
+        # Combined Uncertainty
+        unc_dielec = np.sqrt(delta_dielec**2 + dielec_TypeA**2)
+        unc_lossfac = np.sqrt(delta_lossfac**2 + lossfac_TypeA**2)
+        unc_losstan = np.sqrt(delta_losstan**2 + losstan_TypeA**2)
         
-        delta_losstan[np.where(self.freq<10**8)] = \
-            np.sqrt(delta_losstan[np.where(self.freq<10**8)]**2 + 0.009**2)
-        delta_losstan[np.where(self.freq>=10**8)] = \
-            np.sqrt(delta_losstan[np.where(self.freq>=10**8)]**2 + 0.002**2)
+        # Final uArrays
+        dielec = unp.uarray(unp.nominal_values(dielec),unc_dielec)
+        lossfac = unp.uarray(unp.nominal_values(lossfac),unc_lossfac)
+        losstan = unp.uarray(unp.nominal_values(losstan),unc_losstan)
         
-        return delta_dielec, delta_lossfac, delta_losstan
+        return dielec, lossfac, losstan
     
     def _de_embed(self):
         """

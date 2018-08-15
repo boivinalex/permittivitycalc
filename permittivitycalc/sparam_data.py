@@ -177,7 +177,7 @@ class AirlineData:
                             self.corr_avg_losstan = \
                             self._permittivity_calc('a',True)
             except:
-                pass
+                raise Warning('S-parameter correction failed. Using uncorrected data.')
         self.res_freq = self._resonant_freq()
         self.freq_avg_dielec, self.freq_avg_losstan, self.freq_avg_dielec_std, \
             self.freq_avg_losstan_std = self._freq_avg()

@@ -26,7 +26,9 @@ DATAPATH = os.path.join(PACKAGEPATH, 'data')
 
 class AirlineData:
     """
-    S-parameter data from METAS text file output
+    Use S-parameter data from a METAS VNA Tools II output text file to 
+    calculate the complex relative permittivity of a sample in a coaxial 
+    transmission line
     
     Parameters:
     -----------
@@ -43,17 +45,17 @@ class AirlineData:
         Input file path.
         
     corr : bool, optional
-        Default = False. If True, also correct S-parameter data and 
-            produce corr_* arrays. 
+        Default = False. If True, also correct S-parameter data and produce 
+        corr_* arrays. 
             
     nrw : bool, optional 
         Default = False. If True, use Nicholson, Rross, Weir (NRW) algorithm to 
-            calculate permittivity and magnetic permeability. 
+        calculate permittivity and magnetic permeability.
             
     shorted : bool, optional
         Default = False. If True, automatically load Shorted S11 data. File 
-            name must have the following format and be in the same folder as 
-            original file: file_path/file_name_shorted.txt
+        name must have the following format and be in the same folder as 
+        original file: file_path/file_name_shorted.txt
         
         Example:
             - file_path/air_atm.txt
@@ -61,17 +63,17 @@ class AirlineData:
             
     normalize_density : bool or float or int, optional 
         Default = False. If True, use either Lichtenecker or 
-            Landau-Lifshitz-Looyenga equation to normalize the complex 
-            permittivity to a constant density of 1.60 g/cm^3. If float or int 
-            is given, normalize to the density provided in g/cm^3. Requires 
-            that bulk_density be given.
+        Landau-Lifshitz-Looyenga equation to normalize the complex 
+        permittivity to a constant density of 1.60 g/cm^3. If float or int 
+        is given, normalize to the density provided in g/cm^3. Requires 
+        that bulk_density be given.
         
     norm_eqn : {'LI','LLL'}, optional 
         Default = 'LI'. For use with normalize_density. Equation to be used for 
-            normalization. Options are 'LI' for the Lichtenecker 
-            equation and 'LLL' for the Landau-Lifshitz-Looyenga equation. 
-            LI used alpha = 1.92 (Olhoeft, 1985) and LLL uses 
-            alpha = 0.307 (Hickson et al., 2017, Lunar samples).
+        normalization. Options are 'LI' for the Lichtenecker 
+        equation and 'LLL' for the Landau-Lifshitz-Looyenga equation. 
+        LI used alpha = 1.92 (Olhoeft, 1985) and LLL uses 
+        alpha = 0.307 (Hickson et al., 2017, Lunar samples).
             
     name : str, optional 
         Name of measurement to be used in plots.
@@ -99,7 +101,7 @@ class AirlineData:
             
     freq_cutoff : float, optional
         Default: 4e8. Starting frequency for forward and reverse difference 
-            calculations.
+        calculations.
     
     Attributes:
     ----------
@@ -111,8 +113,8 @@ class AirlineData:
     
     *_dielec : array 
         Real part of the permittivity. Can be avg_dielec, forward_dielec, or 
-            reverse_dielec for average, forward (S11,S21), or reverse (S22,S12) 
-            permittivity.
+        reverse_dielec for average, forward (S11,S21), or reverse (S22,S12) 
+        permittivity.
     
     *_lossfac : array 
         Imaginary part of the permittivity. Same as above.
@@ -122,9 +124,9 @@ class AirlineData:
     
     corr_* : array 
         De-embeded version of S-parameters or permittivity data. Only average 
-            S-parameters are used for permittivity calculations with corrected 
-            S-parameters. Examples: corr_s11, corr_avg_losstan. Only created 
-            if corr = True.
+        S-parameters are used for permittivity calculations with corrected 
+        S-parameters. Examples: corr_s11, corr_avg_losstan. Only created 
+        if corr = True.
             
     norm_* : array
         Bulk density normalized permittivity data. Uses averaged permittivity 
@@ -135,10 +137,10 @@ class AirlineData:
         
     airline_dimensions : dict 
         Dimensions of the airline in cm. D1 is the diameter of the inner 
-            conductor and D4 is the diameter of the outer conductor. D2 and D3 
-            bound the sample-airline boundary regions if particle_diameter is 
-            provided. airline_dimensions is generated automatically for 
-            airlines VAL, PAL, and GAL. Empty otherwise.
+        conductor and D4 is the diameter of the outer conductor. D2 and D3 
+        bound the sample-airline boundary regions if particle_diameter is 
+        provided. airline_dimensions is generated automatically for 
+        airlines VAL, PAL, and GAL. Empty otherwise.
         
     bcorr : complex array 
         Avg complex permittivity corrected for boundary effects. Computed 
@@ -147,11 +149,11 @@ class AirlineData:
         
     real_part_diff_array, imag_part_diff_array : array
         Absolute difference of forward and reverse results for the real and 
-            imaginary parts of the permittivity.
+        imaginary parts of the permittivity.
             
     max_real_diff, max_imag_diff, min_real_diff, min_imag_diff : float
         Maximum and minimum differences of the forward and reverse results for 
-            the real and imaginary parts of the permittivity.
+        the real and imaginary parts of the permittivity.
     """
     def __init__(self,L,airline,dataArray,file,name=None,date=None,\
                  freq_cutoff=4e8,nrw=False,shorted=False,corr=False,\
@@ -416,8 +418,8 @@ class AirlineData:
     def _absdiff(self):
         """
         Calculate the absolute max and median differences in calculated forward 
-            (S11,S21) and reverse (S22,S12) permittivity. Use corrected 
-            S-parameters if present.
+        (S11,S21) and reverse (S22,S12) permittivity. Use corrected 
+        S-parameters if present.
         """
         if self.corr:
             real_part_diff = np.abs(unp.nominal_values(self.corr_forward_dielec) \
@@ -491,23 +493,27 @@ class AirlineData:
     
     def _freq_avg(self):
         """
-        Calculate an average dielectric constant and loss tangent across all measured frequencies \ 
-        from midpoint frequency values between resonant frequencies as described in: \
-            Hickson et al., 2018
+        Calculate an average dielectric constant and loss tangent across all 
+        measured frequencies from midpoint frequency values between resonant 
+        frequencies as described in Hickson et al., 2018
         
         Return
         ------
-        freq_avg_dielec (uncertainties.core.AffineScalarFunc): Average dielectric \
-        constant calculated from midpoint frequency values between resonant \
-        frequencies. Skips first two values due to large uncertainty. 
+        freq_avg_dielec : uncertainties.core.AffineScalarFunc 
+            Average dielectric constant calculated from midpoint frequency 
+            values between resonant frequencies. Skips first two values due to 
+            large uncertainty. 
         
-        freq_avg_dielec_std (float): Standard deviation of freq_avg_dielec from above.
+        freq_avg_dielec_std : float 
+            Standard deviation of freq_avg_dielec from above.
         
-        freq_avg_losstan (uncertainties.core.AffineScalarFunc): Average loss \
-        tangent calculated from midpoint frequency values between resonant \
-        frequencies. Skips first two values due to large uncertainty. 
+        freq_avg_losstan : uncertainties.core.AffineScalarFunc 
+            Average loss tangent calculated from midpoint frequency values 
+            between resonant frequencies. Skips first two values due to large 
+            uncertainty. 
         
-        freq_avg_losstan_std (float): Standard deviation of freq_avg_losstan from above.
+        freq_avg_losstan_std : float 
+            Standard deviation of freq_avg_losstan from above.
         
         """
         f_r = self.res_freq
@@ -543,34 +549,37 @@ class AirlineData:
     
     def _permittivity_calc(self,s_param,corr=False):
         """
-        Return the complex permittivity and loss tangent from S-parameters \
-            and their uncertainties (if present).
+        Return the complex permittivity and loss tangent from S-parameters 
+        and their uncertainties (if present).
     
-        Uses the New Non-iterative method described in Boughriet, A.H., Legrand, \
-            C. & Chapoton, A., 1997. Noniterative stable transmission/reflection \
-            method for low-loss material complex permittivity determination. \
-            IEEE Transactions on Microwave Theory and Techniques, 45(1), pp.52–57.
+        Uses the New Non-iterative method described in Boughriet, A.H., Legrand, 
+        C. & Chapoton, A., 1997. Noniterative stable transmission/reflection 
+        method for low-loss material complex permittivity determination. 
+        IEEE Transactions on Microwave Theory and Techniques, 45(1), pp.52–57.
         
         Assumes the magnetic permeability of the sample = 1 (i.e non-magnetic).
         
         Arguments
         ---------
-        s_param (str): Calculates complex permittivity using either \
-            the forward ('f') (S11,S21), or the reverse ('r') (S22 S12) \
+        s_param : str 
+            Calculates complex permittivity using either 
+            the forward ('f') (S11,S21), or the reverse ('r') (S22 S12) 
             S-Parameters.
             
         Return
         ------
-        f_0 (array): Array of measured frequency values.
+        f_0 : array 
+            Array of measured frequency values.
         
-        dielec (array): Real part of the complex permittivity \
-            (dielectric constant).
+        dielec : array 
+            Real part of the complex relative permittivity.
         
-        lossfac (array): Imaginary part of the complex permittivity \
-            (loss factor).
+        lossfac : array 
+            Imaginary part of the complex permittivity.
         
-        losstan (array): Loss tangent. Defined as the ratio of the imaginary \
-            and the real part of the complex permittivity (lossfac/dielec).
+        losstan : array 
+            Loss tangent. Defined as the ratio of the imaginary 
+            and the real part of the complex permittivity.
         """
         
         # Check if using corrected S-params
@@ -708,11 +717,14 @@ class AirlineData:
         
         Returns
         -------
-        delta_dielec (array): Uncertainty in real part.
+        delta_dielec : array 
+            Uncertainty in real part.
         
-        delta_lossfac (array): Uncertainty in imaginary part.
+        delta_lossfac : array 
+            Uncertainty in imaginary part.
         
-        delta_losstan (array): Uncertainty in loss tangent.
+        delta_losstan : array 
+            Uncertainty in loss tangent.
         """
         # Check if using corrected S-params
         if corr:
@@ -729,12 +741,7 @@ class AirlineData:
             L = self.L
         
         # Strip uarrays of their nominal values
-        if s_param == 'a':
-            err_s_r = (unp.std_devs(s11) + \
-                   unp.std_devs(s22))/2
-            err_s_t = (unp.std_devs(s21) + \
-                   unp.std_devs(s12))/2
-        elif s_param == 'f':
+        if s_param == 'f':
             err_s_r = unp.std_devs(s11)
             err_s_t = unp.std_devs(s21)
         else:
@@ -839,8 +846,8 @@ class AirlineData:
     
     def _de_embed(self):
         """
-        Perform S-parameter de-embedding to remove influence of washers on \
-            measurement.
+        Perform S-parameter de-embedding to remove influence of washers on 
+        measurement.
         """
         # Create synthetic teflon washer s-parameters
         epsilon = -1j*0.0007;
@@ -965,14 +972,14 @@ class AirlineData:
     
     def _boundary_correct(self):
         """
-        Correct calculated sprams for boundary effects in the airline after \
-            Hickson et al., 2017. Requires the effective solid permittivity \
-            of the material, the average particle size in the airline, and \
-            the average particle (solid) density to be supplied to the class\
-            instance. Uses the Looyenga mixing model to calculate the \
-            permittivity in the boundary region.
+        Correct calculated sprams for boundary effects in the airline after 
+        Hickson et al., 2017. Requires the effective solid permittivity 
+        of the material, the average particle size in the airline, and 
+        the average particle (solid) density to be supplied to the class
+        instance. Uses the Looyenga mixing model to calculate the 
+        permittivity in the boundary region.
             
-            As of now, produces dubious results for the imaginary part.
+        As of now, produces dubious results for the imaginary part.
         """
         beta = 1.835    # Porosity proportinality constant
         # Use washer corrected data if it exists
@@ -1030,21 +1037,29 @@ class AirlineData:
         """
         Calculates air gap corrected complex permittivity for solid samples.
         
-        Follows Baker-Jarvis et al., 1993 and Rhode & Schwarz Application Note RAC0607-0019_1_4E
+        Follows Baker-Jarvis et al., 1993 and Rhode & Schwarz 
+        Application Note RAC0607-0019_1_4E
         
         Arguments
         ---------
-        Ds2 (float): The inner diameter (cm) of the solid toroid sample to be specified by user
+        Ds2 : float 
+            The inner diameter (cm) of the solid toroid sample to be specified 
+            by user
         
-        Ds3 (float): The outer diameter (cm) of the solid toroid sample to be specified by user
+        Ds3 : float T
+            The outer diameter (cm) of the solid toroid sample to be specified 
+            by user
         
         Return
         ---------
-        corr_dielec (array): Corrected real part of measured permittivity
+        corr_dielec : array 
+            Corrected real part of measured permittivity
         
-        corr_lossfac (array): Corrected imaginary part of measured permittivity
+        corr_lossfac : array 
+            Corrected imaginary part of measured permittivity
         
-        corr_losstan (array): Corrected loss tangent 
+        corr_losstan : array 
+            Corrected loss tangent 
         """
         if self.corr:
             measured_dielec = unp.nominal_values(self.corr_avg_dielec)
@@ -1070,20 +1085,23 @@ class AirlineData:
     def draw_plots(self,default_setting=True,corr=False,normalized=False,\
                    publish=False):
         """
-        Plots permittivity data using make_plot from permittivity_plot_V1.
+        Plots permittivity data using make_plot from permittivity_plot.
         
-        Default is to plot average s-param results.
+        Default is to plot average results.
         
         Arguments
         ---------
-        default_setting (bool): if True, plots average dielectric constant, \
-            loss factor and loss tangent. If false prompts user to determine \
-            wether to plot, average, forward, reverse, or both s-parameter \
-            results. Default: True
+        default_setting : bool 
+            Default: True. If True, plots average dielectric constant, 
+            loss factor and loss tangent. If false prompts user to determine 
+            wether to plot, average, forward, reverse, or both s-parameter 
+            results. 
         
-        corr (bool): If True, use corrected sparam data. Default: False
+        corr : bool 
+            Default: False. If True, use corrected sparam data.
         
-        publish (bool): If True, save figures.
+        publish : bool 
+            If True, save figures.
         """
         # Check if using corrected data
         if corr and default_setting:
@@ -1141,8 +1159,10 @@ class AirlineData:
         pplot.make_plot(x,y3,'lt',**kwargs)
         
     def s_param_plot(self,corr=False):
-        """Plot raw S-Parameter data using make_sparam_plot from \
-        permittivity_plot_V1"""
+        """
+        Plot raw S-Parameter data using make_sparam_plot from
+        permittivity_plot
+        """
         if corr:
             pplot.make_sparam_plot(self.freq,[self.s11,self.corr_s11],\
                                    [self.s22,self.corr_s22],[self.s21,\
@@ -1153,8 +1173,8 @@ class AirlineData:
             
     def difference_plot(self):
         """
-        Plots the absolute difference between both ε′ and ε′′ calculated from 
-            forward (S11,S21) and reverse (S22,S12) S-Paramaters.
+        Plot the absolute difference between both ε′ and ε′′ calculated from 
+        forward (S11,S21) and reverse (S22,S12) S-Paramaters.
         """
         import matplotlib.pyplot as plt
         
@@ -1205,20 +1225,23 @@ class AirlineData:
             
 def multiple_meas(file_path=None,airline_name=None):
     """
-    Generate an instance of AirlineData for every file in a directory. Store \
-        the intances in a list, and plot them all using perm_compare.
+    Generate an instance of AirlineData for every file in a directory. Store 
+    the intances in a list, and plot them all using perm_compare.
         
     Arguments
     ---------
-    file_path (str): Full path of any file in the source directory. \
-        (Optional - will produce file dialog box if not provided.)
+    file_path : str, optional 
+        Full path of any file in the source directory. Will produce file dialog 
+        box if not provided.
     
-    airlne (str): Name of airline used. Every measurement must have been made \
-        in the same airline. (Optional - will prompt if not provided.)
+    airlne : str, optional
+        Name of airline used. Every measurement must have been made 
+        in the same airline. Will prompt if not provided.
         
     Return
     ------
-    class_list (lst): List of generated class instances of AirlineData.
+    class_list : lst 
+        List of generated class instances of AirlineData.
     """
     # Use _get_file to get the filepath and airline name if not provided
     if file_path:   # If file path provided as argument
@@ -1251,8 +1274,8 @@ def multiple_meas(file_path=None,airline_name=None):
 
 def run_default(airline_name='VAL',file_path=None,**kwargs):
     """
-    Run AirlineData on get_METAS_data with all the prompts and return the \
-        instance.
+    Run AirlineData on get_METAS_data with all the prompts and return the 
+    instance.
     """
     return AirlineData(*get_METAS_data(airline_name,file_path),**kwargs)
 

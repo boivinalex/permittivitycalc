@@ -391,8 +391,8 @@ class AirlineData:
         dims = {}
         # Store inner and outer diameters in a dictionary
         if self.airline_name in ('VAL','PAL'):
-            dims['D1'] = 6.205
-            dims['D4'] = 14.285
+            dims['D1'] = 6.204
+            dims['D4'] = 14.288
         elif self.airline_name == 'GAL':
             dims['D1'] = 6.19
             dims['D4'] = 14.32

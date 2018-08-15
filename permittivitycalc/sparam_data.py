@@ -112,17 +112,18 @@ class AirlineData:
             file_path/air_atm.txt
             file_path/air_atm_shorted.txt
     """
-    def __init__(self,L,airline,dataArray,file,corr=False,bulk_density=None,\
-                 temperature=None,name=None,date=None,solid_dielec=None,\
-                 solid_losstan=None,particle_diameter=None,\
-                 particle_density=None,nrw=False,shorted=False,\
-                 normalize_density=False,norm_eqn='LI'):
+    def __init__(self,L,airline,dataArray,file,name=None,date=None,\
+                 freq_cutoff=4e8,nrw=False,shorted=False,corr=False,\
+                 normalize_density=False,norm_eqn='LI',bulk_density=None,\
+                 solid_dielec=None,solid_losstan=None,particle_diameter=None,\
+                 particle_density=None,temperature=None):
         self.L = L
         self.airline_name = airline
         self.file = file
         self.corr = corr
         self.nrw = nrw
         self.shorted = shorted
+        self.freq_cutoff = freq_cutoff
         # Unpack data into arrays
         self.freq, self.s11, self.s21, self.s12, self.s22 = \
             self._unpack(dataArray)

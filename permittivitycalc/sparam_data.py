@@ -160,24 +160,43 @@ class AirlineData:
             self.avg_dielec = (self.forward_dielec + self.reverse_dielec)/2
             self.avg_lossfac = (self.forward_lossfac + self.reverse_lossfac)/2
             self.avg_losstan = self.avg_lossfac/self.avg_dielec
-        # Try to calculate corrected permittivity if array length is 601 only
-        # Also check for NaNs and don't run if any
-        if corr and len(self.freq) == 601:
+        # Try to calculate corrected (de-embedded) permittivity
+        # Fail if NaNs in data
+        if corr:
             try:
                 if not np.isnan(unp.nominal_values(self.avg_dielec)).any():
-                    self.Lcorr = self.L - 0.345 # Remove total washer length 
+                    self.Lcorr = self.L - 0.34 # Remove total washer length 
                     self.corr_s11, self.corr_s21, self.corr_s12, \
                         self.corr_s22 = self._de_embed()
                     if nrw:
-                        self.corr_avg_dielec, self.corr_avg_lossfac, \
-                            self.corr_avg_losstan, self.corr_avg_mu = \
-                            self._permittivity_calc('a',True)
+                        self.corr_forward_dielec, self.corr_forward_lossfac, \
+                            self.corr_forward_losstan, self.corr_forward_mu = \
+                            self._permittivity_calc('f',True)
+                        self.corr_reverse_dielec, self.corr_reverse_lossfac, \
+                            self.corr_reverse_losstan, self.corr_reverse_mu = \
+                            self._permittivity_calc('r',True)
+                        self.corr_avg_dielec = (self.corr_forward_dielec + \
+                                                 self.corr_reverse_dielec)/2
+                        self.corr_avg_lossfac = (self.corr_forward_lossfac + \
+                                                 self.corr_reverse_lossfac)/2
+                        self.corr_avg_losstan = \
+                            self.corr_avg_lossfac/self.corr_avg_dielec
+                        self.corr_avg_mu = (self.corr_forward_mu + \
+                                           self.corr_reverse_mu)/2
                     else:
-                        self.corr_avg_dielec, self.corr_avg_lossfac, \
-                            self.corr_avg_losstan = \
-                            self._permittivity_calc('a',True)
+                        self.corr_forward_dielec, self.corr_forward_lossfac, \
+                            self.corr_forward_losstan = \
+                            self._permittivity_calc('f',True)
+                        self.corr_reverse_dielec, self.corr_reverse_lossfac, \
+                            self.corr_reverse_losstan = \
+                            self._permittivity_calc('r',True)
+                        self.corr_avg_dielec = (self.corr_forward_dielec + \
+                                                 self.corr_reverse_dielec)/2
+                        self.corr_avg_lossfac = (self.corr_forward_lossfac + \
+                                                 self.corr_reverse_lossfac)/2
+                        self.corr_avg_losstan = self.corr_avg_lossfac/self.corr_avg_dielec
             except:
-                raise Warning('S-parameter correction failed. Using uncorrected data.')
+                raise Warning('S-parameter correction failed. Using uncorrected data. Check if NaNs in data.')
         self.res_freq = self._resonant_freq()
         self.freq_avg_dielec, self.freq_avg_losstan, self.freq_avg_dielec_std, \
             self.freq_avg_losstan_std = self._freq_avg()
@@ -758,50 +777,26 @@ class AirlineData:
         Perform S-parameter de-embedding to remove influence of washers on \
             measurement.
         """
-        # Get washer S-parameters and split into mag and phase
-        # Unpickle files produced by avg_sparam.py
-        with open(DATAPATH + 's11avg.p', 'rb') as f:
-            sw11 = pickle.load(f)
-        with open(DATAPATH + 's22avg.p', 'rb') as f:
-            sw22 = pickle.load(f)
-        with open(DATAPATH + 's21avg.p', 'rb') as f:
-            sw21 = pickle.load(f)
-        with open(DATAPATH + 's12avg.p', 'rb') as f:
-            sw12 = pickle.load(f)
-        with open(DATAPATH + 'washer_freq.p', 'rb') as f:
-            wfreq = pickle.load(f)
-        # Split washer sparams into mag and phase since uncertainties package 
-        #   does not support complex numbers
-        # TESTING OUT FLUSH WASHERS
-        sw22 = sw11
-        sw12 = sw21
-        sw11_mag = sw11[0]
-        sw22_mag = sw22[0]
-        sw21_mag = sw21[0]
-        sw12_mag = sw12[0]
-        sw11_phase = sw11[1]
-        sw22_phase = sw22[1]
-        sw21_phase = sw21[1]
-        sw12_phase = sw12[1]
-        # Cast to complex and unwrap phase
-        sw11_complex = 1j*(unp.nominal_values(sw11_mag)*\
-                           np.sin(np.unwrap(np.radians(unp.nominal_values(sw11_phase))))); \
-        sw11_complex += unp.nominal_values(sw11_mag)*\
-                            np.cos(np.unwrap(np.radians(unp.nominal_values(sw11_phase))))
-        sw22_complex = 1j*(unp.nominal_values(sw22_mag)*\
-                           np.sin(np.unwrap(np.radians(unp.nominal_values(sw22_phase))))); \
-        sw22_complex += unp.nominal_values(sw22_mag)*\
-                            np.cos(np.unwrap(np.radians(unp.nominal_values(sw22_phase))))
-        sw21_complex = 1j*(unp.nominal_values(sw21_mag)*\
-                           np.sin(np.unwrap(np.radians(unp.nominal_values(sw21_phase))))); \
-        sw21_complex += unp.nominal_values(sw21_mag)*\
-                            np.cos(np.unwrap(np.radians(unp.nominal_values(sw21_phase))))
-        sw12_complex = 1j*(unp.nominal_values(sw12_mag)*\
-                           np.sin(np.unwrap(np.radians(unp.nominal_values(sw12_phase))))); \
-        sw12_complex += unp.nominal_values(sw12_mag)*\
-                            np.cos(np.unwrap(np.radians(unp.nominal_values(sw12_phase))))
+        # Create synthetic teflon washer s-parameters
+        epsilon = -1j*0.0007;
+        epsilon += 2.1
+        mu = 1 - 1j*0
+        L = 0.17/100
+        lam_0 = (C/self.freq)
+        small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
+                    (lam_0/LAM_C)**2)
+        small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
+        t = np.exp(-small_gam*L)
+        big_gam = (small_gam_0*mu - small_gam) / (small_gam_0*mu + \
+          small_gam)
+        sw11_complex = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
+        sw21_complex = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
+        # Symetrical washers
+        sw22_complex = sw11_complex
+        sw12_complex = sw21_complex
 
-        # Split measured S-parameters into mag and phase
+        # Split measured sparams into mag and phase since uncertainties package 
+        #   does not support complex numbers
         sm11_mag = self.s11[0]
         sm22_mag = self.s22[0]
         sm21_mag = self.s21[0]
@@ -828,16 +823,6 @@ class AirlineData:
         sm12_complex += unp.nominal_values(sm12_mag)*\
                             np.cos(np.unwrap(np.radians(unp.nominal_values(sm12_phase))))
                             
-        # Check for equal length and same frequency points
-        #   In the future, consider interpolation in some cases
-        # np.allclose retunrs True if equal within a low tolerance
-        if not np.allclose(wfreq,self.freq):
-            # Output the washer freq array to compare to self.freq for 
-            #   troubleshooting
-            global washer_check
-            washer_check = wfreq
-            raise Exception('Measurement must have same 601 frequency points')
-        
         ## De-embed
         # Convert to T-parameters
         # Washers

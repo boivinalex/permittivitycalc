@@ -1082,81 +1082,116 @@ class AirlineData:
         return corr_dielec, corr_lossfac, corr_losstan
         
         
-    def draw_plots(self,default_setting=True,corr=False,normalized=False,\
-                   publish=False):
+    def draw_plots(self,default_settings=True,publish=False,**kwargs):
         """
         Plots permittivity data using make_plot from permittivity_plot.
         
-        Default is to plot average results.
+        If freq_cutoff exists, all frequency points lower than freq_cutoff 
+        will not be plotted.
         
         Arguments
         ---------
-        default_setting : bool 
-            Default: True. If True, plots average dielectric constant, 
-            loss factor and loss tangent. If false prompts user to determine 
-            wether to plot, average, forward, reverse, or both s-parameter 
-            results. 
-        
-        corr : bool 
-            Default: False. If True, use corrected sparam data.
+        default_settings : bool 
+            Default: True. If True, plots average real part of the permittivity, 
+            imaginary part of the permittivity and loss tangent. If corrected
+            or normalized data exist, it will be used in the plot. If False 
+            prompts user to determine wether to plot, Average, Forward, 
+            Reverse, or All results.
         
         publish : bool 
-            If True, save figures.
+            Default: False. If True, save figures.
+            
+        Additional Keyword Arguments
+        ----------------------------
+        These additional arguments can be supplied if default_settings is False
+            
+        corr : bool, optional
+            Can only be used with any of the plot types.
+            If True, use corrected sparam data, otheriwse use uncorrected data.
+            
+        normalized : bool, optional
+            Can only be used with Average plots.
+            If True, use normalized permittivity data. Supersedes corr if True.
         """
-        # Check if using corrected data
-        if corr and default_setting:
-            avg_dielec = self.corr_avg_dielec
-            avg_lossfac = self.corr_avg_lossfac
-            avg_losstan = self.corr_avg_losstan
-        elif corr and not default_setting:
-            raise Exception('default_setting must be True if using corrected data')
-        elif normalized:
-            avg_dielec = self.norm_dielec
-            avg_lossfac = self.norm_lossfac
-            avg_losstan = self.norm_losstan
-        else:
-            avg_dielec = self.avg_dielec
-            avg_lossfac = self.avg_lossfac
-            avg_losstan = self.avg_losstan
-        # Figure out what to plot
+        # If default_settings
+        #   Use first of normalized, corrected, or regular data
+        if default_settings and self.normalize_density:
+            plot_dielec = self.norm_dielec
+            plot_lossfac = self.norm_lossfac
+            plot_losstan = self.norm_losstan
+        elif default_settings and self.corr:
+            plot_dielec = self.corr_avg_dielec
+            plot_lossfac = self.corr_avg_lossfac
+            plot_losstan = self.corr_avg_losstan
+        elif default_settings:
+            plot_dielec = self.avg_dielec
+            plot_lossfac = self.avg_lossfac
+            plot_losstan = self.avg_losstan
+        
         x = self.freq
-        kwargs = {}
-        if default_setting:
-            y1 = avg_dielec
-            y2 = avg_lossfac
-            y3 = avg_losstan
-            kwargs = {"legend_label":[self.name]}
+
+        # Figure out what to plot
+        plot_kwargs = {}
+        if default_settings:
+            y1 = plot_dielec
+            y2 = plot_lossfac
+            y3 = plot_losstan
+            plot_kwargs = {"legend_label":[self.name]}
         else:
             # Prompt user
-            s_plot = input('Please designate "f" for Forward, "r" for ' + \
-                           'Reverse, "b" for Both, or "a" for average ' + \
-                           'S-Parameters: ')
-            if s_plot not in ('f','r','b','a'):
+            s_plot = input('Please designate "a" for Average, ' + \
+                           '"f" for Forward (S11,S21), "r" for ' + \
+                           'Reverse (S22,S12), or "all" for All three: ')
+            if s_plot not in ('f','r','all','a'):
                 raise Exception('Wrong input')
-            if s_plot == 'a':
-                y1 = avg_dielec
-                y2 = avg_lossfac
-                y3 = avg_losstan
+            if s_plot == 'a' and 'normalized' in kwargs:
+                y1 = self.norm_dielec
+                y2 = self.norm_lossfac
+                y3 = self.norm_losstan
+            elif s_plot == 'a' and 'corr' in kwargs:
+                y1 = self.corr_avg_dielec
+                y2 = self.corr_avg_lossfac
+                y3 = self.corr_avg_losstan
+            elif s_plot == 'a' :
+                y1 = self.avg_dielec
+                y2 = self.avg_lossfac
+                y3 = self.avg_losstan
             elif s_plot == 'f':
-                y1 = self.forward_dielec
-                y2 = self.forward_lossfac
-                y3 = self.forward_losstan
+                if 'corr' in kwargs:
+                    y1 = self.corr_forward_dielec
+                    y2 = self.corr_forward_lossfac
+                    y3 = self.corr_forward_losstan
+                else:
+                    y1 = self.forward_dielec
+                    y2 = self.forward_lossfac
+                    y3 = self.forward_losstan
             elif s_plot == 'r':
-                y1 = self.reverse_dielec
-                y2 = self.reverse_lossfac
-                y3 = self.reverse_losstan
+                if 'corr' in kwargs:
+                    y1 = self.corr_reverse_dielec
+                    y2 = self.corr_reverse_lossfac
+                    y3 = self.corr_reverse_losstan
+                else:
+                    y1 = self.reverse_dielec
+                    y2 = self.reverse_lossfac
+                    y3 = self.reverse_losstan
+            elif s_plot == 'all' and 'corr' in kwargs:
+                x = [x,x,x]
+                y1 = [self.corr_forward_dielec,self.corr_reverse_dielec,self.corr_avg_dielec]
+                y2 = [self.corr_forward_lossfac,self.corr_reverse_lossfac,self.corr_avg_lossfac]
+                y3 = [self.corr_forward_losstan,self.corr_reverse_losstan,self.corr_avg_losstan]
+                plot_kwargs = {"legend_label":['Forward [S11,S21]','Reverse [S22,S12]','Average']}
             else:
-                x = [self.freq,self.freq]
-                y1 = [self.forward_dielec,self.reverse_dielec]
-                y2 = [self.forward_lossfac,self.reverse_lossfac]
-                y3 = [self.forward_losstan,self.reverse_losstan]
-                kwargs = {"legend_label":['Forward','Reverse']}
+                x = [x,x,x]
+                y1 = [self.forward_dielec,self.reverse_dielec,self.avg_dielec]
+                y2 = [self.forward_lossfac,self.reverse_lossfac,self.avg_lossfac]
+                y3 = [self.forward_losstan,self.reverse_losstan,self.avg_losstan]
+                plot_kwargs = {"legend_label":['Forward [S11,S21]','Reverse [S22,S12]','Average']}
         if publish:
-            kwargs['publish'] = True
-            kwargs['name'] = self.name
-        pplot.make_plot(x,y1,'d',**kwargs)
-        pplot.make_plot(x,y2,'lf',**kwargs)
-        pplot.make_plot(x,y3,'lt',**kwargs)
+            plot_kwargs['publish'] = True
+            plot_kwargs['name'] = self.name
+        pplot.make_plot(x,y1,'d',**plot_kwargs)
+        pplot.make_plot(x,y2,'lf',**plot_kwargs)
+        pplot.make_plot(x,y3,'lt',**plot_kwargs)
         
     def s_param_plot(self,corr=False):
         """

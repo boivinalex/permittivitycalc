@@ -42,7 +42,7 @@ jobs:
     language: generic
     env: TRAVIS_PYTHON_VERSION=3.6
     script:
-    - travis_wait py.test --cov=./
+    - python -m pytest --cov=permittivitycalc --cov-report=term
     after_success:
     - codecov || echo "codecov upload failed"
     - echo "Build success"

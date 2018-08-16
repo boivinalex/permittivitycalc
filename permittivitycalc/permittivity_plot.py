@@ -13,7 +13,6 @@ from uncertainties import unumpy as unp
 # System
 import os
 import datetime
-import platform
 # Plotting
 if os.environ.get('DISPLAY','') == '':
     print('no display found. Using non-interactive Agg backend')

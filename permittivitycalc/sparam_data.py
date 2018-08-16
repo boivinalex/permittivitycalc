@@ -332,7 +332,7 @@ class AirlineData:
             self.bcorr_dielec, self.bcorr_losstan = self._boundary_correct()
             
     def __repr__(self):
-        rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \
+        rep = 'pc.AirlineData(*pc.get_METAS_data(airline=%r,file_path=%r),' % \
                 (self.airline_name,self.file) + \
                 'bulk_density=%r,temperature=%r,name=%r,date=%r,corr=%r' % \
                 (self.bulk_density,self.temperature,self.name,self.date,\
@@ -340,12 +340,14 @@ class AirlineData:
                  (self.solid_dielec,self.solid_losstan) + \
                  ',particle_diameter=%r,particle_density=%r' % \
                  (self.particle_diameter, self.particle_density) + \
-                 ',nrw=%r,normalize_density=%r,norm_eqn=%r)' % \
-                 (self.nrw, self.normalize_density, self.norm_eqn)
+                 ',nrw=%r,normalize_density=%r,norm_eqn=%r' % \
+                 (self.nrw, self.normalize_density, self.norm_eqn) + \
+                 ',shorted=%r,freq_cutoff=%r)' % \
+                 (self.shorted, self.freq_cutoff)
         return rep
         
     def __str__(self):
-        srep = 'measured in ' + self.airline_name 
+        srep = 'measured in ' + self.airline_name + ' (L = ' + str(self.L) + ')'
         if self.name:
             srep = self.name + ' ' + srep
         if self.date:
@@ -355,12 +357,19 @@ class AirlineData:
         if self.bulk_density:
             srep += ' with a bulk density of ' + str(self.bulk_density) + ' g/cm^3'
         srep += ' from file: \n' + self.file
+        if self.corr:
+            srep += '\n' + 'Corrected (de-embeded) data is available.'
         if self.normalize_density:
-            srep += '\n' + 'Normalized data at a bulk density of 1.60 g/cm^3 using the'
+            if isinstance(self.normalize_density, bool):
+                norm_val = str(1.60)
+            elif isinstance(self.normalize_density, (float,int)):
+                norm_val = str(self.normalize_density)
+            srep += '\n' + 'Normalized data at a bulk density of ' + norm_val \
+            + ' g/cm^3'
             if self.norm_eqn == 'LI':
-                srep += ' Lichtenecker equation'
+                srep += ' using the Lichtenecker equation'
             elif self.norm_eqn == 'LLL':
-                srep += 'Landau-Lifshitz-Looyenga equation'
+                srep += ' using the Landau-Lifshitz-Looyenga equation'
             srep += ' is available.'
         return srep
     

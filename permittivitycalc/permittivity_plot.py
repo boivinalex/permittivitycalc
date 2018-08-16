@@ -142,8 +142,12 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     x = []
     y = []
     for n in range(0,number_to_compare):
-        x.append(xval[n][xval[n]>freq_cutoff])
-        y.append(yval[n][xval[n]>freq_cutoff])
+        if freq_cutoff:
+            x.append(xval[n][xval[n]>freq_cutoff])
+            y.append(yval[n][xval[n]>freq_cutoff])
+        else:
+            x.append(xval[n])
+            y.append(yval[n])
     
     # Determined axes limits    
     x_max = 0

@@ -99,7 +99,7 @@ def get_METAS_data(airline=None,file_path=None):
     if airline == '7':
         L = 9.9873     # 7 mm airline - 10 cm
     elif airline == 'VAL' or airline == 'PAL':
-        L = 14.979
+        L = 14.989
         #L = 14.9835    # 14mm airline - 15 cm 
     elif airline == 'GAL':
         L = 14.991
@@ -110,35 +110,66 @@ def get_METAS_data(airline=None,file_path=None):
 
 def perm_compare(classlist,allplots=False,**kwargs):
     """
-    Given a list of AirlineData instances, plot their permittivity results \
-        together using permittivity_plot_V1.py
+    Given a list of AirlineData instances, plot their permittivity results 
+    together using permittivity_plot. Fot each 
+    item in the list, will plot the first available data type out of: 
+    normalized data, corrected (de-embeded) data, uncorrected data.
+    
+    Will use the smallest freq_cutoff value in the list (if avaialbe) for 
+    plotting.
         
     Arguments
     ---------
-    classlist (list): List of instances of AirlineData
+    classlist : list of sparam_data.AirlineData
+        List of instances of AirlineData.
     
-    allplots (bool): If True plot all of dielectric constant, loss factor and \
-        loss tangent. If Flase plot only the dielectric constant and the loss \
-        tangent. Default: False
+    allplots : bool 
+        Default: False. If True plot all of real and imaginary parts of the 
+        permittivity and the loss tangent. If Flase plot only the real part
+        and the loss tangent.
     """
+    # Check that classlist is a list
+    if isinstance(classlist,list):
+        pass
+    else:
+        raise Exception('AirlineData instances must be provided in a list')
+    # Create data lists
     freq = []
     dielec = []
     losstan = []
     labels = []
+    cutoffs = []
     for item in classlist:
         freq.append(item.freq)
+        labels.append(item.name)
+        cutoffs.append(item.freq_cutoff)
         if item.normalize_density: # Check for normalize_density
             dielec.append(item.norm_dielec)
             losstan.append(item.norm_losstan)
+        elif item.corr:
+            dielec.append(item.corr_avg_dielec)
+            losstan.append(item.corr_avg_losstan)
         else:
             dielec.append(item.avg_dielec)
             losstan.append(item.avg_losstan)
-        labels.append(item.name)
-    kwargs["legend_label"] = labels
+    # Also get lossfac if allplots
     if allplots:
         lossfac = []
         for item in classlist:
-            lossfac.append(item.avg_lossfac)
+            if item.normalize_density:
+                lossfac.append(item.norm_lossfac)
+            elif item.corr:
+                lossfac.append(item.corr_avg_lossfac)
+            else:
+                lossfac.append(item.avg_lossfac)
+    # Pass arguments to make_plot
+    kwargs["legend_label"] = labels
+    if None in cutoffs:     #pass None as freq_cutoff if any of them are None
+        kwargs['freq_cutoff'] = None
+    else:   #else pass the smallest one
+        kwargs['freq_cutoff'] = np.min(cutoffs)
+    # Make the plots
+    if allplots:
         pplot.make_plot(freq,dielec,'d',**kwargs)
         pplot.make_plot(freq,lossfac,'lf',**kwargs)
         pplot.make_plot(freq,losstan,'lt',**kwargs)

@@ -9,8 +9,12 @@ Created on Wed May 23 16:03:51 2018
 import os
 import unittest
 from unittest.mock import patch
-from unittest.mock import MagicMock
 import permittivitycalc.helper_functions as hf
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
+    import matplotlib
+    matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 
 class helper_functions_TestCase(unittest.TestCase):
@@ -137,6 +141,7 @@ class helper_functions_TestCase(unittest.TestCase):
             hf.perm_compare(datasets)
         except Exception as e:
             raise
+        plt.close('all')
 
     def test_perm_compare_allplots(self):
         datasets = [self.dataset1,self.dataset2]
@@ -144,6 +149,7 @@ class helper_functions_TestCase(unittest.TestCase):
             hf.perm_compare(datasets,allplots=True)
         except Exception as e:
             raise
+        plt.close('all')
 
     def test_perm_compare_norm(self):
         datasets = [self.dataset1,self.normdataset]
@@ -151,6 +157,7 @@ class helper_functions_TestCase(unittest.TestCase):
             hf.perm_compare(datasets)
         except Exception as e:
             raise
+        plt.close('all')
             
     def test_perm_compare_corr(self):
         datasets = [self.dataset1,self.corrdataset]
@@ -158,6 +165,7 @@ class helper_functions_TestCase(unittest.TestCase):
             hf.perm_compare(datasets)
         except Exception as e:
             raise
+        plt.close('all')
             
     def test_perm_compare_none(self):
         datasets = [self.dataset1,self.nonedataset]
@@ -165,13 +173,15 @@ class helper_functions_TestCase(unittest.TestCase):
             hf.perm_compare(datasets)
         except Exception as e:
             raise
+        plt.close('all')
             
     def test_perm_compare_cut(self):
         datasets = [self.dataset1,self.cutdataset]
         try:
             hf.perm_compare(datasets)
         except Exception as e:
-            raise  
+            raise
+        plt.close('all')
 
     def test_perm_compare_fail(self):
         fake = 5

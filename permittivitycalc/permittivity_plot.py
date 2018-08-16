@@ -95,19 +95,19 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     
     # Default settings for plotting permittivity data   
     if plot_type == 'd': # Real part
-        plot_title = 'Dielectric Constant'
-        ylabel = '$\epsilon^\prime$'
-        xlabel = 'Frequency (Hz)'
+        plot_title = 'Real Part of the Permittivity'
+        ylabel = '$\epsilon^{\prime}_{r}$'
+        xlabel = 'Frequency'
         rnd = 1 # decimals to round to for axes determination
     elif plot_type == 'lf': # Imaginary part
-        plot_title = 'Loss Factor'
-        ylabel = '$\epsilon^{\prime\prime}$'
-        xlabel = 'Frequency (Hz)'
+        plot_title = 'Imaginary Part of the Permittivity'
+        ylabel = '$\epsilon^{\prime\prime}_{r}$'
+        xlabel = 'Frequency'
         rnd = 2
     elif plot_type == 'lt': # Loss tan
         plot_title = 'Loss Tangent'
         ylabel = '$tan\delta$'
-        xlabel = 'Frequency (Hz)'
+        xlabel = 'Frequency'
         rnd = 2
     elif plot_type == 'c': # Custom plot
         plot_title = plot_title
@@ -138,7 +138,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
             if not legend_label[n]:
                 legend_label[n] = 'Data {}'.format(n+1)
         
-    # Remove 300kHz point
+    # Remove all points lower than freq_cutoff
     x = []
     y = []
     for n in range(0,number_to_compare):
@@ -150,10 +150,10 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
             y.append(yval[n])
     
     # Determined axes limits    
-    x_max = 0
-    x_min = 9999999999
-    y_max = 0
-    y_min = 9999999999
+    x_max = -np.inf
+    x_min = np.inf
+    y_max = -np.inf
+    y_min = np.inf
     for n in range(0,number_to_compare):
         x_chk = unp.nominal_values(x[n])
         max_tmp = round(max(x_chk[~np.isnan(x_chk)]),rnd)
@@ -197,23 +197,52 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     # Plot
     f = plt.figure(figsize=figure_size)
     ax = f.add_subplot(111)
+    # Plot labels
     ax.set_title(plot_title, fontsize=40)
-    if number_to_compare > 8:
+    ax.set_ylabel(ylabel, fontsize=40)
+    ax.set_xlabel(xlabel, fontsize=40)
+    # Colours
+    if number_to_compare > 6:
         ax.set_prop_cycle(cycler('color',\
                             sns.cubehelix_palette(number_to_compare)))
     else:
         ax.set_prop_cycle(cycler('color',\
-                            sns.color_palette("Dark2",number_to_compare)))    
-    ax.spines["top"].set_visible(False)  
-    ax.spines["right"].set_visible(False)
-    ax.get_xaxis().tick_bottom()  
-    ax.get_yaxis().tick_left()
+                            sns.color_palette("Dark2",number_to_compare)))
+    # Plot axes
     ax.set_xscale('log')
     ax.set_ylim(y_min-buffer, y_max+buffer)
     ax.set_yticks(np.arange(y_min-buffer, y_max+buffer, spacing))
-    ax.set_ylabel(ylabel, fontsize=40)
-    ax.set_xlabel(xlabel, fontsize=40)
-    ax.tick_params(axis='both', which='major', labelsize=30)
+    # Customize x ticks
+    from matplotlib.ticker import FixedLocator, LogLocator, EngFormatter, NullFormatter
+    x_logmin = np.log10(x_min) # log of min and max x values
+    x_logmax = np.log10(x_max)
+    x_logticks = np.logspace(x_logmin, x_logmax, num=4) # 4 equaly spaced points in log space
+    x_ticklocs = []
+    for n in range(len(x_logticks)): # round scientific values and make a list
+        x_ticklocs.append(np.float(np.format_float_scientific(x_logticks[n],\
+                        precision=0)))
+    if len(set(x_ticklocs)) < 4: # check that this produced 4 unique values
+        x_ticklocs = [] # if not do it again with precision = 1
+        for n in range(len(x_logticks)): 
+            x_ticklocs.append(np.float(np.format_float_scientific(x_logticks[n]\
+                        ,precision=1)))
+    majorLocator = FixedLocator(x_ticklocs)
+    majorFormatter = EngFormatter(unit='Hz') # Format major ticks with units
+    minorLocator = LogLocator(subs='all') # Use all interger multiples of the log base for minor ticks 
+    minorFormatter =  NullFormatter() # No minor tick labels 
+    # Apply x ticks
+    ax.get_xaxis().set_major_locator(majorLocator)
+    ax.get_xaxis().set_major_formatter(majorFormatter)
+    ax.get_xaxis().set_minor_locator(minorLocator)
+    ax.get_xaxis().set_minor_formatter(minorFormatter)
+    # Format the actual tick marks
+    ax.tick_params(which='both', width=1, labelsize=30)
+    ax.tick_params(which='major', length=7)
+    ax.tick_params(which='minor', length=4)
+    # Use smaller line width for minor tick grid lines
+    ax.grid(b=True, which='major', color='w', linewidth=1.0)
+    ax.grid(b=True, which='minor', color='w', linewidth=0.5)
+    # Do the actual plotting
     if number_to_compare == 1: # plot uncertainty only if plotting one dataset
         ax.plot(unp.nominal_values(x[0]), unp.nominal_values(y[0]), lw=2, \
                 label=legend_label[0])
@@ -222,20 +251,21 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
                         unp.std_devs(y[0]), color="#3F5D7D",label='Uncertainty')
     else:
         for n in range(0,number_to_compare):
-            ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
-                    label=legend_label[n])
-    ax.legend(fontsize=22,loc='best')
+            ax.errorbar(unp.nominal_values(x[n]), unp.nominal_values(y[n]), \
+                        yerr=unp.std_devs(y[n]), errorevery=25, elinewidth=1, \
+                        capthick=1, capsize=2,lw=2,label=legend_label[n])
+#            ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
+#                    label=legend_label[n])
+    ax.legend(fontsize=30,loc='best')
+    plt.show()
     if publish:
-        # Check for directory
-#        if not os.path.exists(DATAPATH):
-#            os.makedirs(DATAPATH)
 #        # Make file name    
-        datapath = _dirprompt()
+        datapath = _dirprompt()     # prompt for save dir
         savename = name.replace(' ','-') + '_' + plot_title.replace(' ','-') \
-            + '_' + DATE + '.png'
+            + '_' + DATE + '.eps'
         filepath = os.path.join(datapath,savename)
         # Save figure to .eps file
-        plt.savefig(filepath,dpi=300,format='png',pad_inches=0)
+        plt.savefig(filepath,dpi=300,format='eps',pad_inches=0)
     
 def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
     """

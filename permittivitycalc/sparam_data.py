@@ -1222,11 +1222,12 @@ class AirlineData:
         
         if self.freq_cutoff:
             freq = self.freq[self.freq>=self.freq_cutoff]
+            real_diff = self.real_part_diff_array[self.freq>=self.freq_cutoff]
+            imag_diff = self.imag_part_diff_array[self.freq>=self.freq_cutoff]
         else:
             freq = self.freq
-            
-        real_diff = self.real_part_diff_array
-        imag_diff = self.imag_part_diff_array
+            real_diff = self.real_part_diff_array
+            imag_diff = self.imag_part_diff_array
         
         f,ax = plt.subplots(2, sharex=True, figsize=(18, 15))
         ax[0].loglog(freq,real_diff,'ko-',label='|$\epsilon^\prime[S_{11},S_{21}]$ - $\epsilon^\prime[S_{22},S_{12}]$|')
@@ -1243,8 +1244,20 @@ class AirlineData:
         ax[1].tick_params(axis='both', which='major', width=2, labelsize=30)
         ax[1].tick_params(axis='both', which='minor', width=1.5)
         if self.freq_cutoff:
-            from matplotlib.ticker import LogLocator, EngFormatter, NullFormatter
-            majorLocator = LogLocator(subs=(1.0,4.0))
+            from matplotlib.ticker import FixedLocator, LogLocator, EngFormatter, NullFormatter
+            x_logmin = np.log10(np.min(freq)) # log of min and max x values
+            x_logmax = np.log10(np.max(freq))
+            x_logticks = np.logspace(x_logmin, x_logmax, num=4) # 4 equaly spaced points in log space
+            x_ticklocs = []
+            for n in range(len(x_logticks)): # round scientific values and make a list
+                x_ticklocs.append(np.float(np.format_float_scientific(x_logticks[n],\
+                                precision=0)))
+            if len(set(x_ticklocs)) < 4: # check that this produced 4 unique values
+                x_ticklocs = [] # if not do it again with precision = 1
+                for n in range(len(x_logticks)): 
+                    x_ticklocs.append(np.float(np.format_float_scientific(x_logticks[n]\
+                                ,precision=1)))
+            majorLocator = FixedLocator(x_ticklocs)
             majorFormatter = EngFormatter(unit='Hz') # Format major ticks with units
             minorLocator = LogLocator(subs='all') # Use all interger multiples of the log base for minor ticks 
             minorFormatter =  NullFormatter() # No minor tick labels 

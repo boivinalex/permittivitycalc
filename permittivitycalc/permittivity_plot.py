@@ -231,8 +231,14 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     ax.set_yticks(np.arange(y_min-buffer, y_max+buffer, spacing))
     # Customize x ticks
     from matplotlib.ticker import FixedLocator, LogLocator, EngFormatter, NullFormatter
-    x_logmin = np.log10(x_min) # log of min and max x values
-    x_logmax = np.log10(x_max)
+    if x_min == 0: # log of min and max x values
+        x_logmin = 0 # don't take log of 0
+    else:
+        x_logmin = np.log10(x_min) 
+    if x_max == 0:
+        x_logmax = 0
+    else:
+        x_logmax = np.log10(x_max)
     x_logticks = np.logspace(x_logmin, x_logmax, num=4) # 4 equaly spaced points in log space
     x_ticklocs = []
     for n in range(len(x_logticks)): # round scientific values and make a list

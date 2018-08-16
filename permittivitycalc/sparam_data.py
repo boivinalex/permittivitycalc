@@ -1167,6 +1167,8 @@ class AirlineData:
                 y1 = self.avg_dielec
                 y2 = self.avg_lossfac
                 y3 = self.avg_losstan
+            elif 'normalized' in kwargs:
+                raise Exception('normalized=True can only be used with Average "a" plots')
             elif s_plot == 'f':
                 if 'corr' in kwargs:
                     y1 = self.corr_forward_dielec

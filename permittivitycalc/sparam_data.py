@@ -1103,10 +1103,13 @@ class AirlineData:
             
         Additional Keyword Arguments
         ----------------------------
-        These additional arguments can be supplied if default_settings is False
+        These additional arguments can be supplied if default_settings is False.
+        
+            If default_settings is False and neither of these are provided, 
+            uncorrected and unnormalized data will be ploted! 
             
         corr : bool, optional
-            Can only be used with any of the plot types.
+            Can be used with any of the plot types.
             If True, use corrected sparam data, otheriwse use uncorrected data.
             
         normalized : bool, optional
@@ -1129,7 +1132,6 @@ class AirlineData:
             plot_losstan = self.avg_losstan
         
         x = self.freq
-
         # Figure out what to plot
         plot_kwargs = {}
         if default_settings:
@@ -1186,9 +1188,14 @@ class AirlineData:
                 y2 = [self.forward_lossfac,self.reverse_lossfac,self.avg_lossfac]
                 y3 = [self.forward_losstan,self.reverse_losstan,self.avg_losstan]
                 plot_kwargs = {"legend_label":['Forward [S11,S21]','Reverse [S22,S12]','Average']}
+        # Pass publish arguments        
         if publish:
             plot_kwargs['publish'] = True
             plot_kwargs['name'] = self.name
+        # Pass freq_cutoff
+        if self.freq_cutoff:
+            plot_kwargs['freq_cutoff'] = self.freq_cutoff
+        # Make plots
         pplot.make_plot(x,y1,'d',**plot_kwargs)
         pplot.make_plot(x,y2,'lf',**plot_kwargs)
         pplot.make_plot(x,y3,'lt',**plot_kwargs)

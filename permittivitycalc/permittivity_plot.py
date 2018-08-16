@@ -40,7 +40,7 @@ def _dirprompt():
 def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
               plot_title=None, ylabel=None, xlabel=None, spacing=None, \
               buffer=None, xlim=None, ylim=None, figure_size=(16,10), \
-              publish=False, round_val=None):
+              round_val=None, freq_cutoff=None, publish=False):
     """
     Takes input from S_Param_Script_V5 and plots calculated permittivity. Can \
     handle multiple data sets. Plots uncertainty countour if plotting single \
@@ -78,7 +78,17 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     
     ylim (tuples, float): Manually set y-axis limits. Currently not implemented.
     
-    figure_size (tuple, int): Set the matplotlib figsize. Default: (12,9).
+    figure_size (tuple, int): Set the matplotlib figsize. Default: (16,10).
+    
+    round_val : float, optional
+        For use with plot_type='c'. When automaticaly determining the axes 
+        limits by finding the max and min value in the input data, round_val 
+        determins what decimal point to round to. Small numbers should use more 
+        decimals. round_val is automatically set to 1 for plot_type 'd' and 2 
+        for plot_type 'lf' or 'lt'.
+        
+    freq_cutoff : float, optional
+        Data points lower than freq_cutoff will not be plotted.
     
     publish (bool): If True save figure as .eps file. Default: False
     """
@@ -132,8 +142,8 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     x = []
     y = []
     for n in range(0,number_to_compare):
-        x.append(xval[n][xval[n]>300000])
-        y.append(yval[n][xval[n]>300000])
+        x.append(xval[n][xval[n]>freq_cutoff])
+        y.append(yval[n][xval[n]>freq_cutoff])
     
     # Determined axes limits    
     x_max = 0

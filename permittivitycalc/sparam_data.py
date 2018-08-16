@@ -458,10 +458,10 @@ class AirlineData:
             
     def _resonant_freq(self):
         """
-        Calculate and return array of resonant frequencies from complex permittivity \ 
-        and/or permeability measurement.
+        Calculate and return array of resonant frequencies from complex 
+        permittivity and/or permeability measurement.
     
-        Follows David Stillman PhD Thesis / NIST Technical Note 1355 ??
+        Follows David Stillman PhD Thesis
 
         """
         

@@ -42,46 +42,62 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
               buffer=None, xlim=None, ylim=None, figure_size=(16,10), \
               round_val=None, freq_cutoff=None, publish=False):
     """
-    Takes input from S_Param_Script_V5 and plots calculated permittivity. Can \
-    handle multiple data sets. Plots uncertainty countour if plotting single \
-    dataset with uncertainty present.
+    Takes input from sparam_data and plots calculated permittivity. Can 
+    handle multiple data sets. Plots uncertainty countour if plotting single 
+    dataset with uncertainty present and plots error bars every 25 points when
+    plotting multiple datasets.
     
     Arguments
     ---------
-    xval (array or list): x-axis data. Multiple data sets must be in a list.
+    xval : array or list 
+        x-axis data. Multiple data sets must be in a list.
     
-    yval (array or list): y-axis data. Multiple data sets must be in a list.
+    yval : array or list 
+        y-axis data. Multiple data sets must be in a list.
     
-    plot_type (str): Flag for default plot types. Can be set to 'd' for Real \
-        Part, 'lf' for Imaginary Part, 'lt' for Loss Tangent, or 'c' for \
-        Custom. If 'c' is used, plot_title, ylabel, xlabel, and round_val \
+    plot_type : str  
+        Flag for default plot types. Can be set to 'd' for Real 
+        Part, 'lf' for Imaginary Part, 'lt' for Loss Tangent, or 'c' for 
+        Custom. If 'c' is used, plot_title, ylabel, xlabel, and round_val 
         must be set.
         
-    legend_label (list of str): Plot legend label. Each dataset much have it's \
+    legend_label : list of str, optional
+        Plot legend label. Each dataset much have it's 
         own label. Stings must be in a list.
         
-    name (str): For use with publish=True. Used in file name of saved figure. 
+    name : str, optional
+        Required when publish=True. Used in file name of saved figure. 
     
-    plot_title (str): For use with plot_type='c'. Title of the plot.
+    plot_title : str, optional
+        Required when plot_type='c'. Title of the plot.
     
-    ylabel (str): For use with plot_type='c'. Y-axis label.
+    ylabel : str, optional
+        Required when plot_type='c'. Y-axis label.
     
-    xlabel (str): For use with plot_type='c'. X-axis label.
+    xlabel : str, optional
+        Required when plot_type='c'. X-axis label.
     
-    spacing (float): For use with plot_type='c'. Sets the spacing between \
+    spacing : float, optional
+        Required when plot_type='c'. Sets the spacing between 
         y-axis tick marks. Currently not implemented.
         
-    buffer (float): For use with plot_type='c'. Sets buffer space around the \
+    buffer : float, optional
+        Required when plot_type='c'. Sets buffer space around the 
         min and max y-axis values. Currently not implemented.
         
-    xlim (tuple, float): Manually set x-axis limits. Currently not implemented.
+    xlim : tuple or float, optional
+        Required when plot_type='c'. Manually set x-axis limits. Currently not 
+        implemented.
     
-    ylim (tuples, float): Manually set y-axis limits. Currently not implemented.
+    ylim : tuple or float, optional
+        Required when plot_type='c'. Manually set y-axis limits. Currently not 
+        implemented.
     
-    figure_size (tuple, int): Set the matplotlib figsize. Default: (16,10).
+    figure_size : tuple or int, optional
+        Set the matplotlib figsize. Default: (16,10).
     
     round_val : float, optional
-        For use with plot_type='c'. When automaticaly determining the axes 
+        Required when plot_type='c'. When automaticaly determining the axes 
         limits by finding the max and min value in the input data, round_val 
         determins what decimal point to round to. Small numbers should use more 
         decimals. round_val is automatically set to 1 for plot_type 'd' and 2 
@@ -90,7 +106,8 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     freq_cutoff : float, optional
         Data points lower than freq_cutoff will not be plotted.
     
-    publish (bool): If True save figure as .eps file. Default: False
+    publish : bool, optional
+        If True save figure as .eps file. Default: False.
     """
     
     # Default settings for plotting permittivity data   
@@ -275,11 +292,14 @@ def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
     
     Arguments
     ---------
-    freq (array): Frequency points.
+    freq : array 
+        Frequency points.
     
-    s11,s22,s21,s12 (array or list of arrays): Mag and Phase S-Parameter data.
+    s11,s22,s21,s12 : array or list of arrays 
+        Mag and Phase S-Parameter data.
     
-    label (list): (Optional) List of labels. Default: None
+    label : list, optional 
+        List of labels. Default: None
     """
     # Checks if input data is in a list and determines number of things to plot
     #   NOTE: Multiple data sets must be in a list      

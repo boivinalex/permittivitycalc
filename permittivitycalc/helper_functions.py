@@ -68,23 +68,27 @@ def _get_file(airline=None,file_path=None):
     
 def get_METAS_data(airline=None,file_path=None):
     """
-    Return data arrays from METAS VNA Tools II text file based on user input \
+    Return data arrays from METAS VNA Tools II text file based on user input 
     Frequencies must be in Hz. Recomeneded precision in VNA Tools II is f9.
     
     Arguments
     ---------
-    airline (str): Airline used for measurement. Options are: 'VAL', \
-        'PAL', 'GAL', '7'. If not provided, will prompt user. Prompt will \
+    airline : str 
+        Airline used for measurement. Options are: 'VAL', 
+        'PAL', 'GAL', '7'. If not provided, will prompt user. Prompt will 
         allow user to input a custom airline length.
     
-    file_path (str): If a path is not given, will prompt user for file. \
+    file_path : str 
+        If a path is not given, will prompt user for file. 
         Default: None
     
     Return
     ------
-    L (float): Length of airline in cm.
+    L : float 
+        Length of airline in cm.
     
-    SparmArray (array): S-parameters and their uncertainties (if present)
+    SparmArray : array 
+        S-parameters and their uncertainties (if present).
     """
     
     # Get the file path and the airline name

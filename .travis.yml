@@ -16,10 +16,10 @@ before_install:
 - conda config --add channels conda-forge
 - conda info -a
 - conda create -q -n test-env python=$TRAVIS_PYTHON_VERSION
-- if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov; fi
 install:
 - export PATH=$HOME/miniconda/bin:$PATH
 - source activate test-env
+- conda install --yes pytest-cov codecov
 - conda install --file requirements.txt
 - conda list
 - python setup.py install
@@ -33,20 +33,18 @@ jobs:
     sudo: required
     python: 3.6
     script:
-    - if  [[ "$COVERAGE" == "true" ]]; then py.test --cov=./; fi
+    - py.test --cov=./
     after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed";
-      fi
+    - codecov || echo "codecov upload failed"
     - echo "Build success"
   - stage: test
     os: osx
     language: generic
     env: TRAVIS_PYTHON_VERSION=3.6
     script:
-    - if  [[ "$COVERAGE" == "true" ]]; then py.test --cov=./; fi
+    - py.test --cov=./
     after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed";
-      fi
+    - codecov || echo "codecov upload failed"
     - echo "Build success"
   - stage: deploy
     python: 3.6

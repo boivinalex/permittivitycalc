@@ -33,7 +33,7 @@ jobs:
     sudo: required
     python: 3.6
     script:
-    - if  [[ "$COVERAGE" == "true" ]]; py.test --cov=./; fi
+    - if  [[ "$COVERAGE" == "true" ]]; then py.test --cov=./; fi
     after_success:
     - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed";
       fi
@@ -43,7 +43,7 @@ jobs:
     language: generic
     env: TRAVIS_PYTHON_VERSION=3.6
     script:
-    - if  [[ "$COVERAGE" == "true" ]]; py.test --cov=./; fi
+    - if  [[ "$COVERAGE" == "true" ]]; then py.test --cov=./; fi
     after_success:
     - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed";
       fi

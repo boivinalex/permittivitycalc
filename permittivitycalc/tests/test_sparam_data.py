@@ -23,17 +23,20 @@ class sparam_data_TestCase(unittest.TestCase):
     def setUp(self):
         self.data_path = os.path.join(pc.__path__[0], 'data')
         self.file_path = os.path.join(self.data_path, 'serpentine_dry.txt')
-#        self.file_path2 = os.path.join(self.data_path, 'rexolite_PAL.txt')
+        self.file_path2 = os.path.join(self.data_path, 'rexolite_PAL.txt')
         self.fake_path = os.path.join(self.data_path, 'fake.txt')
         self.dataset1 = pc.run_default(airline_name='VAL',file_path=self.file_path)
-#        self.dataset2 = pc.run_default(airline_name='VAL',file_path=self.file_path2)
+        self.dataset2 = pc.run_default(airline_name='VAL',file_path=self.file_path2,corr=True,freq_cutoff=None)
         self.normdataset = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path),bulk_density=1.6,name='Serpentine',normalize_density=True)
+        self.normdataset2 = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path),\
+                                           bulk_density=1.6,name='Serpentine',normalize_density=True,\
+                                           norm_eqn='LLL',corr=True,date='date',temperature=25)
 
     def test_repr(self):
         self.assertIsNotNone(self.dataset1.__repr__())
 
     def test_str(self):
-        self.assertIsNotNone(self.dataset1.__str__())
+        self.assertIsNotNone(self.normdataset2.__str__())
 
     def test_file_import(self):
         """Test file import"""
@@ -51,7 +54,7 @@ class sparam_data_TestCase(unittest.TestCase):
         test = pc.AirlineData\
                 (*pc.get_METAS_data(airline='VAL',file_path=self.file_path),nrw=True)
         self.assertIsNotNone(test)
-        self.assertIsNotNone(test.mu)
+        self.assertIsNotNone(test.avg_mu)
         self.assertIsNotNone(test.avg_dielec)
         self.assertIsNotNone(test.avg_losstan)
         
@@ -140,21 +143,76 @@ class sparam_data_TestCase(unittest.TestCase):
     def test_draw_plots_normalized(self):
         """Test draw_plots with normalized data"""
         try:
-            self.normdataset.draw_plots(normalized=True)
+            self.normdataset.draw_plots(default_settings=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    def test_draw_plots_corr(self):
+        """Test draw_plots with corrected data"""
+        try:
+            self.dataset2.draw_plots(default_settings=True)
         except Exception as e:
             raise
         plt.close('all')
 
-    def test_draw_plots_corr_notdefault(self):
-        """Test draw_plots fails when corr and not default_setting"""
+    @patch('builtins.input',return_value='a')
+    def test_draw_plots_corr_notdefault(self,mock):
+        """Test a draw_plots with corrected data"""
+        try:
+            self.dataset2.draw_plots(default_settings=False,corr=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+    
+    @patch('builtins.input',return_value='f')
+    def test_draw_plots_corr_notdefault_f(self,mock):
+        """Test f draw_plots with corrected data"""
+        try:
+            self.dataset2.draw_plots(default_settings=False,corr=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    @patch('builtins.input',return_value='r')
+    def test_draw_plots_corr_notdefault_r(self,mock):
+        """Test r draw_plots with corrected data"""
+        try:
+            self.dataset2.draw_plots(default_settings=False,corr=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    @patch('builtins.input',return_value='all')
+    def test_draw_plots_corr_notdefault_all(self,mock):
+        """Test all draw_plots with corrected data"""
+        try:
+            self.dataset2.draw_plots(default_settings=False,corr=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    @patch('builtins.input',return_value='a')
+    def test_draw_plots_norm_notdefault(self,mock):
+        """Test draw_plots with norm data"""
+        try:
+            self.normdataset.draw_plots(default_settings=False,normalized=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    @patch('builtins.input',return_value='f')
+    def test_draw_plots_norm_notdefault_wrong(self,mock):
+        """Test draw_plots fails when normalized and not default_settings 
+        and not average"""
         with self.assertRaises(Exception):
-            self.dataset1.draw_plots(corr=True,default_setting=False)
+            self.normdataset2.draw_plots(normalized=True,default_settings=False)
 
     @patch('builtins.input',return_value='a')
     def test_draw_plots_notdefault_a(self,mock):
         """Test draw_plots average plot"""
         try:
-            self.dataset1.draw_plots(default_setting=False)
+            self.dataset1.draw_plots(default_settings=False)
         except Exception as e:
             raise
         plt.close('all')
@@ -163,7 +221,7 @@ class sparam_data_TestCase(unittest.TestCase):
     def test_draw_plots_notdefault_f(self,mock):
         """Test draw_plots forward plot"""
         try:
-            self.dataset1.draw_plots(default_setting=False)
+            self.dataset1.draw_plots(default_settings=False)
         except Exception as e:
             raise
         plt.close('all')
@@ -172,16 +230,16 @@ class sparam_data_TestCase(unittest.TestCase):
     def test_draw_plots_notdefault_r(self,mock):
         """Test draw_plots backwards plot"""
         try:
-            self.dataset1.draw_plots(default_setting=False)
+            self.dataset1.draw_plots(default_settings=False)
         except Exception as e:
             raise
         plt.close('all')
 
-    @patch('builtins.input',return_value='b')
+    @patch('builtins.input',return_value='all')
     def test_draw_plots_notdefault_b(self,mock):
         """Test draw_plots both plots"""
         try:
-            self.dataset1.draw_plots(default_setting=False)
+            self.dataset1.draw_plots(default_settings=False)
         except Exception as e:
             raise
         plt.close('all')
@@ -190,12 +248,20 @@ class sparam_data_TestCase(unittest.TestCase):
     def test_draw_plots_notdefault_wrong(self,mock):
         """Test draw_plots fails for wrong plot type"""
         with self.assertRaises(Exception):
-            self.dataset1.draw_plots(default_setting=False)
+            self.dataset1.draw_plots(default_settings=False)
          
     def test_s_param_plots(self):
         """Test s_param_plots"""
         try:
             self.dataset1.s_param_plot()
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    def test_diff_plots(self):
+        """Test diff plot"""
+        try:
+            self.dataset1.difference_plot()
         except Exception as e:
             raise
         plt.close('all')
@@ -211,7 +277,7 @@ class sparam_data_TestCase(unittest.TestCase):
         plt.close('all')
 
     @patch('builtins.input',return_value='VAL')
-    def test_multiple_meas(self,mock):
+    def test_multiple_meas_prompt(self,mock):
         """Test multiple_meas with no airline"""
         try:
             dataset_list = pc.multiple_meas(file_path=self.file_path)

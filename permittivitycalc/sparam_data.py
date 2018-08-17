@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 """Contains the AirlineData class object"""
 
-#File input
-import pickle
 # Array math
 import numpy as np
 import uncertainties 
@@ -28,101 +26,164 @@ DATAPATH = os.path.join(PACKAGEPATH, 'data')
 
 class AirlineData:
     """
-    S-parameter data from METAS text file output
+    Use S-parameter data from a METAS VNA Tools II output text file to 
+    calculate the complex relative permittivity of a sample in a coaxial 
+    transmission line
+    
+    Parameters:
+    -----------
+    L : float 
+        Length of airline in cm.
+        
+    airline : {'VAL','PAL','GAL','7','custom'} 
+        Name of airline used for measurement.
+        
+    dataArray : array
+        Array containing raw measurement data.
+        
+    file : str 
+        Input file path.
+        
+    corr : bool, optional
+        Default = False. If True, also correct S-parameter data and produce 
+        corr_* arrays. 
+            
+    nrw : bool, optional 
+        Default = False. If True, use Nicholson, Rross, Weir (NRW) algorithm to 
+        calculate permittivity and magnetic permeability.
+            
+    shorted : bool, optional
+        Default = False. If True, automatically load Shorted S11 data. File 
+        name must have the following format and be in the same folder as 
+        original file: file_path/file_name_shorted.txt
+        
+        Example:
+            - file_path/air_atm.txt
+            - file_path/air_atm_shorted.txt
+            
+    normalize_density : bool or float or int, optional 
+        Default = False. If True, use either Lichtenecker or 
+        Landau-Lifshitz-Looyenga equation to normalize the complex 
+        permittivity to a constant density of 1.60 g/cm^3. If float or int 
+        is given, normalize to the density provided in g/cm^3. Requires 
+        that bulk_density be given.
+        
+    norm_eqn : {'LI','LLL'}, optional 
+        Default = 'LI'. For use with normalize_density. Equation to be used for 
+        normalization. Options are 'LI' for the Lichtenecker 
+        equation and 'LLL' for the Landau-Lifshitz-Looyenga equation. 
+        LI used alpha = 1.92 (Olhoeft, 1985) and LLL uses 
+        alpha = 0.307 (Hickson et al., 2017, Lunar samples).
+            
+    name : str, optional 
+        Name of measurement to be used in plots.
+            
+    bulk_density : float, optional
+        Bulk density of material.
+        
+    solid_dielec : float, optional 
+        The solid dielectric constant of the material.
+        
+    solid_losstan : float, optional
+        The solid loss tangent of the material.
+        
+    particle_diameter : float, optional
+        The average particle diameter in the airline in cm.
+        
+    particle_density : float, optional
+        The average (solid) particle density of the material in g/cm^3.
+        
+    temperature : str or float, optional 
+        Temperature of measurement.
+        
+    date : str, optional
+        Date measurement was made.
+            
+    freq_cutoff : float, optional
+        Default: 4e8. Starting frequency for forward and reverse difference 
+        calculations.
     
     Attributes:
     ----------
-    L (float): Length of airline in cm.
+    freq : array 
+        Frequency points.
     
-    airline_name (str): Name of airline used for measurement.
+    s11, s21, s12, s22 : array 
+        Mag and Phase S-Parameters.
     
-    file (str): Input file path.
+    *_dielec : array 
+        Real part of the permittivity. Can be avg_dielec, forward_dielec, or 
+        reverse_dielec for average, forward (S11,S21), or reverse (S22,S12) 
+        permittivity.
     
-    corr (bool): (Optional) If True, also correct S-parameter data and \
-        produce corr_* arrays. Default = True.
+    *_lossfac : array 
+        Imaginary part of the permittivity. Same as above.
     
-    freq (array): Frequency points.
+    *_losstan : array 
+        Loss tangent. Same as above.
     
-    s11, s21, s12, s22 (array): Mag and Phase S-Parameters.
-    
-    *_dielec (array): Real part of the permittivity. Can be avg_dielec, \
-        forward_dielec, or reverse_dielec for average, forward, or \
-        reverse permittivity.
-    
-    *_lossfac (array): Imaginary part of the permittivity. Same as above.
-    
-    *_losstan (array): Loss tangent. Same as above.
-    
-    corr_* (array): De-embeded version of S-parameters or permittivity data. \
-        Only average S-parameters are used for permittivity calculations with \
-        corrected S-parameters. Examples: corr_s11, corr_avg_losstan. Only \
-        created if corr = True.
+    corr_* : array 
+        De-embeded version of S-parameters or permittivity data. Only average 
+        S-parameters are used for permittivity calculations with corrected 
+        S-parameters. Examples: corr_s11, corr_avg_losstan. Only created 
+        if corr = True.
+            
+    norm_* : array
+        Bulk density normalized permittivity data. Uses averaged permittivity 
+        data. Only created if normalize_density = True.
         
-    res_freq (array): Resonant frequencies in the sample.
+    res_freq : array 
+        Resonant frequencies in the sample.
         
-    name (str): (Optional) Name of measurement to be used in plots.
-    
-    bulk_density (float): (Optional) Bulk density of material. Nessesary for \
-        bulk density normalization.
+    airline_dimensions : dict 
+        Dimensions of the airline in cm. D1 is the diameter of the inner 
+        conductor and D4 is the diameter of the outer conductor. D2 and D3 
+        bound the sample-airline boundary regions if particle_diameter is 
+        provided. airline_dimensions is generated automatically for 
+        airlines VAL, PAL, and GAL. Empty otherwise.
         
-    normalize_density (bool): (Optional) If True, use either Lichtenecker or \
-        Landau-Lifshitz-Looyenga equation to normalize the real part of the \
-        permittivity to a constant density of 1.60 g/cm^3. Default: False
+    bcorr : complex array 
+        Avg complex permittivity corrected for boundary effects. Computed 
+        automatically if solid_dielec, particle_diameter, particle_density, 
+        and bulk_density are present. solid_losstan is optional.
         
-    norm_eqn (str): For use with normalize_density = True. Equation to be \
-        used for normalization. Options are 'LI' (default) for the \
-        Lichtenecker equation and 'LLL' for the Landau-Lifshitz-Looyenga \
-        equation. LI used alpha = 1.92 (Olhoeft, 1985) and LLL uses \
-        alpha = 0.307 (Hickson et al., 2017, Lunar samples).
-        
-    temperature (str or float): (Optional) Temperature of measurement.
-    
-    date (str): (Optional) Measurement date.
-    
-    solid_dielec (float): (Optional) The solid dielectric constant \
-        of the material.
-        
-    solid_losstan (float): (Optional) The solid loss tangent of the material.
-        
-    particle_diameter (float): (Optional) The average particle diameter in \
-        the airline in cm.
-        
-    particle_density (float): (Optional) The average (solid) particle density \
-        of the material in g/cm^3.
-        
-    airline_dimensions (dict): dimensions of the airline in cm. D1 is the \
-        diameter of the inner conductor and D4 is the diameter of the outer \
-        conductor. D2 and D3 bound the sample-airline boundary regions if \
-        particle_diameter is provided. airline_dimensions is generated \
-        automatically for airlines VAL, PAL, and GAL. Empty otherwise.
-        
-    bcorr (complex array): Avg complex permittivity corrected for boundary \
-        effects. Computed automatically if solid_dielec, particle_diameter, \
-        particle_density, and bulk_density are present. solid_losstan is \
-        optional.
-    
-    nrw (bool): If True, use Nicholson, Rross, Weir (NRW) algorithm to \
-        calculate permittivity and magnetic permeability.
-        
-    shorted (bool): If True, automatically load Shorted S11 data. File name \
-        must have the following format and be in the same folder as original \
-        file: file_path/file_name_shorted.txt
-        
-        Example:
-            file_path/air_atm.txt
-            file_path/air_atm_shorted.txt
+    real_part_diff_array, imag_part_diff_array : array
+        Absolute difference of forward and reverse results for the real and 
+        imaginary parts of the permittivity.
+            
+    max_real_diff, max_imag_diff, min_real_diff, min_imag_diff : float
+        Maximum and minimum differences of the forward and reverse results for 
+        the real and imaginary parts of the permittivity.
     """
-    def __init__(self,L,airline,dataArray,file,corr=False,bulk_density=None,\
-                 temperature=None,name=None,date=None,solid_dielec=None,\
-                 solid_losstan=None,particle_diameter=None,\
-                 particle_density=None,nrw=False,shorted=False,\
-                 normalize_density=False,norm_eqn='LI'):
+    def __init__(self,L,airline,dataArray,file,name=None,date=None,\
+                 freq_cutoff=4e8,nrw=False,shorted=False,corr=False,\
+                 normalize_density=False,norm_eqn='LI',bulk_density=None,\
+                 solid_dielec=None,solid_losstan=None,particle_diameter=None,\
+                 particle_density=None,temperature=None):
+        # Required Attributes
         self.L = L
         self.airline_name = airline
         self.file = file
-        self.corr = corr
+        
+        # Optional attributes
+        self.name = name
+        self.date = date
+        self.freq_cutoff = freq_cutoff
         self.nrw = nrw
         self.shorted = shorted
+        self.corr = corr
+        self.normalize_density = normalize_density
+        self.norm_eqn = norm_eqn
+        self.bulk_density = bulk_density
+        self.solid_dielec = solid_dielec
+        self.solid_losstan = solid_losstan
+        self.particle_diameter = particle_diameter
+        self.particle_density = particle_density
+        self.temperature = temperature
+        
+        # Get the airline dimnetions
+        self.airline_dimensions = self._dims()
+        
         # Unpack data into arrays
         self.freq, self.s11, self.s21, self.s12, self.s22 = \
             self._unpack(dataArray)
@@ -140,79 +201,138 @@ class AirlineData:
                 dataArray2 = get_METAS_data(airline=self.airline_name,file_path=path_shorted)
                 self.freq_short, self.s11_short = self._unpack(dataArray2[2])
             else:
-                raise Exception('Shorted file does not exists.')
+                raise Exception('Shorted file does not exists. Sould be in the form: orig-filename_shorted.txt')
+        
         # Calculate permittivity
         if nrw:
-            self.avg_dielec, self.avg_lossfac, self.avg_losstan, self.mu = \
-                self._permittivity_calc('a')
+            self.forward_dielec, self.forward_lossfac, self.forward_losstan, \
+                self.forward_mu = self._permittivity_calc('f')
+            self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan, \
+                self.reverse_mu = self._permittivity_calc('r')
+            self.avg_dielec = (self.forward_dielec + self.reverse_dielec)/2
+            self.avg_lossfac = (self.forward_lossfac + self.reverse_lossfac)/2
+            self.avg_mu = (self.forward_mu + self.reverse_mu)/2
+            self.avg_losstan = self.avg_lossfac/self.avg_dielec
         else:
-            self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
-                self._permittivity_calc('a')
             self.forward_dielec, self.forward_lossfac, self.forward_losstan = \
                 self._permittivity_calc('f')
             self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan = \
                 self._permittivity_calc('r')
-        # Try to calculate corrected permittivity if array length is 601 only
-        # Also check for NaNs and don't run if any
-        if corr and len(self.freq) == 601:
+            self.avg_dielec = (self.forward_dielec + self.reverse_dielec)/2
+            self.avg_lossfac = (self.forward_lossfac + self.reverse_lossfac)/2
+            self.avg_losstan = self.avg_lossfac/self.avg_dielec
+
+        # Try to calculate corrected (de-embedded) permittivity
+        # Fail if NaNs in data
+        if corr:
             try:
                 if not np.isnan(unp.nominal_values(self.avg_dielec)).any():
-                    self.Lcorr = self.L - 0.345 # Remove total washer length 
+                    self.Lcorr = self.L - 0.34 # Remove total washer length 
                     self.corr_s11, self.corr_s21, self.corr_s12, \
                         self.corr_s22 = self._de_embed()
                     if nrw:
-                        self.corr_avg_dielec, self.corr_avg_lossfac, \
-                            self.corr_avg_losstan, self.corr_avg_mu = \
-                            self._permittivity_calc('a',True)
+                        self.corr_forward_dielec, self.corr_forward_lossfac, \
+                            self.corr_forward_losstan, self.corr_forward_mu = \
+                            self._permittivity_calc('f',True)
+                        self.corr_reverse_dielec, self.corr_reverse_lossfac, \
+                            self.corr_reverse_losstan, self.corr_reverse_mu = \
+                            self._permittivity_calc('r',True)
+                        self.corr_avg_dielec = (self.corr_forward_dielec + \
+                                                 self.corr_reverse_dielec)/2
+                        self.corr_avg_lossfac = (self.corr_forward_lossfac + \
+                                                 self.corr_reverse_lossfac)/2
+                        self.corr_avg_losstan = \
+                            self.corr_avg_lossfac/self.corr_avg_dielec
+                        self.corr_avg_mu = (self.corr_forward_mu + \
+                                           self.corr_reverse_mu)/2
                     else:
-                        self.corr_avg_dielec, self.corr_avg_lossfac, \
-                            self.corr_avg_losstan = \
-                            self._permittivity_calc('a',True)
+                        self.corr_forward_dielec, self.corr_forward_lossfac, \
+                            self.corr_forward_losstan = \
+                            self._permittivity_calc('f',True)
+                        self.corr_reverse_dielec, self.corr_reverse_lossfac, \
+                            self.corr_reverse_losstan = \
+                            self._permittivity_calc('r',True)
+                        self.corr_avg_dielec = (self.corr_forward_dielec + \
+                                                 self.corr_reverse_dielec)/2
+                        self.corr_avg_lossfac = (self.corr_forward_lossfac + \
+                                                 self.corr_reverse_lossfac)/2
+                        self.corr_avg_losstan = self.corr_avg_lossfac/self.corr_avg_dielec
             except:
-                pass
+                raise Warning('S-parameter correction failed. Using uncorrected data. Check if NaNs in data.')
+            
+        # Calculate percentage difference between forward and reverse permittivity
+        self.real_part_diff_array, self.imag_part_diff_array, self.tand_part_diff_array,\
+            self.max_real_diff, self.max_imag_diff, self.max_tand_diff, \
+            self.med_real_diff, self.med_imag_diff, self.med_tand_diff = \
+            self._absdiff()
+        # Print maximum and median difference as percentages
+        diff_results = '\n' + str(self.name) + '\n' + \
+            'The maximum precentage difference between forward (S11/S21) and reverse (S22/S12) calculated permittivity is: \n' + \
+            'ε′: {:.2%} '.format(self.max_real_diff) + \
+            'ε′′: {:.2%} '.format(self.max_imag_diff) + \
+            'tanδ: {:.2%} \n'.format(self.max_tand_diff) + \
+            'The median precentage difference between forward (S11/S21) and reverse (S22/S12) calculated permittivity is: \n' + \
+            'ε′: {:.2%} '.format(self.med_real_diff) + \
+            'ε′′: {:.2%} '.format(self.med_imag_diff) + \
+            'tanδ: {:.2%} \n'.format(self.med_tand_diff)
+        print(diff_results)
+        
+        # Combine Type A and Type B Uncertainty (if it exists)
+        if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw:
+            self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
+                self._calcTotalUncertainty(self.avg_dielec,self.avg_lossfac,\
+                self.avg_losstan)
+            if corr:
+                self.corr_avg_dielec, self.corr_avg_lossfac,\
+                    self.corr_avg_losstan = self._calcTotalUncertainty(\
+                    self.corr_avg_dielec,self.corr_avg_lossfac,\
+                    self.corr_avg_losstan)
+                    
+        # Calculare resonant frequencies in sample
         self.res_freq = self._resonant_freq()
+        
+        # Calculate an average real permittivity and loss tan value from 
+        #   midpoint frequency values between resonant frequencies.
         self.freq_avg_dielec, self.freq_avg_losstan, self.freq_avg_dielec_std, \
             self.freq_avg_losstan_std = self._freq_avg()
             
-        # Optional attributes
-        self.name = name
-        self.bulk_density = bulk_density
-        self.normalize_density = normalize_density
-        self.norm_eqn = norm_eqn
-        self.temperature = temperature
-        self.date = date
-        self.solid_dielec = solid_dielec
-        self.solid_losstan = solid_losstan
-        self.particle_diameter = particle_diameter
-        self.particle_density = particle_density
-        self.airline_dimensions = self._dims()
-        # If appropriate data provided, correct for boundary effects
-        if (solid_dielec and particle_diameter and particle_density and \
-            bulk_density):
-            self.bcorr_dielec, self.bcorr_losstan = self._boundary_correct()
-        # If normalize_density is True and bulk_density exists, do it
-        #   Normalize the density to 1.60 g/cm^3
-        if normalize_density and bulk_density:
-            complex_dielec = 1j*unp.nominal_values(self.avg_lossfac);
-            complex_dielec += unp.nominal_values(self.avg_dielec)
+        # If normalize_density is not False and bulk_density exists, normalize
+        if self.normalize_density and self.bulk_density:
+            if self.corr:   #use corrected data is present
+                complex_dielec = 1j*unp.nominal_values(self.corr_avg_lossfac);
+                complex_dielec += unp.nominal_values(self.corr_avg_dielec)
+            else:
+                complex_dielec = 1j*unp.nominal_values(self.avg_lossfac);
+                complex_dielec += unp.nominal_values(self.avg_dielec)
+            # If normalize_density is True, normalize to to 1.60 g/cm^3
+            #   If normalize_density is a value, normalize to that value
+            if isinstance(self.normalize_density, bool):
+                norm_val = 1.60
+            elif isinstance(self.normalize_density, (float,int)):
+                norm_val = self.normalize_density
             if self.norm_eqn == 'LI':
                 # Lichtenecker equation
-                #   alpha from Olhoeft, 1985
-                norm_complex_dielec = complex_dielec*(1.92)**\
-                    (1.60-self.bulk_density)
+                #   alpha from Carrier et al., 1991
+                norm_complex_dielec = complex_dielec*((1.92)**\
+                    (norm_val-self.bulk_density))
             elif self.norm_eqn == 'LLL':
                 # Landau-Lifshitz-Looyenga equation
                 #   alpha from Hickson et al., 2018
-                norm_complex_dielec = complex_dielec*((1.60*0.307 + 1)**3 / \
+                norm_complex_dielec = complex_dielec*((norm_val*0.307 + 1)**3 / \
                                             (self.bulk_density*0.307 + 1)**3)
             self.norm_dielec = np.real(norm_complex_dielec)
             self.norm_lossfac = np.imag(norm_complex_dielec)
             self.norm_losstan = self.norm_lossfac/self.norm_dielec
         elif normalize_density:
             raise Exception('Need bulk desnity to normalize to constant density')
+                    
+        # If appropriate data provided, correct for boundary effects
+        if (solid_dielec and particle_diameter and particle_density and \
+            bulk_density):
+            self.bcorr_dielec, self.bcorr_losstan = self._boundary_correct()
             
     def __repr__(self):
-        rep = 'AirlineData(*get_METAS_data(airline=%r,file_path=%r),' % \
+        rep = 'pc.AirlineData(*pc.get_METAS_data(airline=%r,file_path=%r),' % \
                 (self.airline_name,self.file) + \
                 'bulk_density=%r,temperature=%r,name=%r,date=%r,corr=%r' % \
                 (self.bulk_density,self.temperature,self.name,self.date,\
@@ -220,12 +340,14 @@ class AirlineData:
                  (self.solid_dielec,self.solid_losstan) + \
                  ',particle_diameter=%r,particle_density=%r' % \
                  (self.particle_diameter, self.particle_density) + \
-                 ',nrw=%r,normalize_density=%r,norm_eqn=%r)' % \
-                 (self.nrw, self.normalize_density, self.norm_eqn)
+                 ',nrw=%r,normalize_density=%r,norm_eqn=%r' % \
+                 (self.nrw, self.normalize_density, self.norm_eqn) + \
+                 ',shorted=%r,freq_cutoff=%r)' % \
+                 (self.shorted, self.freq_cutoff)
         return rep
         
     def __str__(self):
-        srep = 'measured in ' + self.airline_name 
+        srep = 'measured in ' + self.airline_name + ' (L = ' + str(self.L) + ')'
         if self.name:
             srep = self.name + ' ' + srep
         if self.date:
@@ -235,104 +357,22 @@ class AirlineData:
         if self.bulk_density:
             srep += ' with a bulk density of ' + str(self.bulk_density) + ' g/cm^3'
         srep += ' from file: \n' + self.file
+        if self.corr:
+            srep += '\n' + 'Corrected (de-embeded) data is available.'
         if self.normalize_density:
-            srep += '\n' + 'Normalized data at a bulk density of 1.60 g/cm^3 using the'
+            if isinstance(self.normalize_density, bool):
+                norm_val = str(1.60)
+            elif isinstance(self.normalize_density, (float,int)):
+                norm_val = str(self.normalize_density)
+            srep += '\n' + 'Normalized data at a bulk density of ' + norm_val \
+            + ' g/cm^3'
             if self.norm_eqn == 'LI':
-                srep += ' Lichtenecker equation'
+                srep += ' using the Lichtenecker equation'
             elif self.norm_eqn == 'LLL':
-                srep += 'Landau-Lifshitz-Looyenga equation'
+                srep += ' using the Landau-Lifshitz-Looyenga equation'
             srep += ' is available.'
         return srep
     
-    def _resonant_freq(self):
-        """
-        Calculate and return array of resonant frequencies from complex permittivity \ 
-        and/or permeability measurement.
-    
-        Follows David Stillman PhD Thesis / NIST Technical Note 1355 ??
-
-        """
-        
-        n = np.arange(1,40) # Max number of resonances (overkill)
-        if self.corr:
-            measured_dielec = unp.nominal_values(self.corr_avg_dielec)
-            measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
-            L = self.Lcorr
-        else:
-            measured_dielec = unp.nominal_values(self.avg_dielec)
-            measured_lossfac = unp.nominal_values(self.avg_lossfac)
-            L = self.L
-        e_r = np.median(measured_dielec[1::]) # Exclude first data point
-        e_i = np.median(measured_lossfac[1::])
-        if self.nrw:
-            u_r = np.real(self.mu)
-            u_r = np.median(u_r[1::])
-            u_i = np.imag(self.mu)
-            u_i = np.median(u_i[1::])
-        else:
-            u_r = 1
-            u_i = 0
-        
-        res_freq = ((2**(1/2))*C*100)/((2*L/n)*((((u_r*e_r - e_i*u_i)**2 + \
-                    (u_i*e_r + e_i*u_r)**2)**(1/2)) + e_r*u_r - e_i*u_i)**(1/2))
-        # Restrict res_freq to max freq
-        res_freq = res_freq[res_freq<=np.max(self.freq)]
-        return res_freq
-    
-    def _freq_avg(self):
-        """
-        Calculate an average dielectric constant and loss tangent across all measured frequencies \ 
-        from midpoint frequency values between resonant frequencies as described in: \
-            Hickson et al., 2018
-        
-        Return
-        ------
-        freq_avg_dielec (uncertainties.core.AffineScalarFunc): Average dielectric \
-        constant calculated from midpoint frequency values between resonant \
-        frequencies. Skips first two values due to large uncertainty. 
-        
-        freq_avg_dielec_std (float): Standard deviation of freq_avg_dielec from above.
-        
-        freq_avg_losstan (uncertainties.core.AffineScalarFunc): Average loss \
-        tangent calculated from midpoint frequency values between resonant \
-        frequencies. Skips first two values due to large uncertainty. 
-        
-        freq_avg_losstan_std (float): Standard deviation of freq_avg_losstan from above.
-        
-        """
-        f_r = self.res_freq
-        if self.corr:
-            dielec = self.corr_avg_dielec
-            lossfac = self.corr_avg_lossfac
-        else:
-            dielec = self.avg_dielec
-            lossfac = self.avg_lossfac
-        mid_pts  = np.zeros(len(f_r)-1)#, dtype=int)
-        f_0_mids = np.zeros(len(f_r)-1)#, dtype=int)
-        dielec_mids = []
-        loss_tan_mids = []
-        f_r = f_r[f_r < np.max(self.freq)]
-        for i in range(0, len(f_r)):
-            if i != (len(f_r)-1):
-                # Find the midpoint frequencies between resonances
-                x = (f_r[i+1] - f_r[i])/2
-                mid_pts[i] = f_r[i] + x
-                # Find the closest corresponding frequency index in f_0
-                tmp = np.abs(self.freq - mid_pts[i])
-                idx = np.argmin(tmp) # index of closest value
-                f_0_mids[i] = self.freq[idx]
-                dielec_mids.append(dielec[idx])
-                loss_tan_mids.append(lossfac[idx]/dielec[idx])        
-        # Calculate averages past first two values 
-        freq_avg_dielec  = np.mean(dielec_mids[2:])
-        std_dielec = np.std(unp.nominal_values(dielec_mids[2:]))
-        freq_avg_losstan = np.mean(loss_tan_mids[2:])
-        std_losstan = np.std(unp.nominal_values(loss_tan_mids[2:]))
-        
-        return freq_avg_dielec, freq_avg_losstan, std_dielec, std_losstan
-        
-    
-            
     def _unpack(self,dataArray):
         """See if uncertainty in data and unpack to S-parameter arrays"""
         shorted_flag = False
@@ -372,8 +412,8 @@ class AirlineData:
         dims = {}
         # Store inner and outer diameters in a dictionary
         if self.airline_name in ('VAL','PAL'):
-            dims['D1'] = 6.205
-            dims['D4'] = 14.285
+            dims['D1'] = 6.204
+            dims['D4'] = 14.288
         elif self.airline_name == 'GAL':
             dims['D1'] = 6.19
             dims['D4'] = 14.32
@@ -384,36 +424,171 @@ class AirlineData:
             dims['D3'] = dims['D4'] - self.particle_diameter
         return dims
     
+    def _absdiff(self):
+        """
+        Calculate the absolute max and median differences in calculated forward 
+        (S11,S21) and reverse (S22,S12) permittivity. Use corrected 
+        S-parameters if present.
+        """
+        if self.corr:
+            real_part_diff = np.abs(unp.nominal_values(self.corr_forward_dielec) \
+                            - unp.nominal_values(self.corr_reverse_dielec))
+            imag_part_diff = np.abs(unp.nominal_values(self.corr_forward_lossfac) \
+                            - unp.nominal_values(self.corr_reverse_lossfac))
+            tand_part_diff = np.abs(unp.nominal_values(self.corr_forward_losstan) \
+                            - unp.nominal_values(self.corr_reverse_losstan))
+        else:
+            real_part_diff = np.abs(unp.nominal_values(self.forward_dielec) \
+                            - unp.nominal_values(self.reverse_dielec))
+            imag_part_diff = np.abs(unp.nominal_values(self.forward_lossfac) \
+                            - unp.nominal_values(self.reverse_lossfac))
+            tand_part_diff = np.abs(unp.nominal_values(self.forward_losstan) \
+                            - unp.nominal_values(self.reverse_losstan))
+            
+        if self.freq_cutoff:
+            real_part_diff_calc = real_part_diff[self.freq >= self.freq_cutoff]
+            imag_part_diff_calc = imag_part_diff[self.freq >= self.freq_cutoff]
+            tand_part_diff_calc = tand_part_diff[self.freq >= self.freq_cutoff]
+        else:
+            real_part_diff_calc = real_part_diff
+            imag_part_diff_calc = imag_part_diff
+            tand_part_diff_calc = tand_part_diff
+        
+        max_real_diff = np.max(real_part_diff_calc)
+        max_imag_diff = np.max(imag_part_diff_calc)
+        max_tand_diff = np.max(tand_part_diff_calc)
+        avg_real_diff = np.median(real_part_diff_calc)
+        avg_imag_diff = np.median(imag_part_diff_calc)
+        avg_tand_diff = np.median(tand_part_diff_calc)
+        
+        return real_part_diff, imag_part_diff, tand_part_diff, max_real_diff, \
+            max_imag_diff, max_tand_diff, avg_real_diff, avg_imag_diff, \
+            avg_tand_diff
+            
+    def _resonant_freq(self):
+        """
+        Calculate and return array of resonant frequencies from complex 
+        permittivity and/or permeability measurement.
+    
+        Follows David Stillman PhD Thesis
+
+        """
+        
+        n = np.arange(1,40) # Max number of resonances (overkill)
+        if self.corr:
+            measured_dielec = unp.nominal_values(self.corr_avg_dielec)
+            measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
+            L = self.Lcorr
+        else:
+            measured_dielec = unp.nominal_values(self.avg_dielec)
+            measured_lossfac = unp.nominal_values(self.avg_lossfac)
+            L = self.L
+        e_r = np.median(measured_dielec[1::]) # Exclude first data point
+        e_i = np.median(measured_lossfac[1::])
+        if self.nrw:
+            u_r = np.real(self.avg_mu)
+            u_r = np.median(u_r[1::])
+            u_i = np.imag(self.avg_mu)
+            u_i = np.median(u_i[1::])
+        else:
+            u_r = 1
+            u_i = 0
+        
+        res_freq = ((2**(1/2))*C*100)/((2*L/n)*((((u_r*e_r - e_i*u_i)**2 + \
+                    (u_i*e_r + e_i*u_r)**2)**(1/2)) + e_r*u_r - e_i*u_i)**(1/2))
+        # Restrict res_freq to max freq
+        res_freq = res_freq[res_freq<=np.max(self.freq)]
+        return res_freq
+    
+    def _freq_avg(self):
+        """
+        Calculate an average dielectric constant and loss tangent across all 
+        measured frequencies from midpoint frequency values between resonant 
+        frequencies as described in Hickson et al., 2018
+        
+        Return
+        ------
+        freq_avg_dielec : uncertainties.core.AffineScalarFunc 
+            Average dielectric constant calculated from midpoint frequency 
+            values between resonant frequencies. Skips first two values due to 
+            large uncertainty. 
+        
+        freq_avg_dielec_std : float 
+            Standard deviation of freq_avg_dielec from above.
+        
+        freq_avg_losstan : uncertainties.core.AffineScalarFunc 
+            Average loss tangent calculated from midpoint frequency values 
+            between resonant frequencies. Skips first two values due to large 
+            uncertainty. 
+        
+        freq_avg_losstan_std : float 
+            Standard deviation of freq_avg_losstan from above.
+        
+        """
+        f_r = self.res_freq
+        if self.corr:
+            dielec = self.corr_avg_dielec
+            lossfac = self.corr_avg_lossfac
+        else:
+            dielec = self.avg_dielec
+            lossfac = self.avg_lossfac
+        mid_pts  = np.zeros(len(f_r)-1)#, dtype=int)
+        f_0_mids = np.zeros(len(f_r)-1)#, dtype=int)
+        dielec_mids = []
+        loss_tan_mids = []
+        f_r = f_r[f_r < np.max(self.freq)]
+        for i in range(0, len(f_r)):
+            if i != (len(f_r)-1):
+                # Find the midpoint frequencies between resonances
+                x = (f_r[i+1] - f_r[i])/2
+                mid_pts[i] = f_r[i] + x
+                # Find the closest corresponding frequency index in f_0
+                tmp = np.abs(self.freq - mid_pts[i])
+                idx = np.argmin(tmp) # index of closest value
+                f_0_mids[i] = self.freq[idx]
+                dielec_mids.append(dielec[idx])
+                loss_tan_mids.append(lossfac[idx]/dielec[idx])        
+        # Calculate averages past first two values 
+        freq_avg_dielec  = np.mean(dielec_mids[2:])
+        std_dielec = np.std(unp.nominal_values(dielec_mids[2:]))
+        freq_avg_losstan = np.mean(loss_tan_mids[2:])
+        std_losstan = np.std(unp.nominal_values(loss_tan_mids[2:]))
+        
+        return freq_avg_dielec, freq_avg_losstan, std_dielec, std_losstan
+    
     def _permittivity_calc(self,s_param,corr=False):
         """
-        Return the complex permittivity and loss tangent from S-parameters \
-            and their uncertainties (if present).
+        Return the complex permittivity and loss tangent from S-parameters 
+        and their uncertainties (if present).
     
-        Uses the New Non-iterative method described in Boughriet, A.H., Legrand, \
-            C. & Chapoton, A., 1997. Noniterative stable transmission/reflection \
-            method for low-loss material complex permittivity determination. \
-            IEEE Transactions on Microwave Theory and Techniques, 45(1), pp.52–57.
+        Uses the New Non-iterative method described in Boughriet, A.H., Legrand, 
+        C. & Chapoton, A., 1997. Noniterative stable transmission/reflection 
+        method for low-loss material complex permittivity determination. 
+        IEEE Transactions on Microwave Theory and Techniques, 45(1), pp.52–57.
         
         Assumes the magnetic permeability of the sample = 1 (i.e non-magnetic).
         
         Arguments
         ---------
-        s_param (str): Calculates complex permittivity using either \
-            the average ('a'), the forward ('f'), or the reverse ('r') \
+        s_param : str 
+            Calculates complex permittivity using either 
+            the forward ('f') (S11,S21), or the reverse ('r') (S22 S12) 
             S-Parameters.
             
         Return
         ------
-        f_0 (array): Array of measured frequency values.
+        f_0 : array 
+            Array of measured frequency values.
         
-        dielec (array): Real part of the complex permittivity \
-            (dielectric constant).
+        dielec : array 
+            Real part of the complex relative permittivity.
         
-        lossfac (array): Imaginary part of the complex permittivity \
-            (loss factor).
+        lossfac : array 
+            Imaginary part of the complex permittivity.
         
-        losstan (array): Loss tangent. Defined as the ratio of the imaginary \
-            and the real part of the complex permittivity (lossfac/dielec).
+        losstan : array 
+            Loss tangent. Defined as the ratio of the imaginary 
+            and the real part of the complex permittivity.
         """
         
         # Check if using corrected S-params
@@ -435,12 +610,7 @@ class AirlineData:
         #   support complex numbers at the time of writing.
         #   Later, uncertainties may be propagated through and compared with
         #   those calculated in Boughriet et al.
-        if s_param == 'a':
-            s_r = (unp.nominal_values(s11) + \
-                   unp.nominal_values(s22))/2
-            s_t = (unp.nominal_values(s21) + \
-                   unp.nominal_values(s12))/2
-        elif s_param == 'f':
+        if s_param == 'f':
             s_r = unp.nominal_values(s11)
             s_t = unp.nominal_values(s21)
         else:
@@ -534,13 +704,14 @@ class AirlineData:
         # Calculate uncertainties
         # Check for uncertainties and make sure not using NRW
         if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw: 
-            delta_dielec, delta_lossfac, delta_losstan = \
+            delta_dielec, delta_lossfac = \
                 self._calc_uncertainties(s_param,nrows,sign,x,s_reflect,\
                                          s_trans,gam,lam_og,new_t,mu_eff,\
-                                         ep_eff,lam_0,dielec,lossfac,losstan,corr)
+                                         ep_eff,lam_0,dielec,lossfac,losstan,\
+                                         corr)
             dielec = unp.uarray(dielec,delta_dielec)
             lossfac = unp.uarray(lossfac,delta_lossfac)
-            losstan = unp.uarray(losstan,delta_losstan)
+            losstan = losstan = lossfac/dielec
         
         if self.nrw:
             return dielec,lossfac,losstan,complex_mu
@@ -555,11 +726,14 @@ class AirlineData:
         
         Returns
         -------
-        delta_dielec (array): Uncertainty in real part.
+        delta_dielec : array 
+            Uncertainty in real part.
         
-        delta_lossfac (array): Uncertainty in imaginary part.
+        delta_lossfac : array 
+            Uncertainty in imaginary part.
         
-        delta_losstan (array): Uncertainty in loss tangent.
+        delta_losstan : array 
+            Uncertainty in loss tangent.
         """
         # Check if using corrected S-params
         if corr:
@@ -576,12 +750,7 @@ class AirlineData:
             L = self.L
         
         # Strip uarrays of their nominal values
-        if s_param == 'a':
-            err_s_r = (unp.std_devs(s11) + \
-                   unp.std_devs(s22))/2
-            err_s_t = (unp.std_devs(s21) + \
-                   unp.std_devs(s12))/2
-        elif s_param == 'f':
+        if s_param == 'f':
             err_s_r = unp.std_devs(s11)
             err_s_t = unp.std_devs(s21)
         else:
@@ -631,9 +800,7 @@ class AirlineData:
         deff_dL = deff_dT*dT_dd
         
         # Combine partial derivatives for overal measurement uncertainty
-        # In Boughriet, 1997 the last term (length uncertainty) isn't squared. 
-        #   Mistake???? Answer: Yes Reason: Sqaured in older references
-            
+        # Final Type B Uncertainty
         delta_dielec = abs((1 - ((lam_0**2)/(LAM_C**2)))\
             *np.sqrt((((np.real(deff_dS_reflect_mag))*err_s_r[0])**2) + \
             (((np.real(deff_dS_reflect_phase))*err_s_r[1])**2) + \
@@ -648,75 +815,69 @@ class AirlineData:
             (((np.imag(deff_dS_trans_phase))*err_s_t[1])**2) + \
             (((np.imag(deff_dL))*delta_length)**2)))
         
-        delta_losstan = abs(losstan*np.sqrt((delta_dielec/dielec)**2 +\
-                                        (delta_lossfac/lossfac)**2))
+        return delta_dielec, delta_lossfac
+    
+    def _calcTotalUncertainty(self,dielec,lossfac,losstan):
+        # Type A Uncertainty. Note 2 regions for lossfac and losstan
+        dielec_TypeA = np.where(self.real_part_diff_array > 0.008,\
+                                self.real_part_diff_array,0.008)
+        lossfac_TypeA_high = np.where(\
+                self.imag_part_diff_array[np.where(self.freq<10**8)] > 0.009, \
+                self.imag_part_diff_array[np.where(self.freq<10**8)], 0.009)
+        lossfac_TypeA_low = np.where(\
+                self.imag_part_diff_array[np.where(self.freq>=10**8)] > 0.002, \
+                self.imag_part_diff_array[np.where(self.freq>=10**8)], 0.002)
+        lossfac_TypeA = np.concatenate((lossfac_TypeA_high,lossfac_TypeA_low))
+        losstan_TypeA_high = np.where(\
+                self.tand_part_diff_array[np.where(self.freq<10**8)] > 0.009, \
+                self.tand_part_diff_array[np.where(self.freq<10**8)], 0.009)
+        losstan_TypeA_low = np.where(\
+                self.tand_part_diff_array[np.where(self.freq>=10**8)] > 0.002, \
+                self.tand_part_diff_array[np.where(self.freq>=10**8)], 0.002)
+        losstan_TypeA = np.concatenate((losstan_TypeA_high,losstan_TypeA_low))
         
-        # Add measurement standard deviation error to measurement uncertainty
-        #   in quadrature as calculated with multiple rexolite measurements.
-        #   Note 2 regions for lossfac and losstan
-        delta_dielec = np.sqrt(delta_dielec**2 + 0.008**2)
+        # Type B Uncertainty
+        delta_dielec = unp.std_devs(dielec)
+        delta_lossfac = unp.std_devs(lossfac)
+        delta_losstan = unp.std_devs(losstan)
         
-        delta_lossfac[np.where(self.freq<10**8)] = \
-            np.sqrt(delta_lossfac[np.where(self.freq<10**8)]**2 + 0.009**2) 
-        delta_lossfac[np.where(self.freq>=10**8)] = \
-            np.sqrt(delta_lossfac[np.where(self.freq>=10**8)]**2 + 0.002**2)
+        # Combined Uncertainty
+        unc_dielec = np.sqrt(delta_dielec**2 + dielec_TypeA**2)
+        unc_lossfac = np.sqrt(delta_lossfac**2 + lossfac_TypeA**2)
+        unc_losstan = np.sqrt(delta_losstan**2 + losstan_TypeA**2)
         
-        delta_losstan[np.where(self.freq<10**8)] = \
-            np.sqrt(delta_losstan[np.where(self.freq<10**8)]**2 + 0.009**2)
-        delta_losstan[np.where(self.freq>=10**8)] = \
-            np.sqrt(delta_losstan[np.where(self.freq>=10**8)]**2 + 0.002**2)
+        # Final uArrays
+        dielec = unp.uarray(unp.nominal_values(dielec),unc_dielec)
+        lossfac = unp.uarray(unp.nominal_values(lossfac),unc_lossfac)
+        losstan = unp.uarray(unp.nominal_values(losstan),unc_losstan)
         
-        return delta_dielec, delta_lossfac, delta_losstan
+        return dielec, lossfac, losstan
     
     def _de_embed(self):
         """
-        Perform S-parameter de-embedding to remove influence of washers on \
-            measurement.
+        Perform S-parameter de-embedding to remove influence of washers on 
+        measurement.
         """
-        # Get washer S-parameters and split into mag and phase
-        # Unpickle files produced by avg_sparam.py
-        with open(DATAPATH + 's11avg.p', 'rb') as f:
-            sw11 = pickle.load(f)
-        with open(DATAPATH + 's22avg.p', 'rb') as f:
-            sw22 = pickle.load(f)
-        with open(DATAPATH + 's21avg.p', 'rb') as f:
-            sw21 = pickle.load(f)
-        with open(DATAPATH + 's12avg.p', 'rb') as f:
-            sw12 = pickle.load(f)
-        with open(DATAPATH + 'washer_freq.p', 'rb') as f:
-            wfreq = pickle.load(f)
-        # Split washer sparams into mag and phase since uncertainties package 
-        #   does not support complex numbers
-        # TESTING OUT FLUSH WASHERS
-        sw22 = sw11
-        sw12 = sw21
-        sw11_mag = sw11[0]
-        sw22_mag = sw22[0]
-        sw21_mag = sw21[0]
-        sw12_mag = sw12[0]
-        sw11_phase = sw11[1]
-        sw22_phase = sw22[1]
-        sw21_phase = sw21[1]
-        sw12_phase = sw12[1]
-        # Cast to complex and unwrap phase
-        sw11_complex = 1j*(unp.nominal_values(sw11_mag)*\
-                           np.sin(np.unwrap(np.radians(unp.nominal_values(sw11_phase))))); \
-        sw11_complex += unp.nominal_values(sw11_mag)*\
-                            np.cos(np.unwrap(np.radians(unp.nominal_values(sw11_phase))))
-        sw22_complex = 1j*(unp.nominal_values(sw22_mag)*\
-                           np.sin(np.unwrap(np.radians(unp.nominal_values(sw22_phase))))); \
-        sw22_complex += unp.nominal_values(sw22_mag)*\
-                            np.cos(np.unwrap(np.radians(unp.nominal_values(sw22_phase))))
-        sw21_complex = 1j*(unp.nominal_values(sw21_mag)*\
-                           np.sin(np.unwrap(np.radians(unp.nominal_values(sw21_phase))))); \
-        sw21_complex += unp.nominal_values(sw21_mag)*\
-                            np.cos(np.unwrap(np.radians(unp.nominal_values(sw21_phase))))
-        sw12_complex = 1j*(unp.nominal_values(sw12_mag)*\
-                           np.sin(np.unwrap(np.radians(unp.nominal_values(sw12_phase))))); \
-        sw12_complex += unp.nominal_values(sw12_mag)*\
-                            np.cos(np.unwrap(np.radians(unp.nominal_values(sw12_phase))))
+        # Create synthetic teflon washer s-parameters
+        epsilon = -1j*0.0007;
+        epsilon += 2.1
+        mu = 1 - 1j*0
+        L = 0.17/100
+        lam_0 = (C/self.freq)
+        small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
+                    (lam_0/LAM_C)**2)
+        small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
+        t = np.exp(-small_gam*L)
+        big_gam = (small_gam_0*mu - small_gam) / (small_gam_0*mu + \
+          small_gam)
+        sw11_complex = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
+        sw21_complex = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
+        # Symetrical washers
+        sw22_complex = sw11_complex
+        sw12_complex = sw21_complex
 
-        # Split measured S-parameters into mag and phase
+        # Split measured sparams into mag and phase since uncertainties package 
+        #   does not support complex numbers
         sm11_mag = self.s11[0]
         sm22_mag = self.s22[0]
         sm21_mag = self.s21[0]
@@ -743,16 +904,6 @@ class AirlineData:
         sm12_complex += unp.nominal_values(sm12_mag)*\
                             np.cos(np.unwrap(np.radians(unp.nominal_values(sm12_phase))))
                             
-        # Check for equal length and same frequency points
-        #   In the future, consider interpolation in some cases
-        # np.allclose retunrs True if equal within a low tolerance
-        if not np.allclose(wfreq,self.freq):
-            # Output the washer freq array to compare to self.freq for 
-            #   troubleshooting
-            global washer_check
-            washer_check = wfreq
-            raise Exception('Measurement must have same 601 frequency points')
-        
         ## De-embed
         # Convert to T-parameters
         # Washers
@@ -830,14 +981,14 @@ class AirlineData:
     
     def _boundary_correct(self):
         """
-        Correct calculated sprams for boundary effects in the airline after \
-            Hickson et al., 2017. Requires the effective solid permittivity \
-            of the material, the average particle size in the airline, and \
-            the average particle (solid) density to be supplied to the class\
-            instance. Uses the Looyenga mixing model to calculate the \
-            permittivity in the boundary region.
+        Correct calculated sprams for boundary effects in the airline after 
+        Hickson et al., 2017. Requires the effective solid permittivity 
+        of the material, the average particle size in the airline, and 
+        the average particle (solid) density to be supplied to the class
+        instance. Uses the Looyenga mixing model to calculate the 
+        permittivity in the boundary region.
             
-            As of now, produces dubious results for the imaginary part.
+        As of now, produces dubious results for the imaginary part.
         """
         beta = 1.835    # Porosity proportinality constant
         # Use washer corrected data if it exists
@@ -895,21 +1046,29 @@ class AirlineData:
         """
         Calculates air gap corrected complex permittivity for solid samples.
         
-        Follows Baker-Jarvis et al., 1993 and Rhode & Schwarz Application Note RAC0607-0019_1_4E
+        Follows Baker-Jarvis et al., 1993 and Rhode & Schwarz 
+        Application Note RAC0607-0019_1_4E
         
         Arguments
         ---------
-        Ds2 (float): The inner diameter (cm) of the solid toroid sample to be specified by user
+        Ds2 : float 
+            The inner diameter (cm) of the solid toroid sample to be specified 
+            by user
         
-        Ds3 (float): The outer diameter (cm) of the solid toroid sample to be specified by user
+        Ds3 : float T
+            The outer diameter (cm) of the solid toroid sample to be specified 
+            by user
         
         Return
         ---------
-        corr_dielec (array): Corrected real part of measured permittivity
+        corr_dielec : array 
+            Corrected real part of measured permittivity
         
-        corr_lossfac (array): Corrected imaginary part of measured permittivity
+        corr_lossfac : array 
+            Corrected imaginary part of measured permittivity
         
-        corr_losstan (array): Corrected loss tangent 
+        corr_losstan : array 
+            Corrected loss tangent 
         """
         if self.corr:
             measured_dielec = unp.nominal_values(self.corr_avg_dielec)
@@ -932,82 +1091,131 @@ class AirlineData:
         return corr_dielec, corr_lossfac, corr_losstan
         
         
-    def draw_plots(self,default_setting=True,corr=False,normalized=False,\
-                   publish=False):
+    def draw_plots(self,default_settings=True,publish=False,**kwargs):
         """
-        Plots permittivity data using make_plot from permittivity_plot_V1.
+        Plots permittivity data using make_plot from permittivity_plot.
         
-        Default is to plot average s-param results.
+        If freq_cutoff exists, all frequency points lower than freq_cutoff 
+        will not be plotted.
         
         Arguments
         ---------
-        default_setting (bool): if True, plots average dielectric constant, \
-            loss factor and loss tangent. If false prompts user to determine \
-            wether to plot, average, forward, reverse, or both s-parameter \
-            results. Default: True
+        default_settings : bool 
+            Default: True. If True, plots average real part of the permittivity, 
+            imaginary part of the permittivity and loss tangent. If corrected
+            or normalized data exist, it will be used in the plot. If False 
+            prompts user to determine wether to plot, Average, Forward, 
+            Reverse, or All results.
         
-        corr (bool): If True, use corrected sparam data. Default: False
+        publish : bool 
+            Default: False. If True, save figures.
+            
+        Additional Keyword Arguments
+        ----------------------------
+        These additional arguments can be supplied if default_settings is False.
         
-        publish (bool): If True, save figures.
+            If default_settings is False and neither of these are provided, 
+            uncorrected and unnormalized data will be ploted! 
+            
+        corr : bool, optional
+            Can be used with any of the plot types.
+            If True, use corrected sparam data, otheriwse use uncorrected data.
+            
+        normalized : bool, optional
+            Can only be used with Average plots.
+            If True, use normalized permittivity data. Supersedes corr if True.
         """
-        # Check if using corrected data
-        if corr and default_setting:
-            avg_dielec = self.corr_avg_dielec
-            avg_lossfac = self.corr_avg_lossfac
-            avg_losstan = self.corr_avg_losstan
-        elif corr and not default_setting:
-            raise Exception('default_setting must be True if using corrected data')
-        elif normalized:
-            avg_dielec = self.norm_dielec
-            avg_lossfac = self.norm_lossfac
-            avg_losstan = self.norm_losstan
-        else:
-            avg_dielec = self.avg_dielec
-            avg_lossfac = self.avg_lossfac
-            avg_losstan = self.avg_losstan
-        # Figure out what to plot
+        # If default_settings
+        #   Use first of normalized, corrected, or regular data
+        if default_settings and self.normalize_density:
+            plot_dielec = self.norm_dielec
+            plot_lossfac = self.norm_lossfac
+            plot_losstan = self.norm_losstan
+        elif default_settings and self.corr:
+            plot_dielec = self.corr_avg_dielec
+            plot_lossfac = self.corr_avg_lossfac
+            plot_losstan = self.corr_avg_losstan
+        elif default_settings:
+            plot_dielec = self.avg_dielec
+            plot_lossfac = self.avg_lossfac
+            plot_losstan = self.avg_losstan
+        
         x = self.freq
-        kwargs = {}
-        if default_setting:
-            y1 = avg_dielec
-            y2 = avg_lossfac
-            y3 = avg_losstan
-            kwargs = {"legend_label":[self.name]}
+        # Figure out what to plot
+        plot_kwargs = {}
+        if default_settings:
+            y1 = plot_dielec
+            y2 = plot_lossfac
+            y3 = plot_losstan
+            plot_kwargs = {"legend_label":[self.name]}
         else:
             # Prompt user
-            s_plot = input('Please designate "f" for Forward, "r" for ' + \
-                           'Reverse, "b" for Both, or "a" for average ' + \
-                           'S-Parameters: ')
-            if s_plot not in ('f','r','b','a'):
+            s_plot = input('Please designate "a" for Average, ' + \
+                           '"f" for Forward (S11,S21), "r" for ' + \
+                           'Reverse (S22,S12), or "all" for All three: ')
+            if s_plot not in ('f','r','all','a'):
                 raise Exception('Wrong input')
-            if s_plot == 'a':
-                y1 = avg_dielec
-                y2 = avg_lossfac
-                y3 = avg_losstan
+            if s_plot == 'a' and 'normalized' in kwargs:
+                y1 = self.norm_dielec
+                y2 = self.norm_lossfac
+                y3 = self.norm_losstan
+            elif s_plot == 'a' and 'corr' in kwargs:
+                y1 = self.corr_avg_dielec
+                y2 = self.corr_avg_lossfac
+                y3 = self.corr_avg_losstan
+            elif s_plot == 'a' :
+                y1 = self.avg_dielec
+                y2 = self.avg_lossfac
+                y3 = self.avg_losstan
+            elif 'normalized' in kwargs:
+                raise Exception('normalized=True can only be used with Average "a" plots')
             elif s_plot == 'f':
-                y1 = self.forward_dielec
-                y2 = self.forward_lossfac
-                y3 = self.forward_losstan
+                if 'corr' in kwargs:
+                    y1 = self.corr_forward_dielec
+                    y2 = self.corr_forward_lossfac
+                    y3 = self.corr_forward_losstan
+                else:
+                    y1 = self.forward_dielec
+                    y2 = self.forward_lossfac
+                    y3 = self.forward_losstan
             elif s_plot == 'r':
-                y1 = self.reverse_dielec
-                y2 = self.reverse_lossfac
-                y3 = self.reverse_losstan
+                if 'corr' in kwargs:
+                    y1 = self.corr_reverse_dielec
+                    y2 = self.corr_reverse_lossfac
+                    y3 = self.corr_reverse_losstan
+                else:
+                    y1 = self.reverse_dielec
+                    y2 = self.reverse_lossfac
+                    y3 = self.reverse_losstan
+            elif s_plot == 'all' and 'corr' in kwargs:
+                x = [x,x,x]
+                y1 = [self.corr_forward_dielec,self.corr_reverse_dielec,self.corr_avg_dielec]
+                y2 = [self.corr_forward_lossfac,self.corr_reverse_lossfac,self.corr_avg_lossfac]
+                y3 = [self.corr_forward_losstan,self.corr_reverse_losstan,self.corr_avg_losstan]
+                plot_kwargs = {"legend_label":['Forward [S11,S21]','Reverse [S22,S12]','Average']}
             else:
-                x = [self.freq,self.freq]
-                y1 = [self.forward_dielec,self.reverse_dielec]
-                y2 = [self.forward_lossfac,self.reverse_lossfac]
-                y3 = [self.forward_losstan,self.reverse_losstan]
-                kwargs = {"legend_label":['Forward','Reverse']}
+                x = [x,x,x]
+                y1 = [self.forward_dielec,self.reverse_dielec,self.avg_dielec]
+                y2 = [self.forward_lossfac,self.reverse_lossfac,self.avg_lossfac]
+                y3 = [self.forward_losstan,self.reverse_losstan,self.avg_losstan]
+                plot_kwargs = {"legend_label":['Forward [S11,S21]','Reverse [S22,S12]','Average']}
+        # Pass publish arguments        
         if publish:
-            kwargs['publish'] = True
-            kwargs['name'] = self.name
-        pplot.make_plot(x,y1,'d',**kwargs)
-        pplot.make_plot(x,y2,'lf',**kwargs)
-        pplot.make_plot(x,y3,'lt',**kwargs)
+            plot_kwargs['publish'] = True
+            plot_kwargs['name'] = self.name
+        # Pass freq_cutoff
+        if self.freq_cutoff:
+            plot_kwargs['freq_cutoff'] = self.freq_cutoff
+        # Make plots
+        pplot.make_plot(x,y1,'d',**plot_kwargs)
+        pplot.make_plot(x,y2,'lf',**plot_kwargs)
+        pplot.make_plot(x,y3,'lt',**plot_kwargs)
         
     def s_param_plot(self,corr=False):
-        """Plot raw S-Parameter data using make_sparam_plot from \
-        permittivity_plot_V1"""
+        """
+        Plot raw S-Parameter data using make_sparam_plot from
+        permittivity_plot
+        """
         if corr:
             pplot.make_sparam_plot(self.freq,[self.s11,self.corr_s11],\
                                    [self.s22,self.corr_s22],[self.s21,\
@@ -1016,24 +1224,90 @@ class AirlineData:
         else:
             pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12)
             
+    def difference_plot(self):
+        """
+        Plot the absolute difference between both ε′ and ε′′ calculated from 
+        forward (S11,S21) and reverse (S22,S12) S-Paramaters.
+        """
+        import matplotlib.pyplot as plt
+        
+        if self.freq_cutoff:
+            freq = self.freq[self.freq>=self.freq_cutoff]
+            real_diff = self.real_part_diff_array[self.freq>=self.freq_cutoff]
+            imag_diff = self.imag_part_diff_array[self.freq>=self.freq_cutoff]
+        else:
+            freq = self.freq
+            real_diff = self.real_part_diff_array
+            imag_diff = self.imag_part_diff_array
+        
+        f,ax = plt.subplots(2, sharex=True, figsize=(18, 15))
+        ax[0].loglog(freq,real_diff,'ko-',label='|$\epsilon^\prime[S_{11},S_{21}]$ - $\epsilon^\prime[S_{22},S_{12}]$|')
+        ax[0].set_title('Difference in $\epsilon^\prime$', fontsize=40)
+        ax[0].legend(fontsize=30,loc=2)
+        ax[0].set_ylim(10e-7, 1)
+        ax[0].tick_params(axis='both', which='major', width=2, labelsize=30)
+        ax[0].tick_params(axis='both', which='minor', width=1.5)
+        ax[1].loglog(freq,imag_diff,'ko-',label='|$\epsilon^{\prime\prime}[S_{11},S_{21}]$ - $\epsilon^{\prime\prime}[S_{22},S_{12}]$|')
+        ax[1].set_title('Difference in $\epsilon^{\prime\prime}$', fontsize=40)
+        ax[1].legend(fontsize=30,loc=2)
+        ax[1].set_xlabel('Frequency',fontsize=40)
+        ax[1].set_ylim(10e-7, 1)
+        ax[1].tick_params(axis='both', which='major', width=2, labelsize=30)
+        ax[1].tick_params(axis='both', which='minor', width=1.5)
+        if self.freq_cutoff:
+            from matplotlib.ticker import FixedLocator, LogLocator, EngFormatter, NullFormatter
+            x_logmin = np.log10(np.min(freq)) # log of min and max x values
+            x_logmax = np.log10(np.max(freq))
+            x_logticks = np.logspace(x_logmin, x_logmax, num=4) # 4 equaly spaced points in log space
+            x_ticklocs = []
+            for n in range(len(x_logticks)): # round scientific values and make a list
+                x_ticklocs.append(np.float(np.format_float_scientific(x_logticks[n],\
+                                precision=0)))
+            if len(set(x_ticklocs)) < 4: # check that this produced 4 unique values
+                x_ticklocs = [] # if not do it again with precision = 1
+                for n in range(len(x_logticks)): 
+                    x_ticklocs.append(np.float(np.format_float_scientific(x_logticks[n]\
+                                ,precision=1)))
+            majorLocator = FixedLocator(x_ticklocs)
+            majorFormatter = EngFormatter(unit='Hz') # Format major ticks with units
+            minorLocator = LogLocator(subs='all') # Use all interger multiples of the log base for minor ticks 
+            minorFormatter =  NullFormatter() # No minor tick labels 
+            for n in range(0,2):
+                # Apply x ticks
+                ax[n].get_xaxis().set_major_locator(majorLocator)
+                ax[n].get_xaxis().set_major_formatter(majorFormatter)
+                ax[n].get_xaxis().set_minor_locator(minorLocator)
+                ax[n].get_xaxis().set_minor_formatter(minorFormatter)
+                # Format the actual tick marks
+                ax[n].tick_params(which='both', width=1, labelsize=30)
+                ax[n].tick_params(which='major', length=7)
+                ax[n].tick_params(which='minor', length=4)
+                # Use smaller line width for minor tick grid lines
+                ax[n].grid(b=True, which='major', color='w', linewidth=1.0)
+                ax[n].grid(b=True, which='minor', color='w', linewidth=0.5)
+        plt.show()
+            
 #%% Functions
             
 def multiple_meas(file_path=None,airline_name=None):
     """
-    Generate an instance of AirlineData for every file in a directory. Store \
-        the intances in a list, and plot them all using perm_compare.
+    Generate an instance of AirlineData for every file in a directory. Store 
+    the intances in a list, and plot them all using perm_compare.
         
     Arguments
     ---------
-    file_path (str): Full path of any file in the source directory. \
-        (Optional - will produce file dialog box if not provided.)
+    file_path : str, optional 
+        Full path of any file in the source directory. Will produce file dialog 
+        box if not provided.
     
-    airlne (str): Name of airline used. Every measurement must have been made \
-        in the same airline. (Optional - will prompt if not provided.)
+    airlne : str, optional
+        Name of airline used. Every measurement must have been made 
+        in the same airline. Will prompt if not provided.
         
     Return
     ------
-    class_list (lst): List of generated class instances of AirlineData.
+    class_list : lst 
+        List of generated class instances of AirlineData.
     """
     # Use _get_file to get the filepath and airline name if not provided
     if file_path:   # If file path provided as argument
@@ -1066,8 +1340,8 @@ def multiple_meas(file_path=None,airline_name=None):
 
 def run_default(airline_name='VAL',file_path=None,**kwargs):
     """
-    Run AirlineData on get_METAS_data with all the prompts and return the \
-        instance.
+    Run AirlineData on get_METAS_data with all the prompts and return the 
+    instance.
     """
     return AirlineData(*get_METAS_data(airline_name,file_path),**kwargs)
 

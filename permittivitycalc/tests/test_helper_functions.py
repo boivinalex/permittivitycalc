@@ -9,8 +9,12 @@ Created on Wed May 23 16:03:51 2018
 import os
 import unittest
 from unittest.mock import patch
-from unittest.mock import MagicMock
 import permittivitycalc.helper_functions as hf
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
+    import matplotlib
+    matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 
 class helper_functions_TestCase(unittest.TestCase):
@@ -24,7 +28,10 @@ class helper_functions_TestCase(unittest.TestCase):
         self.fake_path = os.path.join(self.data_path, 'fake.txt')
         self.dataset1 = pc.run_default(airline_name='VAL',file_path=self.file_path)
         self.dataset2 = pc.run_default(airline_name='VAL',file_path=self.file_path2)
+        self.nonedataset = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path2),bulk_density=1.6,name='Serpentine',normalize_density=True,freq_cutoff=None)
+        self.cutdataset = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path2),bulk_density=1.6,name='Serpentine',normalize_density=True,freq_cutoff=2e8)
         self.normdataset = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path2),bulk_density=1.6,name='Serpentine',normalize_density=True)
+        self.corrdataset = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path2),bulk_density=1.6,name='Serpentine',corr=True)
     
     # #patch tkinter modules
     # @patch('tkinter.Tk') 
@@ -134,6 +141,7 @@ class helper_functions_TestCase(unittest.TestCase):
             hf.perm_compare(datasets)
         except Exception as e:
             raise
+        plt.close('all')
 
     def test_perm_compare_allplots(self):
         datasets = [self.dataset1,self.dataset2]
@@ -141,6 +149,7 @@ class helper_functions_TestCase(unittest.TestCase):
             hf.perm_compare(datasets,allplots=True)
         except Exception as e:
             raise
+        plt.close('all')
 
     def test_perm_compare_norm(self):
         datasets = [self.dataset1,self.normdataset]
@@ -148,11 +157,39 @@ class helper_functions_TestCase(unittest.TestCase):
             hf.perm_compare(datasets)
         except Exception as e:
             raise
+        plt.close('all')
+            
+    def test_perm_compare_corr(self):
+        datasets = [self.dataset1,self.corrdataset]
+        try:
+            hf.perm_compare(datasets)
+        except Exception as e:
+            raise
+        plt.close('all')
+            
+    def test_perm_compare_none(self):
+        datasets = [self.dataset1,self.nonedataset]
+        try:
+            hf.perm_compare(datasets)
+        except Exception as e:
+            raise
+        plt.close('all')
+            
+    def test_perm_compare_cut(self):
+        datasets = [self.dataset1,self.cutdataset]
+        try:
+            hf.perm_compare(datasets)
+        except Exception as e:
+            raise
+        plt.close('all')
 
     def test_perm_compare_fail(self):
         fake = 5
         datasets = [self.dataset1,fake]
         self.assertRaises(Exception,hf.perm_compare,datasets)
+        
+    def test_perm_compare_fail_nolist(self):
+        self.assertRaises(Exception,hf.perm_compare,self.dataset1)
 
 if __name__ == '__main__':
     unittest.main()

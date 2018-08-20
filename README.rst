@@ -19,8 +19,8 @@ permittivitycalc
 .. |PyPiBadge| image:: https://badge.fury.io/py/permittivitycalc.svg
     :target: https://badge.fury.io/py/permittivitycalc
 
-.. |DOIBadge| image:: https://zenodo.org/badge/98680301.svg
-   :target: https://zenodo.org/badge/latestdoi/98680301
+.. |DOIBadge| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1400670.svg
+   :target: https://doi.org/10.5281/zenodo.1400670
 
 Scripts to calculate and plot the complex permittivity from S-parameter data acquired with transmission-line measurements
 

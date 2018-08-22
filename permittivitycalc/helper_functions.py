@@ -40,10 +40,9 @@ def _get_file(airline=None,file_path=None):
             file = file_path
     elif file_path and not airline:
         # Prompt for airline
-        airline = input('Are you using the "VAL", "PAL", "GAL", "7" mm, "10cm"' + \
-                        'or "custom" airline?: ')
-        #if airline not in ('VAL','PAL','GAL','7','custom','10cm'):
-        #    raise Exception('Wrong input')
+        airline = input('Choose airline option: "VAL", "PAL", "GAL", "7" mm, "10cm"' + \
+                        'Or enter length of airline in (cm): ')
+
         if airline == 'custom':
             L_in = input('Enter the length of the airline (cm): ')
         elif isinstance(airline, float):
@@ -81,7 +80,8 @@ def get_METAS_data(airline=None,file_path=None):
     airline : str 
         Airline used for measurement. Options are: 'VAL', 
         'PAL', 'GAL', '7'. If not provided, will prompt user. Prompt will 
-        allow user to input a custom airline length.
+        allow user to input a custom airline length. Alternative option to input 
+        length of airline as float in units of (cm).
     
     file_path : str 
         If a path is not given, will prompt user for file. 

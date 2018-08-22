@@ -29,7 +29,7 @@ def _get_file(airline=None,file_path=None):
     L_in = None
     # Figure out the file path and the airline name
     if file_path and airline:
-        if airline not in ('VAL','PAL','GAL','7','washer','custom'):
+        if airline not in ('VAL','PAL','GAL','7','washer','custom','10cm'):
             raise Exception('Wrong airline name. You used %s' % (airline))
         elif airline == 'custom':
             L_in = input('Enter the length of the airline (cm): ')
@@ -38,16 +38,16 @@ def _get_file(airline=None,file_path=None):
             file = file_path
     elif file_path and not airline:
         # Prompt for airline
-        airline = input('Are you using the "VAL", "PAL", "GAL", "7" mm, ' + \
+        airline = input('Are you using the "VAL", "PAL", "GAL", "7" mm, "10cm"' + \
                         'or "custom" airline?: ')
-        if airline not in ('VAL','PAL','GAL','7','custom'):
+        if airline not in ('VAL','PAL','GAL','7','custom','10cm'):
             raise Exception('Wrong input')
         elif airline == 'custom':
             L_in = input('Enter the length of the airline (cm): ')
         file = file_path
     elif airline and not file_path:
         # Check airline
-        if airline not in ('VAL','PAL','GAL','7','custom'):
+        if airline not in ('VAL','PAL','GAL','7','custom','10cm'):
             raise Exception('Wrong input')
         elif airline == 'custom':
             L_in = input('Enter the length of the airline (cm): ')
@@ -55,7 +55,7 @@ def _get_file(airline=None,file_path=None):
         file = _prompt()
     else:   # Prompt for both
         # Airline
-        airline = input('Are you using the "VAL", "PAL", "GAL", "7" mm, ' + \
+        airline = input('Are you using the "VAL", "PAL", "GAL", "7" mm, "10cm"' + \
                         'or "custom" airline?: ')
         if airline not in ('VAL','PAL','GAL','7','custom'):
             raise Exception('Wrong input')
@@ -107,6 +107,8 @@ def get_METAS_data(airline=None,file_path=None):
         #L = 14.9835    # 14mm airline - 15 cm 
     elif airline == 'GAL':
         L = 14.991
+    elif airline == '10cm':
+        L = 9.993
     else:
         L = float(L_in)
         

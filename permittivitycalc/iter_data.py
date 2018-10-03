@@ -24,42 +24,86 @@ LAM_C = float('inf') #Cut-off wavelength = infinity
 class AirlineIter():
     """
     Iterative fit to measured S-parameters using a Cole-Cole model. Can fit 
-    both 2-port and 2-port + shorted measurements.
+    both 2-port and 2-port + shorted measurements. A flat model can also be 
+    used for samples with no measurable frequency dispersion.
         
     To determine an initial guess for the fit, first fit a Cole-Cole
-    model to analytical results (either New Non-iterative, NRW, or both).
-    Then use the emcee package with lmfit to refine initial guess before
-    performing final fit using lmfit. Then plot and store the results.
+    model to analytical results: either New Non-iterative, NRW, or both. This 
+    provides an initial guess for the Cole-Cole model parameters. Then use the 
+    emcee package with lmfit to perform a Bayesian fit to the S-Parameters. 
+    This finds the Cole-Cole model which produces the best fit model 
+    S-parameters.  
         
-    Attributes
+    Parameters
     ----------
     data_instance : permittivitycalc.AirlineData 
         AirlineData class instance  containing raw S-parameters to be 
-        iterated over.
+        iterated over. If data_instance contains corrected data, it will be 
+        automatically used.
         
     trial_run : bool
         If True only fit Cole-Cole model to analytical results and plot the 
         results. Useful for determining the number of poles to be used
         in the Cole-Cole model before perfoming the more time consuming
-        final fit (Default: True).
+        final fit to the S-parameters (Default: True).
             
     number_of_poles : int
-        Number of poles to be used in the Cole-Cole model for epsilon (Default: 2).
-        
-    number_of_fits : int
-        Number of default emcee fits to perform beofre final fit (Default: 2).
-        
-    start_freq : float or int
-        Start frequency for iteration
+        Number of poles to be used in the Cole-Cole model for epsilon. When
+        number_of_poles is 0, a flat model will be used instead of a Cole-Cole
+        model (epsilon* = epsilon_real - 1j*epsilon_imag) (Default: 2).
         
     fit_mu : bool
         If True, fit both permittivity and permeability (Default: False).
         
     number_of_poles_mu : int
-        Number of poles to be used in the Cole-Cole model for mu (Default: 1).
+        Number of poles to be used in the Cole-Cole model for mu. When
+        number_of_poles_mu is 0, a flat model will be used instead of a 
+        Cole-Cole model (mu* = mu_real - 1j*mu_imag) (Default: 1).
         
-    Return
-    ------
+    fit_conductivity : bool
+        If True, include a seperate real conductivity term in the Cole-Cole 
+        model for epsilon. Can be ignored for materials with very low 
+        conductivity (Default: False).
+        
+    number_of_fits : int
+        Number of default emcee fits to perform beofre final fit. Subsequent 
+        fits will use the results from the pervious iteration as initial 
+        values. Generally, using more steps is preferable to initializing a 
+        new fit (Default: 1).
+        
+    start_freq : float or int, optional
+        Start frequency in Hz for iteration (Default: 4e8).
+    
+    end_freq : float or int, optional
+        End frequency in Hz for iteration (Default: None).
+        
+    initial_parameters : dict, optional
+        A dictionary containing custom initial values for the iteration. 
+        Default values will be automatically generated if none are provided.
+        The dictionary must contain initial values for all parameters in the
+        iteration and each parameter much have the exact name as the ones used
+        in the iteration. See documnetation for the _colecole and 
+        _iteration_parameters for parameter naming conventions.
+        
+    nsteps : int, optional
+        Number of steps to be used by emcee for iteration when trial_run is 
+        False. See lmfit and emcee documentation for details (Default: 1000).
+        
+    nwalkwers: int, optional
+        Number of walkers to be used by emcee for iteration when trial_run is 
+        False. See lmfit and emcee documentation for details (Default: 100).
+        
+    nburn : int, optional
+        Number of steps for burn-in phase to be used by emcee for iteration 
+        when trial_run is False. See lmfit and emcee documentation for details 
+        (Default: 500).
+        
+    nthin : int, optional
+        Only accept every nthin samples in emcee for iteration when trial_run 
+        is False. See lmfit and emcee documentation for details (Default: 20).
+        
+    Attributes
+    ----------
     epsilon_iter : array
         Complex array containing the results of the iterrative fit for epsilon.
         trail_run must be set to False.
@@ -69,23 +113,69 @@ class AirlineIter():
         trial_run must be set to False and fit_mu must be set to True.
         
     cc_parmas : dict
-        Cole-Cole model parameters for epsilon and mu (if fit_mu is True).
+        Model parameters for epsilon and mu (if fit_mu is True).
+        
     """
     def __init__(self,data_instance,trial_run=True,number_of_poles=2,\
-                 number_of_fits=2,start_freq=None,fit_mu=False,\
-                 number_of_poles_mu=1):
+                 fit_mu=False,number_of_poles_mu=1,fit_conductivity=False,\
+                 number_of_fits=1,start_freq=None,end_freq=None,\
+                 initial_parameters=None,nsteps=1000,nwalkers=100,nburn=500,\
+                 nthin=20):
         self.meas = data_instance
+        # Get s params (corrected if they exist)
+        if self.meas.corr:
+            self.s11 = self.meas.corr_s11
+            self.s21 = self.meas.corr_s21
+            self.s22 = self.meas.corr_s22
+            self.s12 = self.meas.corr_s12
+            print('Using corrected S-Parameter data.')
+        else:
+            self.s11 = self.meas.s11
+            self.s21 = self.meas.s21
+            self.s22 = self.meas.s22
+            self.s12 = self.meas.s12
+        # Check if shorted
+        if self.meas.shorted:
+            self.shorted = True
+            self.s11_short = self.meas.s11_short
+            print('Using shorted data.')
+        else:
+            self.shorted = False
+        # Get permittivity data
+        self.freq = self.meas.freq
+        self.avg_dielec = self.meas.avg_dielec
+        self.avg_lossfac = self.meas.avg_lossfac
+        self.avg_losstan = self.meas.avg_losstan
+        if self.meas.nrw:
+            self.avg_mu = self.meas.avg_mu
         self.trial = trial_run
+        self.fit_mu = fit_mu
+        self.fit_sigma = fit_conductivity
         self.poles = number_of_poles
         self.poles_mu = number_of_poles_mu
         self.fits = number_of_fits
         self.start_freq = start_freq
-        self.fit_mu = fit_mu
-        # Check if shorted
-        if self.meas.shorted:
-            self.shorted = True
-        else:
-            self.shorted = False
+        self.end_freq = end_freq
+        self.initial_parameters = initial_parameters
+        self.nsteps = nsteps
+        self.nwalkers = nwalkers
+        self.nburn = nburn
+        self.nthin = nthin
+        
+        # Data cutoff
+        if self.end_freq:
+            self.s11 = np.array((self.s11[0][self.freq<=self.end_freq],self.s11[1][self.freq<=self.end_freq]))
+            self.s21 = np.array((self.s21[0][self.freq<=self.end_freq],self.s21[1][self.freq<=self.end_freq]))
+            self.s22 = np.array((self.s22[0][self.freq<=self.end_freq],self.s22[1][self.freq<=self.end_freq]))
+            self.s12 = np.array((self.s12[0][self.freq<=self.end_freq],self.s12[1][self.freq<=self.end_freq]))
+            self.avg_dielec = self.avg_dielec[self.freq<=self.end_freq]
+            self.avg_lossfac = self.avg_lossfac[self.freq<=self.end_freq]
+            self.avg_losstan = self.avg_losstan[self.freq<=self.end_freq]
+            if self.meas.nrw:
+                self.avg_mu = self.avg_mu[self.freq<=self.end_freq]
+            if self.shorted:
+                self.s11_short = np.array((self.s11_short[0][self.freq<=self.end_freq],self.s11_short[1][self.freq<=self.end_freq]))
+            self.freq = self.freq[self.freq<=self.end_freq]
         
         if self.trial:
             self._permittivity_iterate()
@@ -133,20 +223,30 @@ class AirlineIter():
             Cole-Cole model.
         """
         if mu:
-            k = (v['mu_inf'])
-            # Make k the length of freq if using 0 poles
-            if self.poles_mu == 0:
+            if number_of_poles == 0:
+                k = (v['mu_real'] - 1j*v['mu_imag'])
+                # Make k the length of freq if using 0 poles
                 freq_vector = np.ones(len(freq))
                 k = k * freq_vector
-        else:
-            k = (v['k_inf']) - 1j*v['sigma']/(2*np.pi*freq*E_0)
-        
-        for n in range(number_of_poles):
-            n+=1    # Start names at 1 intead of 0
-            if mu and self.poles_mu != 0:
-                k += (v['mu_dc_{}'.format(n)] - v['mu_inf'])/(1 + (1j*2*np.pi*freq*v['mutau_{}'.format(n)])**v['mualpha_{}'.format(n)])
             else:
-                k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)])**v['alpha_{}'.format(n)])
+                k = (v['mu_inf'])
+        elif number_of_poles == 0:
+            k = (v['k_real'] - 1j*v['k_imag'])
+            # Make k the length of freq if using 0 poles
+            freq_vector = np.ones(len(freq))
+            k = k * freq_vector
+        elif self.fit_sigma:
+            k = (v['k_inf']) - 1j*v['sigma']/(2*np.pi*freq*E_0)
+        else:
+            k = (v['k_inf'])
+        
+        if number_of_poles != 0:
+            for n in range(number_of_poles):
+                n+=1    # Start names at 1 intead of 0
+                if mu and self.poles_mu != 0:
+                    k += (v['mu_dc_{}'.format(n)] - v['mu_inf'])/(1 + (1j*2*np.pi*freq*v['mutau_{}'.format(n)])**v['mualpha_{}'.format(n)])
+                else:
+                    k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)])**v['alpha_{}'.format(n)])
         
         return k
     
@@ -179,13 +279,13 @@ class AirlineIter():
         
         return s11_predicted, s21_predicted, s12_predicted
     
-    def _iteration_parameters(self,initial_values=None,mu=False):
+    def _iteration_parameters(self,pole_num,initial_values=None,mu=False):
         """
         Creates Parameter object to be used in _permittivity_iterate
         
         Attributes
         ----------
-        number_of_poles : int 
+        number_of_poles : int or list of ints
             Number if poles in the Cole-Cole model.
             
         initial_values : dict (optional)
@@ -215,31 +315,54 @@ class AirlineIter():
         params : lmfit.Parameter object
             paramaters for iteration
         """
+        if isinstance(pole_num,int):
+            pole_num = [pole_num]           
         # Get default initial values if none given
         if not initial_values:
-            initial_values = self._default_initial_values(self.poles)
+            initial_values = self._default_initial_values(pole_num[0])
             if mu:
-                initial_values_mu = self._default_initial_values_mu(self.poles_mu)
+                initial_values_mu = self._default_initial_values_mu(pole_num[1])
                 initial_values = {**initial_values,**initial_values_mu}
+                
+        # Flat model if number of poles is 0
+        if pole_num[0] == 0:
+            eps_flag = True
+        else:
+            eps_flag = False
+        if mu and pole_num[1] == 0:
+            mu_flag = True
+        else:
+            mu_flag = False
         
         # Create parameters
         params = Parameters()
         if mu:
-            params.add('mu_inf',value=initial_values['mu_inf'],min=1)
-        params.add('k_inf',value=initial_values['k_inf'],min=1)
-        params.add('sigma',value=initial_values['sigma'],min=0)
+            if mu_flag:
+                params.add('mu_real',value=initial_values['mu_real'],min=1)
+                params.add('mu_imag',value=initial_values['mu_imag'],min=0)
+            else:
+                params.add('mu_inf',value=initial_values['mu_inf'],min=1)
+        if eps_flag:
+            params.add('k_real',value=initial_values['k_real'],min=1)
+            params.add('k_imag',value=initial_values['k_imag'],min=0)
+        else:
+            params.add('k_inf',value=initial_values['k_inf'],min=1)
+        if self.fit_sigma:
+            params.add('sigma',value=initial_values['sigma'],min=0)
         
-        if mu and self.poles_mu != 0:
-            for m in range(self.poles_mu):
-                m+=1
-                params.add('mu_dc_{}'.format(m),value=initial_values['mu_dc_{}'.format(m)],min=1)
-                params.add('mutau_{}'.format(m),value=initial_values['mutau_{}'.format(m)],min=0)
-                params.add('mualpha_{}'.format(m),value=initial_values['mualpha_{}'.format(m)],min=0,max=1)   
-        for n in range(self.poles):
-            n+=1 # start variable names at 1 instead of 0
-            params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=1)
-            params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0)
-            params.add('alpha_{}'.format(n),value=initial_values['alpha_{}'.format(n)],min=0,max=1)
+        if mu:
+            if not mu_flag:
+                for m in range(pole_num[1]):
+                    m+=1
+                    params.add('mu_dc_{}'.format(m),value=initial_values['mu_dc_{}'.format(m)],min=1)
+                    params.add('mutau_{}'.format(m),value=initial_values['mutau_{}'.format(m)],min=0)
+                    params.add('mualpha_{}'.format(m),value=initial_values['mualpha_{}'.format(m)],min=0,max=1)
+        if not eps_flag:
+            for n in range(pole_num[0]):
+                n+=1 # start variable names at 1 instead of 0
+                params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=1)
+                params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0)
+                params.add('alpha_{}'.format(n),value=initial_values['alpha_{}'.format(n)],min=0,max=1)
             
         return params
     
@@ -247,13 +370,15 @@ class AirlineIter():
         """
         Creates default initial values for iteration parameters
         """
-        initial_values = {'k_inf':2.01,'sigma':0.0001}
-        
-        for n in range(number_of_poles):
-            n+=1 # start variable names at 1 instead of 0
-            initial_values['k_dc_{}'.format(n)] = 3 + 10**(n-1)
-            initial_values['tau_{}'.format(n)] = 1e-9 * 10**-(2*(n-1))
-            initial_values['alpha_{}'.format(n)] = 0.5
+        if number_of_poles == 0:
+            initial_values = {'k_real':2.01,'k_imag':0.0001}
+        else:
+            initial_values = {'k_inf':2.01,'sigma':0.0001}
+            for n in range(number_of_poles):
+                n+=1 # start variable names at 1 instead of 0
+                initial_values['k_dc_{}'.format(n)] = 3 + 10**(n-1)
+                initial_values['tau_{}'.format(n)] = 1e-9 * 10**-(2*(n-1))
+                initial_values['alpha_{}'.format(n)] = 0.5
             
         return initial_values
     
@@ -261,13 +386,15 @@ class AirlineIter():
         """
         Creates default initial values for iteration parameters
         """
-        initial_values = {'mu_inf':1.01}
-        
-        for n in range(number_of_poles):
-            n+=1 # start variable names at 1 instead of 0
-            initial_values['mu_dc_{}'.format(n)] = 0.001 + 10**(n-1)
-            initial_values['mutau_{}'.format(n)] = 1e-9 * 10**-(2*(n-1))
-            initial_values['mualpha_{}'.format(n)] = 0.5
+        if number_of_poles == 0:
+            initial_values = {'mu_real':1.01,'mu_imag':0.0001}
+        else:
+            initial_values = {'mu_inf':1.001}
+            for n in range(number_of_poles):
+                n+=1 # start variable names at 1 instead of 0
+                initial_values['mu_dc_{}'.format(n)] = 0.001 + 10**(n-1)
+                initial_values['mutau_{}'.format(n)] = 1e-9 * 10**-(2*(n-1))
+                initial_values['mualpha_{}'.format(n)] = 0.5
             
         return initial_values
     
@@ -289,20 +416,20 @@ class AirlineIter():
         
         return np.concatenate((resid1,resid2))
     
-    def _iterate_objective_function(self,params,L,freq_0,s11c,s21c,s12c,s22c):
+    def _iterate_model(self,params,L,freq_0):
         """
         Objective funtion to minimize from modified Baker-Jarvis (NIST) 
             iterative method (Houtz et al. 2016).
         """
         
-        freq = self.meas.freq[self.meas.freq>=freq_0]
+        freq = self.freq[self.freq>=freq_0]
         L = L/100 #L in m
 
         # Unpack parameters
         v = params.valuesdict()
         
         # Calculate predicted mu and epsilon
-        if self.fit_mu:    #check if fitting mu 
+        if self.fit_mu:    #check if fitting mu
             mu = self._colecole(self.poles_mu,freq,v,mu=True)
         else:   #set mu=1 if not fitting mu
             mu = 1
@@ -312,23 +439,39 @@ class AirlineIter():
         
         # Get uncertainty (weights)
         if self.shorted:
-            s11m_sigma = unp.std_devs(self.meas.s11_short[0][self.meas.freq>=freq[0]])
-            s11p_sigma = unp.std_devs(self.meas.s11_short[1][self.meas.freq>=freq[0]])
+            s11m_unc = unp.std_devs(self.s11_short[0][self.freq>=freq[0]])
+            s11p_unc = unp.std_devs(unp.radians(self.s11_short[1][self.freq>=freq[0]]))
         else:   #NOTE: Update to use S22 for non-shorted case
-            s11m_sigma = unp.std_devs(self.meas.s11[0][self.meas.freq>=freq[0]])
-            s11p_sigma = unp.std_devs(self.meas.s11[1][self.meas.freq>=freq[0]])
-        s21m_sigma = unp.std_devs(self.meas.s21[0][self.meas.freq>=freq[0]])
-        s21p_sigma = unp.std_devs(self.meas.s21[1][self.meas.freq>=freq[0]])
-        s12m_sigma = unp.std_devs(self.meas.s12[0][self.meas.freq>=freq[0]])
-        s12p_sigma = unp.std_devs(self.meas.s12[1][self.meas.freq>=freq[0]])
+            s11m_unc = unp.std_devs(self.s11[0][self.freq>=freq[0]])
+            s11p_unc = unp.std_devs(unp.radians(self.s11[1][self.freq>=freq[0]]))
+        s21m_unc = unp.std_devs(self.s21[0][self.freq>=freq[0]])
+        s21p_unc = unp.std_devs(unp.radians(self.s21[1][self.freq>=freq[0]]))
+        s12m_unc = unp.std_devs(self.s12[0][self.freq>=freq[0]])
+        s12p_unc = unp.std_devs(unp.radians(self.s12[1][self.freq>=freq[0]]))
+        
+        return s11_predicted, s21_predicted, s12_predicted, s11m_unc, \
+            s11p_unc, s21m_unc, s21p_unc, s12m_unc, s12p_unc
+    
+    def _iterate_objective_function(self,params,L,freq_0,s11c,s21c,s12c):
+        """
+        Objective funtion to minimize from modified Baker-Jarvis (NIST) 
+            iterative method (Houtz et al. 2016).
+        """
+        
+        s11_predicted, s21_predicted, s12_predicted, s11m_unc, s11p_unc, \
+            s21m_unc, s21p_unc, s12m_unc, s12p_unc = \
+            self._iterate_model(params,L,freq_0)
         
         # Create weighted objective functions for magnitute and phase seperately
-        obj_func_real = ((np.absolute(s21c) - np.absolute(s21_predicted))/s21m_sigma + \
-                         (np.absolute(s12c) - np.absolute(s12_predicted))/s12m_sigma + \
-                         (np.absolute(s11c) - np.absolute(s11_predicted))/s11m_sigma)
-        obj_func_imag = ((np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted)))**2/s21p_sigma**2 + \
-                         (np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))**2/s12p_sigma**2 + \
-                         (np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted)))**2/s11p_sigma**2)
+        obj_func_real = ((np.absolute(s21c) - np.absolute(s21_predicted))/s21m_unc + \
+                         (np.absolute(s12c) - np.absolute(s12_predicted))/s12m_unc + \
+                         (np.absolute(s11c) - np.absolute(s11_predicted))/s11m_unc)
+#        obj_func_imag = ((np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted)))**2/s21p_sigma**2 + \
+#                         (np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))**2/s12p_sigma**2 + \
+#                         (np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted)))**2/s11p_sigma**2)
+        obj_func_imag = ((np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted)))/s21p_unc + \
+                         (np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))/s12p_unc + \
+                         (np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted)))/s11p_unc)
 #        # Un-weighed objective fucntion
 #        obj_func_real = ((np.absolute(s21c) - np.absolute(s21_predicted)) + \
 #                         (np.absolute(s12c) - np.absolute(s12_predicted)) + \
@@ -339,43 +482,86 @@ class AirlineIter():
         
         return np.concatenate((obj_func_real,obj_func_imag))
     
+#    def log_prior(self,sigma):
+#        if sigma < 0:
+#            return -np.inf
+#        else:
+#            return 0
+        
+    def log_likelihood(self,params,L,freq_0,s11c,s21c,s12c):
+#        y = s11c + s21c + s12c
+        s11_predicted, s21_predicted, s12_predicted, s11m_unc, s11p_unc, \
+            s21m_unc, s21p_unc, s12m_unc, s12p_unc = \
+            self._iterate_model(params,L,freq_0)
+#        model = s11_predicted + s21_predicted + s12_predicted
+        # Cast error to complex
+#        s11c_sigma = 1j*s11m_sigma + np.sin(s11p_sigma);
+#        s11c_sigma += s11m_sigma + np.cos(s11p_sigma)
+#        s21c_sigma = 1j*s21m_sigma + np.sin(s21p_sigma);
+#        s21c_sigma += s21m_sigma + np.cos(s21p_sigma)
+#        s12c_sigma = 1j*s12m_sigma + np.sin(s12p_sigma);
+#        s12c_sigma += s12m_sigma + np.cos(s12p_sigma)
+        # Total error
+        unc_m = np.sqrt(s11m_unc**2 + s21m_unc**2 + s12m_unc**2)
+        unc_p = np.sqrt(s11p_unc**2 + s21p_unc**2 + s12p_unc**2)
+        unc = np.concatenate((unc_m,unc_p))
+        loglik = -0.5 * np.sum(np.log(2*np.pi*unc**2) + (self._iterate_objective_function(params,L,freq_0,s11c,s21c,s12c))**2)
+        return loglik
+    
+#    def log_posterior(self,params,L,freq_0,s11c,s21c,s12c):
+#        sigma, loglik = self.log_likelihood(params,L,freq_0,s11c,s21c,s12c)
+#        return self.log_prior(sigma) + loglik
+    
     def _sparam_iterator(self,params,L,freq_0,s11,s21,s12,s22):
         """
         Perform the s-parameter fit using lmfit and emcee and produce the fit 
             report.
         """
         # Fit data
-        minner = Minimizer(self._iterate_objective_function,\
-                   params,fcn_args=(L,freq_0,s11,s21,s12,s22),\
+#        minner = Minimizer(self._iterate_objective_function,\
+#                   params,fcn_args=(L,freq_0,s11,s21,s12,s22),\
+#                   nan_policy='omit')
+        minner = Minimizer(self.log_likelihood,\
+                   params,fcn_args=(L,freq_0,s11,s21,s12),\
                    nan_policy='omit')
         
-        result = minner.emcee(steps=300,nwalkers=600,is_weighted=True,burn=50)
+        from timeit import default_timer as timer
+        start = timer()
+        result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin)
+#        result = minner.emcee(steps=3)#,burn=150,thin=10)
+        end = timer()
+        m, s = divmod(end - start, 60)
+        h, m = divmod(m, 60)
+        time_str = "emcee took: %02d:%02d:%02d" % (h, m, s)
+        print(time_str)
         
         report_fit(result)
         
-        return result
+        return result, time_str
     
     def _permittivity_iterate(self,corr=False):
         """
-        Set up iteration and plot results. Corrected data currently NOT FULLY SUPPORTED.
+        Set up iteration and plot results. Corrected data currently only supported for un-shorted measurements.
         """
-        number_of_poles = self.poles
         number_of_fits = self.fits
-        
         # Get electromagnetic properties
         # Note: does not currently check if using corrected data
         if self.start_freq:     #start iteration from self.start_freq
-            freq = self.meas.freq[self.meas.freq>=self.start_freq]
+            freq = self.freq[self.freq>=self.start_freq]
         else:   #use full frequency range
-            freq = self.meas.freq
+            freq = self.freq
         # Get epsilon    
-        epsilon = -1j*unp.nominal_values(self.meas.avg_lossfac);
-        epsilon += unp.nominal_values(self.meas.avg_dielec)
-        epsilon = epsilon[self.meas.freq>=freq[0]]
+        if self.meas.nrw:
+            epsilon = 1j*unp.nominal_values(self.avg_lossfac);
+            epsilon += unp.nominal_values(self.avg_dielec)
+        else:
+            epsilon = -1j*unp.nominal_values(self.avg_lossfac);
+            epsilon += unp.nominal_values(self.avg_dielec)
+        epsilon = epsilon[self.freq>=freq[0]]
         # If ierating for mu, get mu
         if self.fit_mu:
             if self.meas.nrw:   #get epsilon and mu
-                mu = self.meas.mu[self.meas.freq>=freq[0]]
+                mu = self.avg_mu[self.freq>=freq[0]]
                 mu_real = mu.real
                 mu_imag = mu.imag
                 mu = -1j*mu_imag;
@@ -384,99 +570,140 @@ class AirlineIter():
                 self.meas.nrw = True
                 dielec, lossfac, losstan, mu = \
                     self.meas._permittivity_calc('a')
-                mu = mu[self.meas.freq>=freq[0]]
+                mu = mu[self.freq>=freq[0]]
                 mu_real = mu.real
                 mu_imag = mu.imag
                 mu = -1j*mu_imag;
                 mu += mu_real
                 self.meas.nrw = False    # Reset to previous setting
             
-        # Create a set of Parameters to the Cole-Cole model
-        if self.fit_mu:
-            params = self._iteration_parameters(mu=True)
-        else:
-            params = self._iteration_parameters()
-        
         ## First, fit Cole-Cole model(s) to analytical results to get initial guess
-        # Iterate to find parameters       
-        miner = Minimizer(self._colecole_residuals,params,\
-                          fcn_args=(number_of_poles,freq,epsilon))
-        result = miner.minimize()
-        if self.fit_mu:
-            miner_mu = Minimizer(self._colecole_residuals,params,\
-                          fcn_args=(self.poles_mu,freq,mu,True))
-            result_mu = miner_mu.minimize()
+        # If in Trial mode and number_of_poles is a list, fit for each 
+        # number_of_poles (and number_of_poles_mu) in the list(s) and report statistics
+        # If not in trial mode, only one value for the number of poles may be 
+        # given for each of epsilon and mu
+        if isinstance(self.poles,list) and not self.trial and len(self.poles) != 1:
+            raise Exception('Can only have one value for number_of_poles when trial_run=False.')
+        # if trail_run=False and number_of_poles is a list of length 1, make int
+        elif isinstance(self.poles,list) and not self.trial and len(self.poles) == 1:
+            self.poles = self.poles[0]
+        if self.fit_mu and isinstance(self.poles_mu,list) and not self.trial and len(self.poles_mu) != 1:
+            raise Exception('Can only have one value for number_of_poles_mu when trial_run=False.')
+        elif self.fit_mu and isinstance(self.poles_mu,list) and not self.trial and len(self.poles_mu) == 1:
+            self.poles_mu = self.poles_mu[0]
         
-        # Write fit report
-        report_fit(result)
+        # When trial_run is False, then self.poles should be an int while number_of_poles should be a list (of length 1)
+        number_of_poles = self.poles
         if self.fit_mu:
-            report_fit(result_mu)
+            number_of_mu_poles = self.poles_mu
+        if not isinstance(self.poles,list): # make sure number_of_poles is a list
+            number_of_poles = [number_of_poles]
+        if self.fit_mu and not isinstance(self.poles_mu,list):
+            number_of_mu_poles = [number_of_mu_poles]
+        if self.fit_mu and len(number_of_poles) != len(number_of_mu_poles):
+                raise Exception('Number of poles must be the same for epsilon and mu (len(number_of_poles) = len(number_of_poles_mu))')
+        
+        # Create a set of Parameters to the Cole-Cole model
+        params = []
+        if self.fit_mu:
+            for m in range(len(number_of_mu_poles)):
+                params.append(self._iteration_parameters([number_of_poles[m],number_of_mu_poles[m]],initial_values=self.initial_parameters,mu=True))
+        else:
+            for n in range(len(number_of_poles)):
+                params.append(self._iteration_parameters(number_of_poles[n],initial_values=self.initial_parameters))
+            
+        # Iterate to find parameters
+        result = []
+        for n in range(len(number_of_poles)):
+            miner = Minimizer(self._colecole_residuals,params[n],\
+                              fcn_args=(number_of_poles[n],freq,epsilon))
+            result.append(miner.minimize())
+        if self.fit_mu:
+            result_mu = []
+            for m in range(len(number_of_mu_poles)):
+                miner_mu = Minimizer(self._colecole_residuals,params[m],\
+                              fcn_args=(number_of_mu_poles[m],freq,mu,True))
+                result_mu.append(miner_mu.minimize())
+    
+        # Write fit report
+        for n in range(len(number_of_poles)):
+            print('Results for epsilon with {} poles:'.format(str(number_of_poles[n])))
+            report_fit(result[n])
+        if self.fit_mu:
+            for m in range(len(number_of_mu_poles)):
+                print('Results for mu with {} poles:'.format(str(number_of_mu_poles[m])))
+                report_fit(result_mu[m])
         
         # Get parameter values
-        values = result.params
-        values = values.valuesdict()
+        global values
+        values = []
+        for n in range(len(number_of_poles)):
+            values_temp = result[n].params
+            values.append(values_temp.valuesdict())
         if self.fit_mu:
-            values_mu = result_mu.params
-            values_mu = values_mu.valuesdict()
-            # Merge results into single object
-            values['mu_inf'] = values_mu['mu_inf']
-            for m in range(self.poles_mu):
-                m+=1
-                values['mu_dc_{}'.format(m)] = values_mu['mu_dc_{}'.format(m)]
-                values['mutau_{}'.format(m)] = values_mu['mutau_{}'.format(m)]
-                values['mualpha_{}'.format(m)] = values_mu['mualpha_{}'.format(m)]
-            print(values)
+            values_mu = []
+            for m in range(len(number_of_mu_poles)):
+                values_mu_temp = result_mu[m].params
+                values_mu.append(values_mu_temp.valuesdict())
+            if not self.trial:    
+                # Merge results into single object for initial guess of Bayesian fit
+                if self.poles_mu == 0:
+                    values[0]['mu_real'] = values_mu[0]['mu_real']
+                    values[0]['mu_imag'] = values_mu[0]['mu_imag']
+                else:
+                    values[0]['mu_inf'] = values_mu[0]['mu_inf']
+                    for m in range(self.poles_mu):
+                        m+=1
+                        values[0]['mu_dc_{}'.format(m)] = values_mu[0]['mu_dc_{}'.format(m)]
+                        values[0]['mutau_{}'.format(m)] = values_mu[0]['mutau_{}'.format(m)]
+                        values[0]['mualpha_{}'.format(m)] = values_mu[0]['mualpha_{}'.format(m)]
             
-        
         # Calculate model EM parameters
-        epsilon_iter = self._colecole(number_of_poles,freq,values)
+        for n in range(len(number_of_poles)):
+            epsilon_iter = self._colecole(number_of_poles[n],freq,values[n])
+            # Plot                    
+            pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter.real],legend_label=['Analytical','Iterative ({} poles)'.format(str(number_of_poles[n]))])
+            pplot.make_plot([freq,freq],[-epsilon.imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative ({} poles)'.format(str(number_of_poles[n]))])
+            # Find values at 8.5 GHz by finding index where freq is closest to 8.5 GHz
+            ep_real = epsilon_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
+            ep_imag = epsilon_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
+            print(ep_real)
+            print(ep_imag)
         if self.fit_mu:
-            mu_iter = self._colecole(self.poles_mu,freq,values_mu,mu=True)
-        
-        # Plot                    
-        pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter.real],legend_label=['Analytical','Iterative'])
-        pplot.make_plot([freq,freq],[-epsilon.imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
-        if self.fit_mu:
-            pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu'])
-            pplot.make_plot([freq,freq],[-mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu'])
-        
-        # Find values at 8.5 GHz by finding index where freq is closest to 8.5 GHz
-        ep_real = epsilon_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
-        ep_imag = epsilon_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
-        print(ep_real)
-        print(ep_imag)
-        if self.fit_mu:
-            mu_real = mu_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
-            mu_imag = mu_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
-            print(mu_real)
-            print(mu_imag)
+            for m in range(len(number_of_mu_poles)):
+                mu_iter = self._colecole(number_of_mu_poles[m],freq,values_mu[m],mu=True)
+                if number_of_mu_poles[m] == 0:
+                    mu_iter =  mu_iter*np.ones(len(freq))
+                pplot.make_plot([freq,freq],[mu.real,mu_iter.real],legend_label=['Analytical mu','Iterative mu ({} poles)'.format(str(number_of_mu_poles[m]))])
+                pplot.make_plot([freq,freq],[-mu.imag,-mu_iter.imag],plot_type='lf',legend_label=['Analytical mu','Iterative mu ({} poles)'.format(str(number_of_mu_poles[m]))])
+                mu_real = mu_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
+                mu_imag = mu_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
+                print(mu_real)
+                print(mu_imag)
         
         # If not in trial mode (no iterative fitting of sparams), perform iteration
         if not self.trial:
             ## Perform Modified Baker-Jarvis iteration
             # Check if using corrected S-params
             if corr:
-                s11 = unp.nominal_values(self.meas.corr_s11)
-                s21 = unp.nominal_values(self.meas.corr_s21)
-                s12 = unp.nominal_values(self.meas.corr_s12)
-                s22 = unp.nominal_values(self.meas.corr_s22)
+                s11 = unp.nominal_values(self.s11)
                 L = self.meas.Lcorr
             else:
                 # Use shorted S11 if available
                 if self.shorted:
-                    s11 = unp.nominal_values(self.meas.s11_short)
+                    s11 = unp.nominal_values(self.s11_short)
                 else:
-                    s11 = unp.nominal_values(self.meas.s11)
-                s21 = unp.nominal_values(self.meas.s21)
-                s12 = unp.nominal_values(self.meas.s12)
-                s22 = unp.nominal_values(self.meas.s22)
+                    s11 = unp.nominal_values(self.s11)
                 L = self.meas.L
+            s21 = unp.nominal_values(self.s21)
+            s12 = unp.nominal_values(self.s12)
+            s22 = unp.nominal_values(self.s22)
             
             # Start arrays at start_freq
-            s11 = np.array((s11[0][self.meas.freq>=freq[0]],s11[1][self.meas.freq>=freq[0]]))
-            s21 = np.array((s21[0][self.meas.freq>=freq[0]],s21[1][self.meas.freq>=freq[0]]))
-            s12 = np.array((s12[0][self.meas.freq>=freq[0]],s12[1][self.meas.freq>=freq[0]]))
-            s22 = np.array((s22[0][self.meas.freq>=freq[0]],s22[1][self.meas.freq>=freq[0]]))
+            s11 = np.array((s11[0][self.freq>=freq[0]],s11[1][self.freq>=freq[0]]))
+            s21 = np.array((s21[0][self.freq>=freq[0]],s21[1][self.freq>=freq[0]]))
+            s12 = np.array((s12[0][self.freq>=freq[0]],s12[1][self.freq>=freq[0]]))
+            s22 = np.array((s22[0][self.freq>=freq[0]],s22[1][self.freq>=freq[0]]))
             # Cast measured sparams to complex
             s11c = 1j*s11[0]*np.sin(np.radians(s11[1]));
             s11c += s11[0]*np.cos(np.radians(s11[1]))
@@ -488,16 +715,19 @@ class AirlineIter():
             s12c += s12[0]*np.cos(np.radians(s12[1]))
             
             ## Perform the fits acording to number_of_fits
-            values_sp = values # Use Cole-Cole fit for intial values
+            values_sp = values[0] # Use Cole-Cole fit for intial values
             for n in range(number_of_fits):
                 # Create a set of Parameters
-                initial_values = values_sp
-                if self.fit_mu:
-                    params = self._iteration_parameters(initial_values,mu=True)
+                if self.initial_parameters: # Use given initial values instead of generated ones
+                    initial_values = self.initial_parameters
                 else:
-                    params = self._iteration_parameters(initial_values)
+                    initial_values = values_sp
+                if self.fit_mu:
+                    params = self._iteration_parameters([number_of_poles[0],number_of_mu_poles[0]],initial_values,mu=True)
+                else:
+                    params = self._iteration_parameters(number_of_poles,initial_values)
                 # Fit data
-                result_sp = self._sparam_iterator(params,L,freq[0],s11c,s21c,s12c,s22c)
+                result_sp, time_str = self._sparam_iterator(params,L,freq[0],s11c,s21c,s12c,s22c)
                 # Update initial values for next run
                 values_sp = result_sp.params
                 values_sp = values_sp.valuesdict()
@@ -507,9 +737,9 @@ class AirlineIter():
             values_sp = values_sp.valuesdict()
             
             # Calculate model EM parameters
-            epsilon_iter_sp = self._colecole(number_of_poles,freq,values_sp)
+            epsilon_iter_sp = self._colecole(number_of_poles[0],freq,values_sp)
             if self.fit_mu:
-                mu_iter_sp = self._colecole(self.poles_mu,freq,values_sp,mu=True)
+                mu_iter_sp = self._colecole(number_of_mu_poles[0],freq,values_sp,mu=True)
             
             # Plot                    
             pplot.make_plot([freq,freq],[epsilon.real,epsilon_iter_sp.real],legend_label=['Analytical','Iterative'])
@@ -539,6 +769,23 @@ class AirlineIter():
             plt.plot(freq, np.angle(s21c),label='Measured')
             plt.plot(freq, np.angle(s21_predicted),label='Predicted')
             plt.title('s21phase')
+            
+            #Corner plot
+            import corner
+            corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
+                          truths=list(result_sp.params.valuesdict().values()))
+            
+            from matplotlib.ticker import MaxNLocator
+            nplots = len(result_sp.var_names)
+            fig, axes = plt.subplots(nplots, 1, sharex=True, figsize=(8,nplots*1.4))
+            for n in range(nplots):
+                axes[n].plot(result_sp.chain[:, :, n].T, color="k", alpha=0.4)
+                axes[n].yaxis.set_major_locator(MaxNLocator(5))
+                axes[n].set_ylabel(result_sp.var_names[n])
+            axes[nplots-1].set_xlabel("step number")
+            fig.tight_layout(h_pad=0.0)
+            
+            print(time_str)
             
             # Return results
             if self.fit_mu:

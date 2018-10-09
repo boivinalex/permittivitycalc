@@ -787,8 +787,8 @@ class AirlineData:
         deff_dT = 2*((1j*lam_og/(2*np.pi*L))*np.log(new_t))\
                         *((1j*lam_og)/(2*np.pi*L*new_t))
         
-        deff_dS_reflect_mag = (deff_dT*dT_dS_reflect)*np.exp(1j*np.imag(s_reflect))
-        deff_dS_trans_mag = (deff_dT*dT_dS_trans)*np.exp(1j*np.imag(s_trans))
+        deff_dS_reflect_mag = (deff_dT*dT_dS_reflect)*np.exp(1j*np.angle(s_reflect))
+        deff_dS_trans_mag = (deff_dT*dT_dS_trans)*np.exp(1j*np.angle(s_trans))
         
         deff_dS_reflect_phase = 1j*np.real(s_reflect)*deff_dS_reflect_mag
         deff_dS_trans_phase = 1j*np.real(s_trans)*deff_dS_trans_mag

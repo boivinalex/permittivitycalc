@@ -552,7 +552,7 @@ class AirlineIter():
             freq = self.freq
         # Get epsilon    
         if self.meas.nrw:
-            epsilon = 1j*unp.nominal_values(self.avg_lossfac);
+            epsilon = -1j*unp.nominal_values(self.avg_lossfac);
             epsilon += unp.nominal_values(self.avg_dielec)
         else:
             epsilon = -1j*unp.nominal_values(self.avg_lossfac);

@@ -803,16 +803,16 @@ class AirlineData:
         # Final Type B Uncertainty
         delta_dielec = abs((1 - ((lam_0**2)/(LAM_C**2)))\
             *np.sqrt((((np.real(deff_dS_reflect_mag))*err_s_r[0])**2) + \
-            (((np.real(deff_dS_reflect_phase))*err_s_r[1])**2) + \
+            (((np.real(deff_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
             (((np.real(deff_dS_reflect_mag))*err_s_t[0])**2) + \
-            (((np.real(deff_dS_trans_phase))*err_s_t[1])**2) + \
+            (((np.real(deff_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
             (((np.real(deff_dL))*delta_length)**2)))
         
         delta_lossfac = abs((1 - ((lam_0**2)/(LAM_C**2)))\
             *np.sqrt((((np.imag(deff_dS_reflect_mag))*err_s_r[0])**2) + \
-            (((np.imag(deff_dS_reflect_phase))*err_s_r[1])**2) + \
+            (((np.imag(deff_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
             (((np.imag(deff_dS_trans_mag))*err_s_t[0])**2) + \
-            (((np.imag(deff_dS_trans_phase))*err_s_t[1])**2) + \
+            (((np.imag(deff_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
             (((np.imag(deff_dL))*delta_length)**2)))
         
         return delta_dielec, delta_lossfac

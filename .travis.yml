@@ -2,7 +2,6 @@ language: python
 env:
   global:
   - COVERAGE=true
-  - FLAKE8=false
 before_install:
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
   -O miniconda.sh ; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -38,18 +37,18 @@ jobs:
     - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed";
       fi
     - echo "Build success"
-  - stage: test
-    os: osx
-    osx_image: xcode8.3
-    language: generic
-    env: TRAVIS_PYTHON_VERSION=3.6
-    script:
-    - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov;
-      py.test --cov=./; fi
-    after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed";
-      fi
-    - echo "Build success"
+  # - stage: test
+  #   os: osx
+  #   osx_image: xcode8.3
+  #   language: generic
+  #   env: TRAVIS_PYTHON_VERSION=3.6
+  #   script:
+  #   - if  [[ "$COVERAGE" == "true" ]]; then conda install --yes pytest-cov codecov;
+  #     py.test --cov=./; fi
+  #   after_success:
+  #   - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "codecov upload failed";
+  #     fi
+  #   - echo "Build success"
   - stage: deploy
     python: 3.6
     script: skip

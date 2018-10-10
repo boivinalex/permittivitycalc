@@ -28,7 +28,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='permittivitycalc',  
 
-    version='0.4.0',
+    version='0.4.1',
 
     description='Scripts to calculate and plot the complex permittivity from S-parameter data',  
 
@@ -61,7 +61,7 @@ setup(
                       'scipy',
                       ],
                       
-    python_requires='==3.6',
+    python_requires='>=3.6',
 
 #    extras_require={
 #        'dev': ['check-manifest'],

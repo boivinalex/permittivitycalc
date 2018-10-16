@@ -787,30 +787,30 @@ class AirlineData:
         deff_dS_reflect_mag = (deff_dT*dT_dS_reflect)*np.exp(1j*np.angle(s_reflect))
         deff_dS_trans_mag = (deff_dT*dT_dS_trans)*np.exp(1j*np.angle(s_trans))
         
-        deff_dS_reflect_phase = 1j*np.real(s_reflect)*deff_dS_reflect_mag
-        deff_dS_trans_phase = 1j*np.real(s_trans)*deff_dS_trans_mag
+        deff_dS_reflect_phase = 1j*np.absolute(s_reflect)*deff_dS_reflect_mag
+        deff_dS_trans_phase = 1j*np.absolute(s_trans)*deff_dS_trans_mag
         
+        # From Baker-Jarvis tech note 1992 can get dT_dd (or just calculate it)
         dT_dd = (-2*np.pi*1j*np.sqrt(mu_eff*ep_eff)*\
                  np.exp((-2*np.pi*L*1j*np.sqrt(mu_eff*ep_eff))/lam_og))/lam_og
         
-        # From Baker-Jarvis, 1990 can get deff_dL
         deff_dL = deff_dT*dT_dd
         
         # Combine partial derivatives for overal measurement uncertainty
         # Final Type B Uncertainty
-        delta_dielec = abs((1 - ((lam_0**2)/(LAM_C**2)))\
+        delta_dielec = (1 - ((lam_0**2)/(LAM_C**2)))\
             *np.sqrt((((np.real(deff_dS_reflect_mag))*err_s_r[0])**2) + \
             (((np.real(deff_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
-            (((np.real(deff_dS_reflect_mag))*err_s_t[0])**2) + \
+            (((np.real(deff_dS_trans_mag))*err_s_t[0])**2) + \
             (((np.real(deff_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
-            (((np.real(deff_dL))*delta_length)**2)))
+            (((np.real(deff_dL))*delta_length)**2))
         
-        delta_lossfac = abs((1 - ((lam_0**2)/(LAM_C**2)))\
+        delta_lossfac = (1 - ((lam_0**2)/(LAM_C**2)))\
             *np.sqrt((((np.imag(deff_dS_reflect_mag))*err_s_r[0])**2) + \
             (((np.imag(deff_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
             (((np.imag(deff_dS_trans_mag))*err_s_t[0])**2) + \
             (((np.imag(deff_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
-            (((np.imag(deff_dL))*delta_length)**2)))
+            (((np.imag(deff_dL))*delta_length)**2))
         
         return delta_dielec, delta_lossfac
     

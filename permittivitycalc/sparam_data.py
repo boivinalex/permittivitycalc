@@ -767,12 +767,12 @@ class AirlineData:
         dgam_dS_trans[sign] = (1 + (x[sign]/np.sqrt((x[sign]**2)-1)))*\
                         (-1*(s_trans[sign]/s_reflect[sign]))
         
-        dgam_dS_reflect[np.invert(sign)] = (1 + \
+        dgam_dS_reflect[np.invert(sign)] = (1 - \
                         (x[np.invert(sign)]/np.sqrt((x[np.invert(sign)]**2)-1)))\
                         *(((2*s_reflect[np.invert(sign)]**2)\
                            -(2*s_trans[np.invert(sign)]**2)+1)\
                         /2*s_reflect[np.invert(sign)]**2)
-        dgam_dS_trans[np.invert(sign)] = (1 + (x[np.invert(sign)]\
+        dgam_dS_trans[np.invert(sign)] = (1 - (x[np.invert(sign)]\
                         /np.sqrt((x[np.invert(sign)]**2)-1)))\
                         *(-1*(s_trans[np.invert(sign)]/s_reflect[np.invert(sign)]))
      

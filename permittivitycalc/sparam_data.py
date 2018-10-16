@@ -656,6 +656,7 @@ class AirlineData:
         # Calculate T (transmission coefficient)
         t = (s_trans + s_reflect - gam) / (1 - ((s_reflect + s_trans) * gam))
         # Unwrap phase ambiguities in phase angle of T
+        # From Chen, L. F. et al. (2004). Microwave Electronics: Measurement and Materials Characterization
         t_phaser = np.angle(t) #get phase angle from complex
         t_phase_unwrap = np.copy(t_phaser)
         # Ignore NaN values
@@ -667,13 +668,11 @@ class AirlineData:
         # Also create new unwrapped T vector
         new_t = 1j*t_phase_unwrap; new_t += np.absolute(t)
         
-        # Calculate A 
+        # Calculate 1/A
         a_1 = np.sqrt(-(ln_1_T / (2*np.pi*L))**2)
-        a_2 = -1 * (np.sqrt(-(ln_1_T / (2*np.pi*L))**2))
          
-        # Determine correct root with condition Re(1/A) > 0
-        a[a_1.real > 0] = 1 / a_1[a_1.real > 0]
-        a[a_1.real < 0] = 1 / a_2[a_1.real < 0]
+        # Calculate A
+        a = 1 / a_1
           
         # Find wavelength in empty cell
         lam_og = 1 / np.sqrt(1/lam_0**2 - 1/LAM_C**2)
@@ -694,12 +693,10 @@ class AirlineData:
             (lam_0**2/LAM_C*2)/mu_eff
         
         dielec = ep_r.real
-        if self.nrw:
-            lossfac = -ep_r.imag
-            complex_mu = mu_eff
-        else:
-            lossfac = ep_r.imag
+        lossfac = ep_r.imag
         losstan = lossfac/dielec
+        if self.nrw:
+            complex_mu = mu_eff
         
         # Calculate uncertainties
         # Check for uncertainties and make sure not using NRW

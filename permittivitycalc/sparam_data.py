@@ -211,7 +211,7 @@ class AirlineData:
                 self.reverse_mu = self._permittivity_calc('r')
             self.avg_dielec = (self.forward_dielec + self.reverse_dielec)/2
             self.avg_lossfac = (self.forward_lossfac + self.reverse_lossfac)/2
-            self.avg_mu = (self.forward_mu + self.reverse_mu)/2
+            self.avg_mu = (self.forward_mu[0] + self.reverse_mu[0])/2
             self.avg_losstan = self.avg_lossfac/self.avg_dielec
         else:
             self.forward_dielec, self.forward_lossfac, self.forward_losstan = \
@@ -277,16 +277,16 @@ class AirlineData:
             'tanδ: {:.2%} \n'.format(self.med_tand_diff)
         print(diff_results)
         
-        # Combine Type A and Type B Uncertainty (if it exists)
-        if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw:
-            self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
-                self._calcTotalUncertainty(self.avg_dielec,self.avg_lossfac,\
-                self.avg_losstan)
-            if corr:
-                self.corr_avg_dielec, self.corr_avg_lossfac,\
-                    self.corr_avg_losstan = self._calcTotalUncertainty(\
-                    self.corr_avg_dielec,self.corr_avg_lossfac,\
-                    self.corr_avg_losstan)
+#        # Combine Type A and Type B Uncertainty (if it exists)
+#        if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw:
+#            self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
+#                self._calcTotalUncertainty(self.avg_dielec,self.avg_lossfac,\
+#                self.avg_losstan)
+#            if corr:
+#                self.corr_avg_dielec, self.corr_avg_lossfac,\
+#                    self.corr_avg_losstan = self._calcTotalUncertainty(\
+#                    self.corr_avg_dielec,self.corr_avg_lossfac,\
+#                    self.corr_avg_losstan)
                     
         # Calculare resonant frequencies in sample
         self.res_freq = self._resonant_freq()
@@ -708,10 +708,19 @@ class AirlineData:
                                          corr)
             dielec = unp.uarray(dielec,delta_dielec)
             lossfac = unp.uarray(lossfac,delta_lossfac)
+            losstan = losstan = lossfac/dielec  
+        elif isinstance(self.s11[0][0], uncertainties.UFloat) and self.nrw: 
+            delta_dielec, delta_lossfac, delta_mu = \
+                self._calc_uncertainties_NRW(s_param,nrows,sign,x,s_reflect,\
+                                         s_trans,gam,lam_og,new_t,complex_mu,\
+                                         ep_r,lam_0,dielec,lossfac,losstan,\
+                                         corr)
+            dielec = unp.uarray(dielec,delta_dielec)
+            lossfac = unp.uarray(lossfac,delta_lossfac)
             losstan = losstan = lossfac/dielec
         
         if self.nrw:
-            return dielec,lossfac,losstan,complex_mu
+            return dielec,lossfac,losstan,[complex_mu,delta_mu]
         else:
             return dielec,lossfac,losstan
         
@@ -728,9 +737,6 @@ class AirlineData:
         
         delta_lossfac : array 
             Uncertainty in imaginary part.
-        
-        delta_losstan : array 
-            Uncertainty in loss tangent.
         """
         # Check if using corrected S-params
         if corr:
@@ -814,6 +820,140 @@ class AirlineData:
         
         return delta_dielec, delta_lossfac
     
+    def _calc_uncertainties_NRW(self,s_param,nrows,sign,x,s_reflect,\
+                                         s_trans,gam,lam_og,new_t,complex_mu,\
+                                         ep_r,lam_0,dielec,lossfac,losstan,\
+                                         corr):
+        """
+        Calculates nrw uncertainties from Baker-Jarvis et al. (1993). 
+        Transmission/reflection and short-circuit line methods for measuring 
+        permittivity and permeability. NIST Technical Note 1355-R. Boulder, 
+        CO: National Institute of Standards and Technology. 
+        http://doi.org/10.6028/NIST.TN.1355r
+        
+        Returns
+        -------
+        delta_dielec : array 
+            Uncertainty in real part.
+        
+        delta_lossfac : array 
+            Uncertainty in imaginary part.
+            
+        delta_mu : complex array
+            Uncertainty in complex permeability.
+        """
+        # Check if using corrected S-params
+        if corr:
+            s11 = self.corr_s11
+            s21 = self.corr_s21
+            s12 = self.corr_s12
+            s22 = self.corr_s22
+            L = self.Lcorr
+        else:
+            s11 = self.s11
+            s21 = self.s21
+            s12 = self.s12
+            s22 = self.s22
+            L = self.L
+        
+        # Strip uarrays of their nominal values
+        if s_param == 'f':
+            err_s_r = unp.std_devs(s11)
+            err_s_t = unp.std_devs(s21)
+        else:
+            err_s_r = unp.std_devs(s22)
+            err_s_t = unp.std_devs(s12)
+        
+        delta_length = 0.001 #in cm
+        e_0 = E_0*100
+        mu_0 = U_0*100
+        mu = complex_mu
+        eps = ep_r
+        t = new_t
+        omega = 2*np.pi*self.freq
+        small_gam = (1j*2*np.pi/lam_0)*np.sqrt(eps*mu - \
+                    (lam_0/LAM_C)**2)
+        small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
+        
+        # (2.95)
+        dT_dmu = ((L*eps*(omega**2)*e_0*mu_0)/(2*small_gam))*np.exp(-small_gam*L)
+        # (2.94)
+        dT_deps = ((L*mu*(omega**2)*e_0*mu_0)/(2*small_gam))*np.exp(-small_gam*L)
+        # (2.93)
+        dT_dL = -small_gam*np.exp(-small_gam*L)
+        # (2.91)
+        dgam_deps = (small_gam_0*(mu**2)*e_0*mu_0*(omega**2))\
+                        /(small_gam*(small_gam + small_gam_0*mu)**2)
+        # (2.92)
+        dgam_dmu = eps*dgam_deps/mu + 2*small_gam_0*small_gam/(small_gam + \
+                        small_gam_0*mu)**2
+        # (2.90)
+        dS_trans_dgam = 2*t*gam*(t**2 -1)/(1 - (gam**2)*(t**2))**2
+        # (2.89)
+        dS_trans_dT = (1 - gam**2)*((t**2)*(gam**2) + 1)/(1 - (gam**2)*(t**2))**2
+        # (2.88)
+        dS_reflect_dT = 2*gam*t*((gam**2) - 1)/(1 - (gam**2)*(t**2))**2
+        # (2.87)
+        dS_reflect_dgam = -(1 + (gam**2)*(t**2))*((t**1) - 1)/(1 - \
+                          (gam**2)*(t**2))**2
+        # (2.74)
+        a = dS_reflect_dT*dT_deps + dS_reflect_dgam*dgam_deps
+        b = dS_reflect_dT*dT_dmu + dS_reflect_dgam*dgam_dmu
+        # (2.75)
+        c = dS_trans_dT*dT_deps + dS_trans_dgam*dgam_deps
+        d = dS_trans_dT*dT_dmu + dS_trans_dgam*dgam_dmu
+        # (2.77)
+        e = -dS_reflect_dT*dT_dL
+        # (2.78)
+        f = -dS_trans_dT*dT_dL
+        # (2.79)
+        deps_dS_reflect_mag = np.exp(1j*np.angle(s_reflect))/(a - b*c/d)
+        # (2.80)
+        dmu_dS_reflect_mag = -c*deps_dS_reflect_mag/d
+        # trans
+        deps_dS_trans_mag = np.exp(1j*np.angle(s_trans))/(c - d*a/b)
+        dmu_dS_trans_mag = -a*deps_dS_trans_mag/b
+        # (2.81)
+        deps_dL = (b*f - d*e)/(b*c - a*d)
+        # (2.82)
+        dmu_dL = (e - a*deps_dL)/b
+        # (2.83)
+        deps_dS_reflect_phase = 1j*np.absolute(s_reflect)*deps_dS_reflect_mag
+        # (2.84)
+        dmu_dS_reflect_phase = 1j*np.absolute(s_reflect)*dmu_dS_reflect_mag
+        # (2.85)
+        deps_dS_trans_phase = 1j*np.absolute(s_trans)*deps_dS_trans_mag
+        # (2.86)
+        dmu_dS_trans_phase = 1j*np.absolute(s_trans)*dmu_dS_reflect_mag
+        # (2.67)
+        delta_dielec = np.sqrt((((np.real(deps_dS_reflect_mag))*err_s_r[0])**2) + \
+            (((np.real(deps_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
+            (((np.real(deps_dS_trans_mag))*err_s_t[0])**2) + \
+            (((np.real(deps_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
+            (((np.real(deps_dL))*delta_length)**2))
+        # (2.68)
+        delta_lossfac = np.sqrt((((np.imag(deps_dS_reflect_mag))*err_s_r[0])**2) + \
+            (((np.imag(deps_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
+            (((np.imag(deps_dS_trans_mag))*err_s_t[0])**2) + \
+            (((np.imag(deps_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
+            (((np.imag(deps_dL))*delta_length)**2))
+        # mu
+        delta_mu_real = np.sqrt((((np.real(dmu_dS_reflect_mag))*err_s_r[0])**2) + \
+            (((np.real(dmu_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
+            (((np.real(dmu_dS_trans_mag))*err_s_t[0])**2) + \
+            (((np.real(dmu_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
+            (((np.real(dmu_dL))*delta_length)**2))
+        delta_mu_imag = np.sqrt((((np.imag(dmu_dS_reflect_mag))*err_s_r[0])**2) + \
+            (((np.imag(dmu_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
+            (((np.imag(dmu_dS_trans_mag))*err_s_t[0])**2) + \
+            (((np.imag(dmu_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
+            (((np.imag(dmu_dL))*delta_length)**2))
+        # Build complex mu unc
+        delta_mu = 1j*delta_mu_imag;
+        delta_mu += delta_mu_real
+        
+        return delta_dielec, delta_lossfac, delta_mu
+    
     def _calcTotalUncertainty(self,dielec,lossfac,losstan):
         # Type A Uncertainty. Note 2 regions for lossfac and losstan
         dielec_TypeA = np.where(self.real_part_diff_array > 0.008,\
@@ -859,8 +999,8 @@ class AirlineData:
         epsilon = -1j*0.0007;
         epsilon += 2.1
         mu = 1 - 1j*0
-        L = 0.17/100
-        lam_0 = (C/self.freq)
+        L = 0.17/100 # (m)
+        lam_0 = (C/self.freq) # (m)
         small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
                     (lam_0/LAM_C)**2)
         small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)

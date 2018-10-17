@@ -206,12 +206,15 @@ class AirlineData:
         # Calculate permittivity
         if nrw:
             self.forward_dielec, self.forward_lossfac, self.forward_losstan, \
-                self.forward_mu = self._permittivity_calc('f')
+                self.forward_mu_real, self.forward_mu_imag \
+                = self._permittivity_calc('f')
             self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan, \
-                self.reverse_mu = self._permittivity_calc('r')
+                self.reverse_mu_real, self.reverse_mu_imag \
+                = self._permittivity_calc('r')
             self.avg_dielec = (self.forward_dielec + self.reverse_dielec)/2
             self.avg_lossfac = (self.forward_lossfac + self.reverse_lossfac)/2
-            self.avg_mu = (self.forward_mu[0] + self.reverse_mu[0])/2
+            self.avg_mu_real = (self.forward_mu_real + self.reverse_mu_real)/2
+            self.avg_mu_imag = (self.forward_mu_imag + self.reverse_mu_imag)/2
             self.avg_losstan = self.avg_lossfac/self.avg_dielec
         else:
             self.forward_dielec, self.forward_lossfac, self.forward_losstan = \
@@ -232,19 +235,25 @@ class AirlineData:
                         self.corr_s22 = self._de_embed()
                     if nrw:
                         self.corr_forward_dielec, self.corr_forward_lossfac, \
-                            self.corr_forward_losstan, self.corr_forward_mu = \
-                            self._permittivity_calc('f',True)
+                            self.corr_forward_losstan, \
+                            self.corr_forward_mu_real, \
+                            self.corr_forward_mu_imag \
+                            = self._permittivity_calc('f',True)
                         self.corr_reverse_dielec, self.corr_reverse_lossfac, \
-                            self.corr_reverse_losstan, self.corr_reverse_mu = \
-                            self._permittivity_calc('r',True)
+                            self.corr_reverse_losstan, \
+                            self.corr_reverse_mu_real, \
+                            self.corr_reverse_mu_imag \
+                            = self._permittivity_calc('r',True)
                         self.corr_avg_dielec = (self.corr_forward_dielec + \
                                                  self.corr_reverse_dielec)/2
                         self.corr_avg_lossfac = (self.corr_forward_lossfac + \
                                                  self.corr_reverse_lossfac)/2
                         self.corr_avg_losstan = \
                             self.corr_avg_lossfac/self.corr_avg_dielec
-                        self.corr_avg_mu = (self.corr_forward_mu + \
-                                           self.corr_reverse_mu)/2
+                        self.corr_avg_mu_real = (self.corr_forward_mu_real + \
+                                           self.corr_reverse_mu_real)/2
+                        self.corr_avg_mu_imag = (self.corr_forward_mu_imag + \
+                                           self.corr_reverse_mu_imag)/2
                     else:
                         self.corr_forward_dielec, self.corr_forward_lossfac, \
                             self.corr_forward_losstan = \
@@ -479,16 +488,21 @@ class AirlineData:
             measured_dielec = unp.nominal_values(self.corr_avg_dielec)
             measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
             L = self.Lcorr
+            if self.nrw:
+                global u_r
+                u_r = unp.nominal_values(self.corr_avg_mu_real)
+                u_i = unp.nominal_values(self.corr_avg_mu_imag)
         else:
             measured_dielec = unp.nominal_values(self.avg_dielec)
             measured_lossfac = unp.nominal_values(self.avg_lossfac)
             L = self.L
+            if self.nrw:
+                u_r = unp.nominal_values(self.avg_mu_real)
+                u_i = unp.nominal_values(self.avg_mu_imag)
         e_r = np.median(measured_dielec[1::]) # Exclude first data point
         e_i = np.median(measured_lossfac[1::])
         if self.nrw:
-            u_r = np.real(self.avg_mu)
             u_r = np.median(u_r[1::])
-            u_i = np.imag(self.avg_mu)
             u_i = np.median(u_i[1::])
         else:
             u_r = 1
@@ -697,6 +711,8 @@ class AirlineData:
         losstan = lossfac/dielec
         if self.nrw:
             complex_mu = mu_eff
+            mu_real = complex_mu.real
+            mu_imag = complex_mu.imag
         
         # Calculate uncertainties
         # Check for uncertainties and make sure not using NRW
@@ -710,7 +726,7 @@ class AirlineData:
             lossfac = unp.uarray(lossfac,delta_lossfac)
             losstan = losstan = lossfac/dielec  
         elif isinstance(self.s11[0][0], uncertainties.UFloat) and self.nrw: 
-            delta_dielec, delta_lossfac, delta_mu = \
+            delta_dielec, delta_lossfac, delta_mureal, delta_muimag = \
                 self._calc_uncertainties_NRW(s_param,nrows,sign,x,s_reflect,\
                                          s_trans,gam,lam_og,new_t,complex_mu,\
                                          ep_r,lam_0,dielec,lossfac,losstan,\
@@ -718,9 +734,11 @@ class AirlineData:
             dielec = unp.uarray(dielec,delta_dielec)
             lossfac = unp.uarray(lossfac,delta_lossfac)
             losstan = losstan = lossfac/dielec
+            mu_real = unp.uarray(mu_real,delta_mureal)
+            mu_imag = unp.uarray(mu_imag,delta_muimag)
         
         if self.nrw:
-            return dielec,lossfac,losstan,[complex_mu,delta_mu]
+            return dielec,lossfac,losstan,mu_real,mu_imag
         else:
             return dielec,lossfac,losstan
         
@@ -938,21 +956,18 @@ class AirlineData:
             (((np.imag(deps_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
             (((np.imag(deps_dL))*delta_length)**2))
         # mu
-        delta_mu_real = np.sqrt((((np.real(dmu_dS_reflect_mag))*err_s_r[0])**2) + \
+        delta_mureal = np.sqrt((((np.real(dmu_dS_reflect_mag))*err_s_r[0])**2) + \
             (((np.real(dmu_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
             (((np.real(dmu_dS_trans_mag))*err_s_t[0])**2) + \
             (((np.real(dmu_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
             (((np.real(dmu_dL))*delta_length)**2))
-        delta_mu_imag = np.sqrt((((np.imag(dmu_dS_reflect_mag))*err_s_r[0])**2) + \
+        delta_muimag = np.sqrt((((np.imag(dmu_dS_reflect_mag))*err_s_r[0])**2) + \
             (((np.imag(dmu_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
             (((np.imag(dmu_dS_trans_mag))*err_s_t[0])**2) + \
             (((np.imag(dmu_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
             (((np.imag(dmu_dL))*delta_length)**2))
-        # Build complex mu unc
-        delta_mu = 1j*delta_mu_imag;
-        delta_mu += delta_mu_real
         
-        return delta_dielec, delta_lossfac, delta_mu
+        return delta_dielec, delta_lossfac, delta_mureal, delta_muimag
     
     def _calcTotalUncertainty(self,dielec,lossfac,losstan):
         # Type A Uncertainty. Note 2 regions for lossfac and losstan
@@ -1272,10 +1287,16 @@ class AirlineData:
             plot_dielec = self.corr_avg_dielec
             plot_lossfac = self.corr_avg_lossfac
             plot_losstan = self.corr_avg_losstan
+            if self.nrw:
+                plot_mureal = self.corr_avg_mu_real
+                plot_muimag = self.corr_avg_mu_imag
         elif default_settings:
             plot_dielec = self.avg_dielec
             plot_lossfac = self.avg_lossfac
             plot_losstan = self.avg_losstan
+            if self.nrw:
+                plot_mureal = self.avg_mu_real
+                plot_muimag = self.avg_mu_imag
         
         x = self.freq
         # Figure out what to plot
@@ -1285,6 +1306,9 @@ class AirlineData:
             y2 = plot_lossfac
             y3 = plot_losstan
             plot_kwargs = {"legend_label":[self.name]}
+            if self.nrw:
+                y4 = plot_mureal
+                y5 = plot_muimag
         else:
             # Prompt user
             s_plot = input('Please designate "a" for Average, ' + \
@@ -1300,10 +1324,16 @@ class AirlineData:
                 y1 = self.corr_avg_dielec
                 y2 = self.corr_avg_lossfac
                 y3 = self.corr_avg_losstan
+                if self.nrw:
+                    y4 = self.corr_avg_mu_real
+                    y5 = self.corr_avg_mu_imag
             elif s_plot == 'a' :
                 y1 = self.avg_dielec
                 y2 = self.avg_lossfac
                 y3 = self.avg_losstan
+                if self.nrw:
+                    y4 = self.avg_mu_real
+                    y5 = self.avg_mu_imag
             elif 'normalized' in kwargs:
                 raise Exception('normalized=True can only be used with Average "a" plots')
             elif s_plot == 'f':
@@ -1311,30 +1341,48 @@ class AirlineData:
                     y1 = self.corr_forward_dielec
                     y2 = self.corr_forward_lossfac
                     y3 = self.corr_forward_losstan
+                    if self.nrw:
+                        y4 = self.corr_forward_mu_real
+                        y5 = self.corr_forward_mu_imag
                 else:
                     y1 = self.forward_dielec
                     y2 = self.forward_lossfac
                     y3 = self.forward_losstan
+                    if self.nrw:
+                        y4 = self.forward_mu_real
+                        y5 = self.forward_mu_imag
             elif s_plot == 'r':
                 if 'corr' in kwargs:
                     y1 = self.corr_reverse_dielec
                     y2 = self.corr_reverse_lossfac
                     y3 = self.corr_reverse_losstan
+                    if self.nrw:
+                        y4 = self.corr_reverse_mu_real
+                        y5 = self.corr_reverse_mu_imag
                 else:
                     y1 = self.reverse_dielec
                     y2 = self.reverse_lossfac
                     y3 = self.reverse_losstan
+                    if self.nrw:
+                        y4 = self.reverse_mu_real
+                        y5 = self.reverse_mu_imag
             elif s_plot == 'all' and 'corr' in kwargs:
                 x = [x,x,x]
                 y1 = [self.corr_forward_dielec,self.corr_reverse_dielec,self.corr_avg_dielec]
                 y2 = [self.corr_forward_lossfac,self.corr_reverse_lossfac,self.corr_avg_lossfac]
                 y3 = [self.corr_forward_losstan,self.corr_reverse_losstan,self.corr_avg_losstan]
+                if self.nrw:
+                    y4 = [self.corr_forward_mu_real,self.corr_reverse_mu_real,self.corr_avg_mu_real]
+                    y5 = [self.corr_forward_mu_imag,self.corr_reverse_mu_imag,self.corr_avg_mu_imag]
                 plot_kwargs = {"legend_label":['Forward [S11,S21]','Reverse [S22,S12]','Average']}
             else:
                 x = [x,x,x]
                 y1 = [self.forward_dielec,self.reverse_dielec,self.avg_dielec]
                 y2 = [self.forward_lossfac,self.reverse_lossfac,self.avg_lossfac]
                 y3 = [self.forward_losstan,self.reverse_losstan,self.avg_losstan]
+                if self.nrw:
+                    y4 = [self.forward_mu_real,self.reverse_mu_real,self.avg_mu_real]
+                    y5 = [self.forward_mu_imag,self.reverse_mu_imag,self.avg_mu_imag]
                 plot_kwargs = {"legend_label":['Forward [S11,S21]','Reverse [S22,S12]','Average']}
         # Pass publish arguments        
         if publish:
@@ -1347,6 +1395,9 @@ class AirlineData:
         pplot.make_plot(x,y1,'d',**plot_kwargs)
         pplot.make_plot(x,y2,'lf',**plot_kwargs)
         pplot.make_plot(x,y3,'lt',**plot_kwargs)
+        if self.nrw:
+            pplot.make_plot(x,y4,'ur',**plot_kwargs)
+            pplot.make_plot(x,y5,'ui',**plot_kwargs)
         
     def s_param_plot(self,corr=False):
         """

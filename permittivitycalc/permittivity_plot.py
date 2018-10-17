@@ -125,6 +125,16 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         ylabel = '$tan\delta$'
         xlabel = 'Frequency'
         rnd = 2
+    elif plot_type == 'ur': # Real part of mu
+        plot_title = 'Real Part of the Permeability'
+        ylabel = '$\mu^{\prime}_{r}$'
+        xlabel = 'Frequency'
+        rnd = 2 
+    elif plot_type == 'ui': # Imaginary part of mu
+        plot_title = 'Imaginary Part of the Permeability'
+        ylabel = '$\mu^{\prime\prime}_{r}$'
+        xlabel = 'Frequency'
+        rnd = 2 
     elif plot_type == 'c': # Custom plot
         plot_title = plot_title
         ylabel = ylabel
@@ -188,7 +198,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
             
     # Determine appropriate buffer and spacing depedning on plot type
     thickness = y_max - y_min
-    if plot_type == 'd':
+    if plot_type in ('d','ur','ui'):
         if thickness < 0.1:
             buffer = 0.1
             spacing = 0.02

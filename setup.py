@@ -28,7 +28,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='permittivitycalc',  
 
-    version='0.4.1',
+    version='0.5',
 
     description='Scripts to calculate and plot the complex permittivity from S-parameter data',  
 
@@ -38,7 +38,7 @@ setup(
     
     author='Alexandre Boivin',  
 
-    author_email='alex.boivin@mail.utoronto.ca',
+    author_email='alex.boivin@utoronto.ca',
     
     classifiers=[
         'Development Status :: 3 - Alpha',

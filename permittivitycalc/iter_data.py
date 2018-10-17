@@ -143,11 +143,21 @@ class AirlineIter():
             self.shorted = False
         # Get permittivity data
         self.freq = self.meas.freq
-        self.avg_dielec = self.meas.avg_dielec
-        self.avg_lossfac = self.meas.avg_lossfac
-        self.avg_losstan = self.meas.avg_losstan
+        if self.meas.corr:
+            self.avg_dielec = self.meas.corr_avg_dielec
+            self.avg_lossfac = self.meas.corr_avg_lossfac
+            self.avg_losstan = self.meas.corr_avg_losstan
+        else:
+            self.avg_dielec = self.meas.avg_dielec
+            self.avg_lossfac = self.meas.avg_lossfac
+            self.avg_losstan = self.meas.avg_losstan
         if self.meas.nrw:
-            self.avg_mu = self.meas.avg_mu
+            if self.meas.corr:
+                self.avg_mu_real = self.meas.corr_avg_mu_real
+                self.avg_mu_imag = self.meas.corr_avg_mu_imag
+            else:
+                self.avg_mu_real = self.meas.avg_mu_real
+                self.avg_mu_imag = self.meas.avg_mu_imag
         self.trial = trial_run
         self.fit_mu = fit_mu
         self.fit_sigma = fit_conductivity
@@ -172,7 +182,8 @@ class AirlineIter():
             self.avg_lossfac = self.avg_lossfac[self.freq<=self.end_freq]
             self.avg_losstan = self.avg_losstan[self.freq<=self.end_freq]
             if self.meas.nrw:
-                self.avg_mu = self.avg_mu[self.freq<=self.end_freq]
+                self.avg_mu_real = self.avg_mu_real[self.freq<=self.end_freq]
+                self.avg_mu_imag = self.avg_mu_imag[self.freq<=self.end_freq]
             if self.shorted:
                 self.s11_short = np.array((self.s11_short[0][self.freq<=self.end_freq],self.s11_short[1][self.freq<=self.end_freq]))
             self.freq = self.freq[self.freq<=self.end_freq]
@@ -560,21 +571,20 @@ class AirlineIter():
         epsilon = epsilon[self.freq>=freq[0]]
         # If ierating for mu, get mu
         if self.fit_mu:
-            if self.meas.nrw:   #get epsilon and mu
-                mu = self.avg_mu[self.freq>=freq[0]]
-                mu_real = mu.real
-                mu_imag = mu.imag
+            if self.meas.nrw:   #get epsilon and mu\
+                mu_real = unp.nominal_values(self.avg_mu_real)
+                mu_imag = unp.nominal_values(self.avg_mu_imag)
                 mu = -1j*mu_imag;
                 mu += mu_real
+                mu = mu[self.freq>=freq[0]]
             else:   #create mu via nrw
                 self.meas.nrw = True
-                dielec, lossfac, losstan, mu = \
+                dielec, lossfac, losstan, mu_real, mu_imag = \
                     self.meas._permittivity_calc('a')
                 mu = mu[self.freq>=freq[0]]
-                mu_real = mu.real
-                mu_imag = mu.imag
                 mu = -1j*mu_imag;
                 mu += mu_real
+                mu = mu[self.freq>=freq[0]]
                 self.meas.nrw = False    # Reset to previous setting
             
         ## First, fit Cole-Cole model(s) to analytical results to get initial guess

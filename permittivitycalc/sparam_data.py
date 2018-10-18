@@ -329,8 +329,15 @@ class AirlineData:
                 #   alpha from Hickson et al., 2018
                 norm_complex_dielec = complex_dielec*((norm_val*0.307 + 1)**3 / \
                                             (self.bulk_density*0.307 + 1)**3)
-            self.norm_dielec = np.real(norm_complex_dielec)
-            self.norm_lossfac = np.imag(norm_complex_dielec)
+            # Get uncertainty
+            if self.corr:
+                unc_real = unp.std_devs(self.corr_avg_dielec)
+                unc_imag = unp.std_devs(self.corr_avg_lossfac)
+            else:
+                unc_real = unp.std_devs(self.avg_dielec)
+                unc_imag = unp.std_devs(self.avg_lossfac)
+            self.norm_dielec = unp.uarray(np.real(norm_complex_dielec),unc_real)
+            self.norm_lossfac = unp.uarray(np.imag(norm_complex_dielec),unc_imag)
             self.norm_losstan = self.norm_lossfac/self.norm_dielec
         elif normalize_density:
             raise Exception('Need bulk desnity to normalize to constant density')

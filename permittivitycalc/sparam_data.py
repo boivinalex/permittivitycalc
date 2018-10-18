@@ -286,16 +286,16 @@ class AirlineData:
             'tanδ: {:.2%} \n'.format(self.med_tand_diff)
         print(diff_results)
         
-#        # Combine Type A and Type B Uncertainty (if it exists)
-#        if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw:
-#            self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
-#                self._calcTotalUncertainty(self.avg_dielec,self.avg_lossfac,\
-#                self.avg_losstan)
-#            if corr:
-#                self.corr_avg_dielec, self.corr_avg_lossfac,\
-#                    self.corr_avg_losstan = self._calcTotalUncertainty(\
-#                    self.corr_avg_dielec,self.corr_avg_lossfac,\
-#                    self.corr_avg_losstan)
+        # Combine Type A and Type B Uncertainty (if it exists)
+        if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw:
+            self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
+                self._calcTotalUncertainty(self.avg_dielec,self.avg_lossfac,\
+                self.avg_losstan)
+            if corr:
+                self.corr_avg_dielec, self.corr_avg_lossfac,\
+                    self.corr_avg_losstan = self._calcTotalUncertainty(\
+                    self.corr_avg_dielec,self.corr_avg_lossfac,\
+                    self.corr_avg_losstan)
                     
         # Calculare resonant frequencies in sample
         self.res_freq = self._resonant_freq()

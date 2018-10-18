@@ -289,7 +289,6 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
 #            ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
 #                    label=legend_label[n])
     ax.legend(fontsize=30,loc='best')
-    plt.show()
     if publish:
 #        # Make file name    
         datapath = _dirprompt()     # prompt for save dir
@@ -298,6 +297,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         filepath = os.path.join(datapath,savename)
         # Save figure to .eps file
         plt.savefig(filepath,dpi=300,format='eps',pad_inches=0)
+    plt.show()
     
 def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
     """

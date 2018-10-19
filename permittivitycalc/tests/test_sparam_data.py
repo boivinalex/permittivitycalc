@@ -54,7 +54,8 @@ class sparam_data_TestCase(unittest.TestCase):
         test = pc.AirlineData\
                 (*pc.get_METAS_data(airline='VAL',file_path=self.file_path),nrw=True)
         self.assertIsNotNone(test)
-        self.assertIsNotNone(test.avg_mu)
+        self.assertIsNotNone(test.avg_mu_real)
+        self.assertIsNotNone(test.avg_mu_imag)
         self.assertIsNotNone(test.avg_dielec)
         self.assertIsNotNone(test.avg_losstan)
         

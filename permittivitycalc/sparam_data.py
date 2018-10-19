@@ -49,7 +49,7 @@ class AirlineData:
         corr_* arrays. 
             
     nrw : bool, optional 
-        Default = False. If True, use Nicholson, Rross, Weir (NRW) algorithm to 
+        Default = False. If True, use Nicolson, Rross, Weir (NRW) algorithm to 
         calculate permittivity and magnetic permeability.
             
     shorted : bool, optional
@@ -121,12 +121,18 @@ class AirlineData:
     
     *_losstan : array 
         Loss tangent. Same as above.
+        
+    *_mu_real : array
+        Real part of the magnetic permeability. Same as above.
+        
+    *_mu_imag : array
+        Imaginary part of the magnetic permeability. Same as above.
     
     corr_* : array 
-        De-embeded version of S-parameters or permittivity data. Only average 
-        S-parameters are used for permittivity calculations with corrected 
-        S-parameters. Examples: corr_s11, corr_avg_losstan. Only created 
-        if corr = True.
+        De-embeded version of S-parameters or electromagnetic data. Only average 
+        S-parameters are used for EM calculations with corrected 
+        S-parameters. Examples: corr_s11, corr_avg_losstan, corr_avg_mu_real. 
+        Only created if corr = True.
             
     norm_* : array
         Bulk density normalized permittivity data. Uses averaged permittivity 

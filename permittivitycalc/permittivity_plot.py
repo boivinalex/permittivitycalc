@@ -55,10 +55,11 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         y-axis data. Multiple data sets must be in a list.
     
     plot_type : str  
-        Flag for default plot types. Can be set to 'd' for Real 
-        Part, 'lf' for Imaginary Part, 'lt' for Loss Tangent, or 'c' for 
-        Custom. If 'c' is used, plot_title, ylabel, xlabel, and round_val 
-        must be set.
+        Flag for default plot types. Can be set to 'd' for the real 
+        part of epsilon, 'lf' for the imaginary part of epsilon, 'lt' for 
+        dielectric loss tangent, 'ur' for the real part of mu, 'ui' for the 
+        imaginary part of mu, or 'c' for Custom. If 'c' is used, plot_title, 
+        ylabel, xlabel, and round_val must be set.
         
     legend_label : list of str, optional
         Plot legend label. Each dataset much have it's 

@@ -12,7 +12,7 @@ from uncertainties import unumpy as unp
 # Nonlinear fitting
 from lmfit import Minimizer, Parameters, report_fit
 # Plotting
-import permittivitycalc.permittivity_plot as pplot
+import permittivitycalc as pc
 
 # GLOBAL VARIABLES
 E_0 = 8.854187817620*10**-12 #Permittivity of vacuum (F/m) 
@@ -673,8 +673,8 @@ class AirlineIter():
         for n in range(len(number_of_poles)):
             epsilon_iter = self._colecole(number_of_poles[n],freq,values[n])
             # Plot                    
-            pplot.make_plot([freq,freq],[epsilon_plot_real,epsilon_iter.real],legend_label=['Analytical','Iterative ({} poles)'.format(str(number_of_poles[n]))])
-            pplot.make_plot([freq,freq],[epsilon_plot_imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative ({} poles)'.format(str(number_of_poles[n]))])
+            pc.pplot.make_plot([freq,freq],[epsilon_plot_real,epsilon_iter.real],legend_label=['Analytical','Iterative ({} poles)'.format(str(number_of_poles[n]))])
+            pc.pplot.make_plot([freq,freq],[epsilon_plot_imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative ({} poles)'.format(str(number_of_poles[n]))])
             # Find values at 8.5 GHz by finding index where freq is closest to 8.5 GHz
             ep_real = epsilon_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
             ep_imag = epsilon_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
@@ -685,8 +685,8 @@ class AirlineIter():
                 mu_iter = self._colecole(number_of_mu_poles[m],freq,values_mu[m],mu=True)
                 if number_of_mu_poles[m] == 0:
                     mu_iter =  mu_iter*np.ones(len(freq))
-                pplot.make_plot([freq,freq],[mu_plot_real,mu_iter.real],plot_type='ur',legend_label=['Analytical mu','Iterative mu ({} poles)'.format(str(number_of_mu_poles[m]))])
-                pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu ({} poles)'.format(str(number_of_mu_poles[m]))])
+                pc.pplot.make_plot([freq,freq],[mu_plot_real,mu_iter.real],plot_type='ur',legend_label=['Analytical mu','Iterative mu ({} poles)'.format(str(number_of_mu_poles[m]))])
+                pc.pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu ({} poles)'.format(str(number_of_mu_poles[m]))])
                 mu_real = mu_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
                 mu_imag = mu_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
                 print(mu_real)
@@ -753,11 +753,11 @@ class AirlineIter():
                 mu_iter_sp = self._colecole(number_of_mu_poles[0],freq,values_sp,mu=True)
             
             # Plot                    
-            pplot.make_plot([freq,freq],[epsilon_plot_real,epsilon_iter_sp.real],legend_label=['Analytical','Iterative'])
-            pplot.make_plot([freq,freq],[epsilon_plot_imag,-epsilon_iter_sp.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+            pc.pplot.make_plot([freq,freq],[epsilon_plot_real,epsilon_iter_sp.real],legend_label=['Analytical','Iterative'])
+            pc.pplot.make_plot([freq,freq],[epsilon_plot_imag,-epsilon_iter_sp.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
             if self.fit_mu:
-                pplot.make_plot([freq,freq],[mu_plot_real,mu_iter_sp.real],plot_type='ur',legend_label=['Analytical mu','Iterative mu'])
-                pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter_sp.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu'])
+                pc.pplot.make_plot([freq,freq],[mu_plot_real,mu_iter_sp.real],plot_type='ur',legend_label=['Analytical mu','Iterative mu'])
+                pc.pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter_sp.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu'])
         
             # Plot s-params
             s11_predicted, s21_predicted, s12_predicted = self._model_sparams(freq,L/100,epsilon_iter,1)

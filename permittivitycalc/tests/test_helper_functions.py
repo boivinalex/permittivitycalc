@@ -10,10 +10,6 @@ import os
 import unittest
 from unittest.mock import patch
 from . import helper_functions as hf
-if os.environ.get('DISPLAY','') == '':
-    print('no display found. Using non-interactive Agg backend')
-    import matplotlib
-    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 

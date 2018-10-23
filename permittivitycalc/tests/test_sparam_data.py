@@ -10,10 +10,6 @@ import os
 import unittest
 from unittest.mock import patch
 import permittivitycalc as pc
-if os.environ.get('DISPLAY','') == '':
-    print('no display found. Using non-interactive Agg backend')
-    import matplotlib
-    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
@@ -21,6 +17,7 @@ class sparam_data_TestCase(unittest.TestCase):
     """Tests for 'sparam_data.py"""
     
     def setUp(self):
+        print('setUp')
         self.data_path = os.path.join(pc.__path__[0], 'data')
         self.file_path = os.path.join(self.data_path, 'serpentine_dry.txt')
         self.file_path2 = os.path.join(self.data_path, 'rexolite_PAL.txt')

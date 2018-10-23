@@ -5,6 +5,11 @@ Created on Thu May 24 17:37:35 2018
 
 @author: alex
 """
+import os
+if os.environ.get('DISPLAY','') == '':
+    print('No display found. Using non-interactive Agg backend')
+    import matplotlib
+    matplotlib.use('Agg')
 import sys
 import numpy as np
 import unittest

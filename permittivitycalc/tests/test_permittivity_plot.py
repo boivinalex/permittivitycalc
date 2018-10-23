@@ -8,11 +8,7 @@ Created on Thu May 24 17:37:35 2018
 import os
 import numpy as np
 import unittest
-import permittivitycalc.permittivity_plot as pp
-if os.environ.get('DISPLAY','') == '':
-    print('no display found. Using non-interactive Agg backend')
-    import matplotlib
-    matplotlib.use('Agg')
+from . import permittivity_plot as pp
 import matplotlib.pyplot as plt
 
 class permittivity_plot_TestCase(unittest.TestCase):

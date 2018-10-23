@@ -9,7 +9,7 @@ Created on Wed May 23 16:03:51 2018
 import os
 import unittest
 from unittest.mock import patch
-import permittivitycalc.helper_functions as hf
+from . import helper_functions as hf
 if os.environ.get('DISPLAY','') == '':
     print('no display found. Using non-interactive Agg backend')
     import matplotlib

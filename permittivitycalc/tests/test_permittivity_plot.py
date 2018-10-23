@@ -8,6 +8,7 @@ Created on Thu May 24 17:37:35 2018
 import sys
 import numpy as np
 import unittest
+from unittest.mock import patch
 import permittivitycalc.permittivity_plot as pp
 import matplotlib.pyplot as plt
 plt.ion()
@@ -91,11 +92,53 @@ class permittivity_plot_TestCase(unittest.TestCase):
         except Exception as e:
             raise
         plt.close('all')
+        
+    def test_make_plot_ur(self):
+        """Test make_plot with ur plot_type"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            x = np.arange(0,6)*300000
+            y = np.arange(0,6)
+            pp.make_plot(x,y,plot_type='ur')
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    def test_make_plot_ui(self):
+        """Test make_plot with ui plot_type"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            x = np.arange(0,6)*300000
+            y = np.arange(0,6)
+            pp.make_plot(x,y,plot_type='ui')
+        except Exception as e:
+            raise
+        plt.close('all')
 
     def test_make_plot_invalid_plot_type(self):
         """Test makes_plot with wrong plot_type"""
         print(sys._getframe().f_code.co_name)
-        self.assertRaises(Exception,pp.make_plot,plot_type='wrong')
+        x = np.arange(0,6)*300000
+        y = np.arange(0,6)
+        self.assertRaises(Exception,pp.make_plot,x,y,plot_type='wrong',msg='Invalid plot type')
+        
+#    def test_get_file_nofile_noline(self,mock):
+#        print(sys._getframe().f_code.co_name)
+#        with patch('permittivitycalc.helper_functions._prompt',return_value=self.file_path):
+#            file = hf._get_file()
+#            self.assertIsNotNone(file)
+        
+    def test_save_plot(self):
+        """Test publish"""
+        print(sys._getframe().f_code.co_name)
+        with patch('permittivitycalc.permittivity_plot._dirprompt',return_value='./'):
+            try:
+                x = np.arange(0,6)*300000
+                y = np.arange(0,6)
+                pp.make_plot(x,y,publish=True,name='test')
+            except Exception as e:
+                raise
+        plt.close('all')
             
     def test_make_sparam_plot(self):
         """Test make_sprama_plot"""

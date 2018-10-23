@@ -25,6 +25,8 @@ class sparam_data_TestCase(unittest.TestCase):
         self.fake_path = os.path.join(self.data_path, 'fake.txt')
         self.dataset1 = pc.run_default(airline_name='VAL',file_path=self.file_path)
         self.dataset2 = pc.run_default(airline_name='VAL',file_path=self.file_path2,corr=True,freq_cutoff=None)
+        self.dataset3 = pc.run_default(airline_name='VAL',file_path=self.file_path,nrw=True)
+        self.dataset4 = pc.run_default(airline_name='VAL',file_path=self.file_path,nrw=True,corr=True)
         self.normdataset = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path),bulk_density=1.6,name='Serpentine',normalize_density=True)
         self.normdataset2 = pc.AirlineData(*pc.get_METAS_data(airline='VAL',file_path=self.file_path),\
                                            bulk_density=1.6,name='Serpentine',normalize_density=True,\
@@ -37,6 +39,10 @@ class sparam_data_TestCase(unittest.TestCase):
     def test_str(self):
         print(sys._getframe().f_code.co_name)
         self.assertIsNotNone(self.normdataset2.__str__())
+        self.assertIsNotNone(self.normdataset.__str__())
+        self.assertIsNotNone(pc.AirlineData(*pc.get_METAS_data(airline='VAL',\
+                                file_path=self.file_path),normalize_density=5.8\
+                                ,bulk_density=3.5))
 
     def test_file_import(self):
         """Test file import"""
@@ -62,6 +68,17 @@ class sparam_data_TestCase(unittest.TestCase):
         self.assertIsNotNone(test.avg_dielec)
         self.assertIsNotNone(test.avg_losstan)
         
+    def test_corr_nrw(self):
+        """Test corr and nrw"""
+        print(sys._getframe().f_code.co_name)
+        test = pc.AirlineData\
+                (*pc.get_METAS_data(airline='VAL',file_path=self.file_path),nrw=True,corr=True)
+        self.assertIsNotNone(test)
+        self.assertIsNotNone(test.corr_avg_mu_real)
+        self.assertIsNotNone(test.corr_avg_mu_imag)
+        self.assertIsNotNone(test.corr_avg_dielec)
+        self.assertIsNotNone(test.corr_avg_losstan)
+        
     def test_normalize_density(self):
         """Test density normalization"""
         print(sys._getframe().f_code.co_name)
@@ -74,6 +91,17 @@ class sparam_data_TestCase(unittest.TestCase):
             pc.AirlineData(*pc.get_METAS_data(airline='VAL',\
                             file_path=self.file_path),normalize_density=True)
 
+    def test_normalize_density_number(self):
+            """Test density normalization using a value"""
+            print(sys._getframe().f_code.co_name)
+            test = pc.AirlineData\
+                    (*pc.get_METAS_data(airline='VAL',file_path=self.file_path)\
+                     ,bulk_density=3.5,normalize_density=5.8)
+            self.assertIsNotNone(test.norm_dielec)
+            self.assertIsNotNone(test.norm_losstan)
+            with self.assertRaises(Exception):
+                pc.AirlineData(*pc.get_METAS_data(airline='VAL',\
+                                file_path=self.file_path),normalize_density=5.8)
 
     def test_shorted(self):
         """Test fail to locate shorted sample"""
@@ -81,7 +109,6 @@ class sparam_data_TestCase(unittest.TestCase):
         with self.assertRaises(Exception):
             pc.AirlineData(*pc.get_METAS_data(airline='VAL',\
                             file_path=self.file_path),shorted=True)
-
             
     def test_boundary_correct(self):
         """Test boundary correction"""
@@ -100,6 +127,16 @@ class sparam_data_TestCase(unittest.TestCase):
                 (*pc.get_METAS_data(airline='VAL',file_path=self.file_path)\
                  ,normalize_density=True,bulk_density=3.5,solid_dielec=9\
                  ,solid_losstan=0.1,particle_diameter=0.01,particle_density=3)
+        self.assertIsNotNone(test.bcorr_dielec)
+        self.assertIsNotNone(test.bcorr_losstan)
+        
+    def test_boundary_correct_corr(self):
+        """Test boundary correction with de-embeded date"""
+        print(sys._getframe().f_code.co_name)
+        test = pc.AirlineData\
+                (*pc.get_METAS_data(airline='VAL',file_path=self.file_path)\
+                 ,normalize_density=True,bulk_density=3.5,solid_dielec=9\
+                 ,particle_diameter=0.01,particle_density=3,corr=True)
         self.assertIsNotNone(test.bcorr_dielec)
         self.assertIsNotNone(test.bcorr_losstan)
         
@@ -128,10 +165,21 @@ class sparam_data_TestCase(unittest.TestCase):
         assert len(test.airline_dimensions) == 4
         
     def test_air_gap_correction(self):
+        """test air gap correction"""
         print(sys._getframe().f_code.co_name)
         test = pc.AirlineData\
                 (*pc.get_METAS_data(airline='VAL',file_path=self.file_path)\
                  ,particle_diameter=0.01)
+        D2 = test.airline_dimensions['D2']
+        D3 = test.airline_dimensions['D3']
+        self.assertIsNotNone(test._air_gap_correction(D2,D3))
+        
+    def test_air_gap_correction_corr(self):
+        """test air gab correction with de-embeded data"""
+        print(sys._getframe().f_code.co_name)
+        test = pc.AirlineData\
+                (*pc.get_METAS_data(airline='VAL',file_path=self.file_path)\
+                 ,particle_diameter=0.01,corr=True)
         D2 = test.airline_dimensions['D2']
         D3 = test.airline_dimensions['D3']
         self.assertIsNotNone(test._air_gap_correction(D2,D3))
@@ -172,6 +220,24 @@ class sparam_data_TestCase(unittest.TestCase):
         except Exception as e:
             raise
         plt.close('all')
+        
+    def test_draw_plots_nrw(self):
+        """Test draw_plots nrw"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset3.draw_plots()
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    def test_draw_plots_nrw_corr(self):
+        """Test draw_plots nrw and corr"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset4.draw_plots()
+        except Exception as e:
+            raise
+        plt.close('all')
 
     @patch('builtins.input',return_value='a')
     def test_draw_plots_corr_notdefault(self,mock):
@@ -179,6 +245,16 @@ class sparam_data_TestCase(unittest.TestCase):
         print(sys._getframe().f_code.co_name)
         try:
             self.dataset2.draw_plots(default_settings=False,corr=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    @patch('builtins.input',return_value='a')
+    def test_draw_plots_corr_notdefault(self,mock):
+        """Test a draw_plots with corrected data and nrw"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset4.draw_plots(default_settings=False,corr=True)
         except Exception as e:
             raise
         plt.close('all')
@@ -193,6 +269,16 @@ class sparam_data_TestCase(unittest.TestCase):
             raise
         plt.close('all')
         
+    @patch('builtins.input',return_value='f')
+    def test_draw_plots_corr_notdefault_f_nrw(self,mock):
+        """Test f draw_plots with corrected data and nrw"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset4.draw_plots(default_settings=False,corr=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
     @patch('builtins.input',return_value='r')
     def test_draw_plots_corr_notdefault_r(self,mock):
         """Test r draw_plots with corrected data"""
@@ -203,12 +289,32 @@ class sparam_data_TestCase(unittest.TestCase):
             raise
         plt.close('all')
         
+    @patch('builtins.input',return_value='r')
+    def test_draw_plots_corr_notdefault_r_nrw(self,mock):
+        """Test r draw_plots with corrected data and nrw"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset4.draw_plots(default_settings=False,corr=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
     @patch('builtins.input',return_value='all')
     def test_draw_plots_corr_notdefault_all(self,mock):
         """Test all draw_plots with corrected data"""
         print(sys._getframe().f_code.co_name)
         try:
             self.dataset2.draw_plots(default_settings=False,corr=True)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    @patch('builtins.input',return_value='all')
+    def test_draw_plots_corr_notdefault_all_nrw(self,mock):
+        """Test all draw_plots with corrected data and nrw"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset4.draw_plots(default_settings=False,corr=True)
         except Exception as e:
             raise
         plt.close('all')
@@ -240,6 +346,16 @@ class sparam_data_TestCase(unittest.TestCase):
         except Exception as e:
             raise
         plt.close('all')
+        
+    @patch('builtins.input',return_value='a')
+    def test_draw_plots_notdefault_a_nrw(self,mock):
+        """Test draw_plots average plot and nrw"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset3.draw_plots(default_settings=False)
+        except Exception as e:
+            raise
+        plt.close('all')
 
     @patch('builtins.input',return_value='f')
     def test_draw_plots_notdefault_f(self,mock):
@@ -247,6 +363,16 @@ class sparam_data_TestCase(unittest.TestCase):
         print(sys._getframe().f_code.co_name)
         try:
             self.dataset1.draw_plots(default_settings=False)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    @patch('builtins.input',return_value='f')
+    def test_draw_plots_notdefault_f_nrw(self,mock):
+        """Test draw_plots forward plot and nrw"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset3.draw_plots(default_settings=False)
         except Exception as e:
             raise
         plt.close('all')
@@ -260,6 +386,16 @@ class sparam_data_TestCase(unittest.TestCase):
         except Exception as e:
             raise
         plt.close('all')
+        
+    @patch('builtins.input',return_value='r')
+    def test_draw_plots_notdefault_r_nrw(self,mock):
+        """Test draw_plots backwards plot and nrw"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset3.draw_plots(default_settings=False)
+        except Exception as e:
+            raise
+        plt.close('all')
 
     @patch('builtins.input',return_value='all')
     def test_draw_plots_notdefault_b(self,mock):
@@ -267,6 +403,16 @@ class sparam_data_TestCase(unittest.TestCase):
         print(sys._getframe().f_code.co_name)
         try:
             self.dataset1.draw_plots(default_settings=False)
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    @patch('builtins.input',return_value='all')
+    def test_draw_plots_notdefault_b_nrw(self,mock):
+        """Test draw_plots both plots"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset3.draw_plots(default_settings=False)
         except Exception as e:
             raise
         plt.close('all')
@@ -283,6 +429,15 @@ class sparam_data_TestCase(unittest.TestCase):
         print(sys._getframe().f_code.co_name)
         try:
             self.dataset1.s_param_plot()
+        except Exception as e:
+            raise
+        plt.close('all')
+
+    def test_s_param_plots_corr(self):
+        """Test s_param_plots"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset2.s_param_plot(corr=True)
         except Exception as e:
             raise
         plt.close('all')

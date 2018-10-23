@@ -14,10 +14,6 @@ from uncertainties import unumpy as unp
 import os
 import datetime
 # Plotting
-if os.environ.get('DISPLAY','') == '':
-    print('no display found. Using non-interactive Agg backend')
-    import matplotlib
-    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from cycler import cycler
@@ -55,10 +51,11 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         y-axis data. Multiple data sets must be in a list.
     
     plot_type : str  
-        Flag for default plot types. Can be set to 'd' for Real 
-        Part, 'lf' for Imaginary Part, 'lt' for Loss Tangent, or 'c' for 
-        Custom. If 'c' is used, plot_title, ylabel, xlabel, and round_val 
-        must be set.
+        Flag for default plot types. Can be set to 'd' for the real 
+        part of epsilon, 'lf' for the imaginary part of epsilon, 'lt' for 
+        dielectric loss tangent, 'ur' for the real part of mu, 'ui' for the 
+        imaginary part of mu, or 'c' for Custom. If 'c' is used, plot_title, 
+        ylabel, xlabel, and round_val must be set.
         
     legend_label : list of str, optional
         Plot legend label. Each dataset much have it's 
@@ -112,19 +109,29 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     # Default settings for plotting permittivity data   
     if plot_type == 'd': # Real part
         plot_title = 'Real Part of the Permittivity'
-        ylabel = '$\epsilon^{\prime}_{r}$'
+        ylabel = r'$\epsilon^{\prime}_{r}$'
         xlabel = 'Frequency'
         rnd = 1 # decimals to round to for axes determination
     elif plot_type == 'lf': # Imaginary part
         plot_title = 'Imaginary Part of the Permittivity'
-        ylabel = '$\epsilon^{\prime\prime}_{r}$'
+        ylabel = r'$\epsilon^{\prime\prime}_{r}$'
         xlabel = 'Frequency'
         rnd = 2
     elif plot_type == 'lt': # Loss tan
         plot_title = 'Loss Tangent'
-        ylabel = '$tan\delta$'
+        ylabel = r'$tan\delta$'
         xlabel = 'Frequency'
         rnd = 2
+    elif plot_type == 'ur': # Real part of mu
+        plot_title = 'Real Part of the Permeability'
+        ylabel = r'$\mu^{\prime}_{r}$'
+        xlabel = 'Frequency'
+        rnd = 2 
+    elif plot_type == 'ui': # Imaginary part of mu
+        plot_title = 'Imaginary Part of the Permeability'
+        ylabel = r'$\mu^{\prime\prime}_{r}$'
+        xlabel = 'Frequency'
+        rnd = 2 
     elif plot_type == 'c': # Custom plot
         plot_title = plot_title
         ylabel = ylabel
@@ -188,7 +195,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
             
     # Determine appropriate buffer and spacing depedning on plot type
     thickness = y_max - y_min
-    if plot_type == 'd':
+    if plot_type in ('d','ur','ui'):
         if thickness < 0.1:
             buffer = 0.1
             spacing = 0.02
@@ -279,7 +286,6 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
 #            ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
 #                    label=legend_label[n])
     ax.legend(fontsize=30,loc='best')
-    plt.show()
     if publish:
 #        # Make file name    
         datapath = _dirprompt()     # prompt for save dir
@@ -288,6 +294,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         filepath = os.path.join(datapath,savename)
         # Save figure to .eps file
         plt.savefig(filepath,dpi=300,format='eps',pad_inches=0)
+    plt.show()
     
 def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
     """

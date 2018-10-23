@@ -9,11 +9,11 @@ import uncertainties
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
 from uncertainties import unumpy as unp
 # Plotting
-import permittivitycalc.permittivity_plot as pplot
+from . import permittivity_plot as pplot
 # Make relative path
 import os
 # Helper functions
-from permittivitycalc.helper_functions import get_METAS_data, _get_file, perm_compare
+from .helper_functions import get_METAS_data, _get_file, perm_compare
 
 # GLOBAL VARIABLES
 E_0 = 8.854187817620*10**-12 #Permittivity of vacuum (F/m) 
@@ -49,7 +49,7 @@ class AirlineData:
         corr_* arrays. 
             
     nrw : bool, optional 
-        Default = False. If True, use Nicholson, Rross, Weir (NRW) algorithm to 
+        Default = False. If True, use Nicolson, Rross, Weir (NRW) algorithm to 
         calculate permittivity and magnetic permeability.
             
     shorted : bool, optional
@@ -121,12 +121,18 @@ class AirlineData:
     
     *_losstan : array 
         Loss tangent. Same as above.
+        
+    *_mu_real : array
+        Real part of the magnetic permeability. Same as above.
+        
+    *_mu_imag : array
+        Imaginary part of the magnetic permeability. Same as above.
     
     corr_* : array 
-        De-embeded version of S-parameters or permittivity data. Only average 
-        S-parameters are used for permittivity calculations with corrected 
-        S-parameters. Examples: corr_s11, corr_avg_losstan. Only created 
-        if corr = True.
+        De-embeded version of S-parameters or electromagnetic data. Only average 
+        S-parameters are used for EM calculations with corrected 
+        S-parameters. Examples: corr_s11, corr_avg_losstan, corr_avg_mu_real. 
+        Only created if corr = True.
             
     norm_* : array
         Bulk density normalized permittivity data. Uses averaged permittivity 
@@ -206,12 +212,15 @@ class AirlineData:
         # Calculate permittivity
         if nrw:
             self.forward_dielec, self.forward_lossfac, self.forward_losstan, \
-                self.forward_mu = self._permittivity_calc('f')
+                self.forward_mu_real, self.forward_mu_imag \
+                = self._permittivity_calc('f')
             self.reverse_dielec, self.reverse_lossfac, self.reverse_losstan, \
-                self.reverse_mu = self._permittivity_calc('r')
+                self.reverse_mu_real, self.reverse_mu_imag \
+                = self._permittivity_calc('r')
             self.avg_dielec = (self.forward_dielec + self.reverse_dielec)/2
             self.avg_lossfac = (self.forward_lossfac + self.reverse_lossfac)/2
-            self.avg_mu = (self.forward_mu + self.reverse_mu)/2
+            self.avg_mu_real = (self.forward_mu_real + self.reverse_mu_real)/2
+            self.avg_mu_imag = (self.forward_mu_imag + self.reverse_mu_imag)/2
             self.avg_losstan = self.avg_lossfac/self.avg_dielec
         else:
             self.forward_dielec, self.forward_lossfac, self.forward_losstan = \
@@ -232,19 +241,25 @@ class AirlineData:
                         self.corr_s22 = self._de_embed()
                     if nrw:
                         self.corr_forward_dielec, self.corr_forward_lossfac, \
-                            self.corr_forward_losstan, self.corr_forward_mu = \
-                            self._permittivity_calc('f',True)
+                            self.corr_forward_losstan, \
+                            self.corr_forward_mu_real, \
+                            self.corr_forward_mu_imag \
+                            = self._permittivity_calc('f',True)
                         self.corr_reverse_dielec, self.corr_reverse_lossfac, \
-                            self.corr_reverse_losstan, self.corr_reverse_mu = \
-                            self._permittivity_calc('r',True)
+                            self.corr_reverse_losstan, \
+                            self.corr_reverse_mu_real, \
+                            self.corr_reverse_mu_imag \
+                            = self._permittivity_calc('r',True)
                         self.corr_avg_dielec = (self.corr_forward_dielec + \
                                                  self.corr_reverse_dielec)/2
                         self.corr_avg_lossfac = (self.corr_forward_lossfac + \
                                                  self.corr_reverse_lossfac)/2
                         self.corr_avg_losstan = \
                             self.corr_avg_lossfac/self.corr_avg_dielec
-                        self.corr_avg_mu = (self.corr_forward_mu + \
-                                           self.corr_reverse_mu)/2
+                        self.corr_avg_mu_real = (self.corr_forward_mu_real + \
+                                           self.corr_reverse_mu_real)/2
+                        self.corr_avg_mu_imag = (self.corr_forward_mu_imag + \
+                                           self.corr_reverse_mu_imag)/2
                     else:
                         self.corr_forward_dielec, self.corr_forward_lossfac, \
                             self.corr_forward_losstan = \
@@ -320,8 +335,15 @@ class AirlineData:
                 #   alpha from Hickson et al., 2018
                 norm_complex_dielec = complex_dielec*((norm_val*0.307 + 1)**3 / \
                                             (self.bulk_density*0.307 + 1)**3)
-            self.norm_dielec = np.real(norm_complex_dielec)
-            self.norm_lossfac = np.imag(norm_complex_dielec)
+            # Get uncertainty
+            if self.corr:
+                unc_real = unp.std_devs(self.corr_avg_dielec)
+                unc_imag = unp.std_devs(self.corr_avg_lossfac)
+            else:
+                unc_real = unp.std_devs(self.avg_dielec)
+                unc_imag = unp.std_devs(self.avg_lossfac)
+            self.norm_dielec = unp.uarray(np.real(norm_complex_dielec),unc_real)
+            self.norm_lossfac = unp.uarray(np.imag(norm_complex_dielec),unc_imag)
             self.norm_losstan = self.norm_lossfac/self.norm_dielec
         elif normalize_density:
             raise Exception('Need bulk desnity to normalize to constant density')
@@ -479,16 +501,21 @@ class AirlineData:
             measured_dielec = unp.nominal_values(self.corr_avg_dielec)
             measured_lossfac = unp.nominal_values(self.corr_avg_lossfac)
             L = self.Lcorr
+            if self.nrw:
+                global u_r
+                u_r = unp.nominal_values(self.corr_avg_mu_real)
+                u_i = unp.nominal_values(self.corr_avg_mu_imag)
         else:
             measured_dielec = unp.nominal_values(self.avg_dielec)
             measured_lossfac = unp.nominal_values(self.avg_lossfac)
             L = self.L
+            if self.nrw:
+                u_r = unp.nominal_values(self.avg_mu_real)
+                u_i = unp.nominal_values(self.avg_mu_imag)
         e_r = np.median(measured_dielec[1::]) # Exclude first data point
         e_i = np.median(measured_lossfac[1::])
         if self.nrw:
-            u_r = np.real(self.avg_mu)
             u_r = np.median(u_r[1::])
-            u_i = np.imag(self.avg_mu)
             u_i = np.median(u_i[1::])
         else:
             u_r = 1
@@ -656,6 +683,7 @@ class AirlineData:
         # Calculate T (transmission coefficient)
         t = (s_trans + s_reflect - gam) / (1 - ((s_reflect + s_trans) * gam))
         # Unwrap phase ambiguities in phase angle of T
+        # From Chen, L. F. et al. (2004). Microwave Electronics: Measurement and Materials Characterization
         t_phaser = np.angle(t) #get phase angle from complex
         t_phase_unwrap = np.copy(t_phaser)
         # Ignore NaN values
@@ -667,13 +695,11 @@ class AirlineData:
         # Also create new unwrapped T vector
         new_t = 1j*t_phase_unwrap; new_t += np.absolute(t)
         
-        # Calculate A 
+        # Calculate 1/A
         a_1 = np.sqrt(-(ln_1_T / (2*np.pi*L))**2)
-        a_2 = -1 * (np.sqrt(-(ln_1_T / (2*np.pi*L))**2))
          
-        # Determine correct root with condition Re(1/A) > 0
-        a[a_1.real > 0] = 1 / a_1[a_1.real > 0]
-        a[a_1.real < 0] = 1 / a_2[a_1.real < 0]
+        # Calculate A
+        a = 1 / a_1
           
         # Find wavelength in empty cell
         lam_og = 1 / np.sqrt(1/lam_0**2 - 1/LAM_C**2)
@@ -694,12 +720,12 @@ class AirlineData:
             (lam_0**2/LAM_C*2)/mu_eff
         
         dielec = ep_r.real
-        if self.nrw:
-            lossfac = -ep_r.imag
-            complex_mu = mu_eff
-        else:
-            lossfac = ep_r.imag
+        lossfac = ep_r.imag
         losstan = lossfac/dielec
+        if self.nrw:
+            complex_mu = mu_eff
+            mu_real = complex_mu.real
+            mu_imag = complex_mu.imag
         
         # Calculate uncertainties
         # Check for uncertainties and make sure not using NRW
@@ -711,10 +737,21 @@ class AirlineData:
                                          corr)
             dielec = unp.uarray(dielec,delta_dielec)
             lossfac = unp.uarray(lossfac,delta_lossfac)
+            losstan = losstan = lossfac/dielec  
+        elif isinstance(self.s11[0][0], uncertainties.UFloat) and self.nrw: 
+            delta_dielec, delta_lossfac, delta_mureal, delta_muimag = \
+                self._calc_uncertainties_NRW(s_param,nrows,sign,x,s_reflect,\
+                                         s_trans,gam,lam_og,new_t,complex_mu,\
+                                         ep_r,lam_0,dielec,lossfac,losstan,\
+                                         corr)
+            dielec = unp.uarray(dielec,delta_dielec)
+            lossfac = unp.uarray(lossfac,delta_lossfac)
             losstan = losstan = lossfac/dielec
+            mu_real = unp.uarray(mu_real,delta_mureal)
+            mu_imag = unp.uarray(mu_imag,delta_muimag)
         
         if self.nrw:
-            return dielec,lossfac,losstan,complex_mu
+            return dielec,lossfac,losstan,mu_real,mu_imag
         else:
             return dielec,lossfac,losstan
         
@@ -731,9 +768,6 @@ class AirlineData:
         
         delta_lossfac : array 
             Uncertainty in imaginary part.
-        
-        delta_losstan : array 
-            Uncertainty in loss tangent.
         """
         # Check if using corrected S-params
         if corr:
@@ -770,12 +804,12 @@ class AirlineData:
         dgam_dS_trans[sign] = (1 + (x[sign]/np.sqrt((x[sign]**2)-1)))*\
                         (-1*(s_trans[sign]/s_reflect[sign]))
         
-        dgam_dS_reflect[np.invert(sign)] = (1 + \
+        dgam_dS_reflect[np.invert(sign)] = (1 - \
                         (x[np.invert(sign)]/np.sqrt((x[np.invert(sign)]**2)-1)))\
                         *(((2*s_reflect[np.invert(sign)]**2)\
                            -(2*s_trans[np.invert(sign)]**2)+1)\
                         /2*s_reflect[np.invert(sign)]**2)
-        dgam_dS_trans[np.invert(sign)] = (1 + (x[np.invert(sign)]\
+        dgam_dS_trans[np.invert(sign)] = (1 - (x[np.invert(sign)]\
                         /np.sqrt((x[np.invert(sign)]**2)-1)))\
                         *(-1*(s_trans[np.invert(sign)]/s_reflect[np.invert(sign)]))
      
@@ -790,32 +824,163 @@ class AirlineData:
         deff_dS_reflect_mag = (deff_dT*dT_dS_reflect)*np.exp(1j*np.angle(s_reflect))
         deff_dS_trans_mag = (deff_dT*dT_dS_trans)*np.exp(1j*np.angle(s_trans))
         
-        deff_dS_reflect_phase = 1j*np.real(s_reflect)*deff_dS_reflect_mag
-        deff_dS_trans_phase = 1j*np.real(s_trans)*deff_dS_trans_mag
+        deff_dS_reflect_phase = 1j*np.absolute(s_reflect)*deff_dS_reflect_mag
+        deff_dS_trans_phase = 1j*np.absolute(s_trans)*deff_dS_trans_mag
         
+        # From Baker-Jarvis tech note 1992 can get dT_dd (or just calculate it)
         dT_dd = (-2*np.pi*1j*np.sqrt(mu_eff*ep_eff)*\
                  np.exp((-2*np.pi*L*1j*np.sqrt(mu_eff*ep_eff))/lam_og))/lam_og
         
-        # From Baker-Jarvis, 1990 can get deff_dL
         deff_dL = deff_dT*dT_dd
         
         # Combine partial derivatives for overal measurement uncertainty
         # Final Type B Uncertainty
-        delta_dielec = abs((1 - ((lam_0**2)/(LAM_C**2)))\
+        delta_dielec = (1 - ((lam_0**2)/(LAM_C**2)))\
             *np.sqrt((((np.real(deff_dS_reflect_mag))*err_s_r[0])**2) + \
             (((np.real(deff_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
-            (((np.real(deff_dS_reflect_mag))*err_s_t[0])**2) + \
+            (((np.real(deff_dS_trans_mag))*err_s_t[0])**2) + \
             (((np.real(deff_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
-            (((np.real(deff_dL))*delta_length)**2)))
+            (((np.real(deff_dL))*delta_length)**2))
         
-        delta_lossfac = abs((1 - ((lam_0**2)/(LAM_C**2)))\
+        delta_lossfac = (1 - ((lam_0**2)/(LAM_C**2)))\
             *np.sqrt((((np.imag(deff_dS_reflect_mag))*err_s_r[0])**2) + \
             (((np.imag(deff_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
             (((np.imag(deff_dS_trans_mag))*err_s_t[0])**2) + \
             (((np.imag(deff_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
-            (((np.imag(deff_dL))*delta_length)**2)))
+            (((np.imag(deff_dL))*delta_length)**2))
         
         return delta_dielec, delta_lossfac
+    
+    def _calc_uncertainties_NRW(self,s_param,nrows,sign,x,s_reflect,\
+                                         s_trans,gam,lam_og,new_t,complex_mu,\
+                                         ep_r,lam_0,dielec,lossfac,losstan,\
+                                         corr):
+        """
+        Calculates nrw uncertainties from Baker-Jarvis et al. (1993). 
+        Transmission/reflection and short-circuit line methods for measuring 
+        permittivity and permeability. NIST Technical Note 1355-R. Boulder, 
+        CO: National Institute of Standards and Technology. 
+        http://doi.org/10.6028/NIST.TN.1355r
+        
+        Returns
+        -------
+        delta_dielec : array 
+            Uncertainty in real part.
+        
+        delta_lossfac : array 
+            Uncertainty in imaginary part.
+            
+        delta_mu : complex array
+            Uncertainty in complex permeability.
+        """
+        # Check if using corrected S-params
+        if corr:
+            s11 = self.corr_s11
+            s21 = self.corr_s21
+            s12 = self.corr_s12
+            s22 = self.corr_s22
+            L = self.Lcorr
+        else:
+            s11 = self.s11
+            s21 = self.s21
+            s12 = self.s12
+            s22 = self.s22
+            L = self.L
+        
+        # Strip uarrays of their nominal values
+        if s_param == 'f':
+            err_s_r = unp.std_devs(s11)
+            err_s_t = unp.std_devs(s21)
+        else:
+            err_s_r = unp.std_devs(s22)
+            err_s_t = unp.std_devs(s12)
+        
+        delta_length = 0.001 #in cm
+        e_0 = E_0*100
+        mu_0 = U_0*100
+        mu = complex_mu
+        eps = ep_r
+        t = new_t
+        omega = 2*np.pi*self.freq
+        small_gam = (1j*2*np.pi/lam_0)*np.sqrt(eps*mu - \
+                    (lam_0/LAM_C)**2)
+        small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
+        
+        # (2.95)
+        dT_dmu = ((L*eps*(omega**2)*e_0*mu_0)/(2*small_gam))*np.exp(-small_gam*L)
+        # (2.94)
+        dT_deps = ((L*mu*(omega**2)*e_0*mu_0)/(2*small_gam))*np.exp(-small_gam*L)
+        # (2.93)
+        dT_dL = -small_gam*np.exp(-small_gam*L)
+        # (2.91)
+        dgam_deps = (small_gam_0*(mu**2)*e_0*mu_0*(omega**2))\
+                        /(small_gam*(small_gam + small_gam_0*mu)**2)
+        # (2.92)
+        dgam_dmu = eps*dgam_deps/mu + 2*small_gam_0*small_gam/(small_gam + \
+                        small_gam_0*mu)**2
+        # (2.90)
+        dS_trans_dgam = 2*t*gam*(t**2 -1)/(1 - (gam**2)*(t**2))**2
+        # (2.89)
+        dS_trans_dT = (1 - gam**2)*((t**2)*(gam**2) + 1)/(1 - (gam**2)*(t**2))**2
+        # (2.88)
+        dS_reflect_dT = 2*gam*t*((gam**2) - 1)/(1 - (gam**2)*(t**2))**2
+        # (2.87)
+        dS_reflect_dgam = -(1 + (gam**2)*(t**2))*((t**1) - 1)/(1 - \
+                          (gam**2)*(t**2))**2
+        # (2.74)
+        a = dS_reflect_dT*dT_deps + dS_reflect_dgam*dgam_deps
+        b = dS_reflect_dT*dT_dmu + dS_reflect_dgam*dgam_dmu
+        # (2.75)
+        c = dS_trans_dT*dT_deps + dS_trans_dgam*dgam_deps
+        d = dS_trans_dT*dT_dmu + dS_trans_dgam*dgam_dmu
+        # (2.77)
+        e = -dS_reflect_dT*dT_dL
+        # (2.78)
+        f = -dS_trans_dT*dT_dL
+        # (2.79)
+        deps_dS_reflect_mag = np.exp(1j*np.angle(s_reflect))/(a - b*c/d)
+        # (2.80)
+        dmu_dS_reflect_mag = -c*deps_dS_reflect_mag/d
+        # trans
+        deps_dS_trans_mag = np.exp(1j*np.angle(s_trans))/(c - d*a/b)
+        dmu_dS_trans_mag = -a*deps_dS_trans_mag/b
+        # (2.81)
+        deps_dL = (b*f - d*e)/(b*c - a*d)
+        # (2.82)
+        dmu_dL = (e - a*deps_dL)/b
+        # (2.83)
+        deps_dS_reflect_phase = 1j*np.absolute(s_reflect)*deps_dS_reflect_mag
+        # (2.84)
+        dmu_dS_reflect_phase = 1j*np.absolute(s_reflect)*dmu_dS_reflect_mag
+        # (2.85)
+        deps_dS_trans_phase = 1j*np.absolute(s_trans)*deps_dS_trans_mag
+        # (2.86)
+        dmu_dS_trans_phase = 1j*np.absolute(s_trans)*dmu_dS_reflect_mag
+        # (2.67)
+        delta_dielec = np.sqrt((((np.real(deps_dS_reflect_mag))*err_s_r[0])**2) + \
+            (((np.real(deps_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
+            (((np.real(deps_dS_trans_mag))*err_s_t[0])**2) + \
+            (((np.real(deps_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
+            (((np.real(deps_dL))*delta_length)**2))
+        # (2.68)
+        delta_lossfac = np.sqrt((((np.imag(deps_dS_reflect_mag))*err_s_r[0])**2) + \
+            (((np.imag(deps_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
+            (((np.imag(deps_dS_trans_mag))*err_s_t[0])**2) + \
+            (((np.imag(deps_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
+            (((np.imag(deps_dL))*delta_length)**2))
+        # mu
+        delta_mureal = np.sqrt((((np.real(dmu_dS_reflect_mag))*err_s_r[0])**2) + \
+            (((np.real(dmu_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
+            (((np.real(dmu_dS_trans_mag))*err_s_t[0])**2) + \
+            (((np.real(dmu_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
+            (((np.real(dmu_dL))*delta_length)**2))
+        delta_muimag = np.sqrt((((np.imag(dmu_dS_reflect_mag))*err_s_r[0])**2) + \
+            (((np.imag(dmu_dS_reflect_phase))*np.radians(err_s_r[1]))**2) + \
+            (((np.imag(dmu_dS_trans_mag))*err_s_t[0])**2) + \
+            (((np.imag(dmu_dS_trans_phase))*np.radians(err_s_t[1]))**2) + \
+            (((np.imag(dmu_dL))*delta_length)**2))
+        
+        return delta_dielec, delta_lossfac, delta_mureal, delta_muimag
     
     def _calcTotalUncertainty(self,dielec,lossfac,losstan):
         # Type A Uncertainty. Note 2 regions for lossfac and losstan
@@ -862,8 +1027,8 @@ class AirlineData:
         epsilon = -1j*0.0007;
         epsilon += 2.1
         mu = 1 - 1j*0
-        L = 0.17/100
-        lam_0 = (C/self.freq)
+        L = 0.17/100 # (m)
+        lam_0 = (C/self.freq) # (m)
         small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
                     (lam_0/LAM_C)**2)
         small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
@@ -1135,10 +1300,16 @@ class AirlineData:
             plot_dielec = self.corr_avg_dielec
             plot_lossfac = self.corr_avg_lossfac
             plot_losstan = self.corr_avg_losstan
+            if self.nrw:
+                plot_mureal = self.corr_avg_mu_real
+                plot_muimag = self.corr_avg_mu_imag
         elif default_settings:
             plot_dielec = self.avg_dielec
             plot_lossfac = self.avg_lossfac
             plot_losstan = self.avg_losstan
+            if self.nrw:
+                plot_mureal = self.avg_mu_real
+                plot_muimag = self.avg_mu_imag
         
         x = self.freq
         # Figure out what to plot
@@ -1148,6 +1319,9 @@ class AirlineData:
             y2 = plot_lossfac
             y3 = plot_losstan
             plot_kwargs = {"legend_label":[self.name]}
+            if self.nrw:
+                y4 = plot_mureal
+                y5 = plot_muimag
         else:
             # Prompt user
             s_plot = input('Please designate "a" for Average, ' + \
@@ -1163,10 +1337,16 @@ class AirlineData:
                 y1 = self.corr_avg_dielec
                 y2 = self.corr_avg_lossfac
                 y3 = self.corr_avg_losstan
+                if self.nrw:
+                    y4 = self.corr_avg_mu_real
+                    y5 = self.corr_avg_mu_imag
             elif s_plot == 'a' :
                 y1 = self.avg_dielec
                 y2 = self.avg_lossfac
                 y3 = self.avg_losstan
+                if self.nrw:
+                    y4 = self.avg_mu_real
+                    y5 = self.avg_mu_imag
             elif 'normalized' in kwargs:
                 raise Exception('normalized=True can only be used with Average "a" plots')
             elif s_plot == 'f':
@@ -1174,30 +1354,48 @@ class AirlineData:
                     y1 = self.corr_forward_dielec
                     y2 = self.corr_forward_lossfac
                     y3 = self.corr_forward_losstan
+                    if self.nrw:
+                        y4 = self.corr_forward_mu_real
+                        y5 = self.corr_forward_mu_imag
                 else:
                     y1 = self.forward_dielec
                     y2 = self.forward_lossfac
                     y3 = self.forward_losstan
+                    if self.nrw:
+                        y4 = self.forward_mu_real
+                        y5 = self.forward_mu_imag
             elif s_plot == 'r':
                 if 'corr' in kwargs:
                     y1 = self.corr_reverse_dielec
                     y2 = self.corr_reverse_lossfac
                     y3 = self.corr_reverse_losstan
+                    if self.nrw:
+                        y4 = self.corr_reverse_mu_real
+                        y5 = self.corr_reverse_mu_imag
                 else:
                     y1 = self.reverse_dielec
                     y2 = self.reverse_lossfac
                     y3 = self.reverse_losstan
+                    if self.nrw:
+                        y4 = self.reverse_mu_real
+                        y5 = self.reverse_mu_imag
             elif s_plot == 'all' and 'corr' in kwargs:
                 x = [x,x,x]
                 y1 = [self.corr_forward_dielec,self.corr_reverse_dielec,self.corr_avg_dielec]
                 y2 = [self.corr_forward_lossfac,self.corr_reverse_lossfac,self.corr_avg_lossfac]
                 y3 = [self.corr_forward_losstan,self.corr_reverse_losstan,self.corr_avg_losstan]
+                if self.nrw:
+                    y4 = [self.corr_forward_mu_real,self.corr_reverse_mu_real,self.corr_avg_mu_real]
+                    y5 = [self.corr_forward_mu_imag,self.corr_reverse_mu_imag,self.corr_avg_mu_imag]
                 plot_kwargs = {"legend_label":['Forward [S11,S21]','Reverse [S22,S12]','Average']}
             else:
                 x = [x,x,x]
                 y1 = [self.forward_dielec,self.reverse_dielec,self.avg_dielec]
                 y2 = [self.forward_lossfac,self.reverse_lossfac,self.avg_lossfac]
                 y3 = [self.forward_losstan,self.reverse_losstan,self.avg_losstan]
+                if self.nrw:
+                    y4 = [self.forward_mu_real,self.reverse_mu_real,self.avg_mu_real]
+                    y5 = [self.forward_mu_imag,self.reverse_mu_imag,self.avg_mu_imag]
                 plot_kwargs = {"legend_label":['Forward [S11,S21]','Reverse [S22,S12]','Average']}
         # Pass publish arguments        
         if publish:
@@ -1210,6 +1408,9 @@ class AirlineData:
         pplot.make_plot(x,y1,'d',**plot_kwargs)
         pplot.make_plot(x,y2,'lf',**plot_kwargs)
         pplot.make_plot(x,y3,'lt',**plot_kwargs)
+        if self.nrw:
+            pplot.make_plot(x,y4,'ur',**plot_kwargs)
+            pplot.make_plot(x,y5,'ui',**plot_kwargs)
         
     def s_param_plot(self,corr=False):
         """

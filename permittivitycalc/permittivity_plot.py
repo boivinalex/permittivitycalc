@@ -109,27 +109,27 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     # Default settings for plotting permittivity data   
     if plot_type == 'd': # Real part
         plot_title = 'Real Part of the Permittivity'
-        ylabel = '$\epsilon^{\prime}_{r}$'
+        ylabel = r'$\epsilon^{\prime}_{r}$'
         xlabel = 'Frequency'
         rnd = 1 # decimals to round to for axes determination
     elif plot_type == 'lf': # Imaginary part
         plot_title = 'Imaginary Part of the Permittivity'
-        ylabel = '$\epsilon^{\prime\prime}_{r}$'
+        ylabel = r'$\epsilon^{\prime\prime}_{r}$'
         xlabel = 'Frequency'
         rnd = 2
     elif plot_type == 'lt': # Loss tan
         plot_title = 'Loss Tangent'
-        ylabel = '$tan\delta$'
+        ylabel = r'$tan\delta$'
         xlabel = 'Frequency'
         rnd = 2
     elif plot_type == 'ur': # Real part of mu
         plot_title = 'Real Part of the Permeability'
-        ylabel = '$\mu^{\prime}_{r}$'
+        ylabel = r'$\mu^{\prime}_{r}$'
         xlabel = 'Frequency'
         rnd = 2 
     elif plot_type == 'ui': # Imaginary part of mu
         plot_title = 'Imaginary Part of the Permeability'
-        ylabel = '$\mu^{\prime\prime}_{r}$'
+        ylabel = r'$\mu^{\prime\prime}_{r}$'
         xlabel = 'Frequency'
         rnd = 2 
     elif plot_type == 'c': # Custom plot

@@ -377,6 +377,40 @@ class AirlineIter():
             
         return params
     
+    def _fix_parameters(self,params,pole_num,unfix=False,mu=False):
+        # Check if fixing or unfixing parameters
+        fix_bool = unfix
+        # Check for flat k
+        if pole_num == 0:
+            flat_flag = True
+        else:
+            flat_flag = False
+            
+        if mu and flat_flag:
+            params['mu_real'].vary = fix_bool
+            params['mu_imag'].vary = fix_bool
+        elif mu:
+            params['mu_inf'].vary = fix_bool
+            for m in range(pole_num):
+                m+=1    #start counting at 1
+                params['mu_dc_{}'.format(m)].vary = fix_bool
+                params['mutau_{}'.format(m)].vary = fix_bool
+                params['mualpha_{}'.format(m)].vary = fix_bool
+        elif not mu and flat_flag:
+            params['k_real'].vary = fix_bool
+            params['k_imag'].vary = fix_bool
+        else:
+            params['k_inf'].vary = fix_bool
+            if self.fit_sigma:
+                params['sigma'].vary = fix_bool
+            for n in range(pole_num):
+                n+=1    #start counting at 1
+                params['k_dc_{}'.format(n)].vary = fix_bool
+                params['tau_{}'.format(n)].vary = fix_bool
+                params['alpha_{}'.format(n)].vary = fix_bool
+        
+        return params
+    
     def _default_initial_values(self,number_of_poles):
         """
         Creates default initial values for iteration parameters
@@ -387,7 +421,7 @@ class AirlineIter():
             initial_values = {'k_inf':2.01,'sigma':0.0001}
             for n in range(number_of_poles):
                 n+=1 # start variable names at 1 instead of 0
-                initial_values['k_dc_{}'.format(n)] = 3 + 10**(n-1)
+                initial_values['k_dc_{}'.format(n)] = 5/n
                 initial_values['tau_{}'.format(n)] = 1e-9 * 10**-(2*(n-1))
                 initial_values['alpha_{}'.format(n)] = 0.5
             
@@ -612,7 +646,7 @@ class AirlineIter():
         if self.fit_mu and not isinstance(self.poles_mu,list):
             number_of_mu_poles = [number_of_mu_poles]
         if self.fit_mu and len(number_of_poles) != len(number_of_mu_poles):
-                raise Exception('Number of poles must be the same for epsilon and mu (len(number_of_poles) = len(number_of_poles_mu))')
+                raise Exception('Number of poles must be the same for epsilon and mu (len(number_of_poles) == len(number_of_poles_mu))')
         
         # Create a set of Parameters to the Cole-Cole model
         params = []
@@ -626,15 +660,22 @@ class AirlineIter():
         # Iterate to find parameters
         result = []
         for n in range(len(number_of_poles)):
+            # if fit_mu, fix mu parameters
+            if self.fit_mu:
+                params[n] = self._fix_parameters(params[n],number_of_mu_poles[n],mu=True)
             miner = Minimizer(self._colecole_residuals,params[n],\
                               fcn_args=(number_of_poles[n],freq,epsilon))
-            result.append(miner.minimize())
+            result.append(miner.minimize(method='least_squares'))
         if self.fit_mu:
             result_mu = []
             for m in range(len(number_of_mu_poles)):
+                # unfix mu parameters and fix epsilon parameters
+                params[m] = self._fix_parameters(params[m],number_of_mu_poles[m],unfix=True,mu=True)
+                params[m] = self._fix_parameters(params[m],number_of_poles[m],unfix=False,mu=False)
+                # iterate
                 miner_mu = Minimizer(self._colecole_residuals,params[m],\
                               fcn_args=(number_of_mu_poles[m],freq,mu,True))
-                result_mu.append(miner_mu.minimize())
+                result_mu.append(miner_mu.minimize(method='least_squares'))
     
         # Write fit report
         for n in range(len(number_of_poles)):

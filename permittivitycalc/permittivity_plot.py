@@ -213,9 +213,9 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     # Makes sure the lowest point is 0 if y_min is 0
     if y_min == 0:
         y_min+=buffer
-    elif y_min-buffer < 0:
-        # Make sure buffer does not make ymin negative
-        y_min = buffer
+#    elif y_min-buffer < 0:
+#        # Make sure buffer does not make ymin negative
+#        y_min = buffer
     
     # Plot
     f = plt.figure(figsize=figure_size)

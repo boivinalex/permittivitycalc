@@ -10,7 +10,11 @@ import numpy as np
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
 from uncertainties import unumpy as unp
 # Nonlinear fitting
+import lmfit
 from lmfit import Minimizer, Parameters, report_fit
+print(lmfit.__version__)
+import emcee
+print(emcee.__version__)
 # Plotting
 import permittivitycalc as pc
 
@@ -116,11 +120,11 @@ class AirlineIter():
         Model parameters for epsilon and mu (if fit_mu is True).
         
     """
-    def __init__(self,data_instance,trial_run=True,number_of_poles=2,\
+    def __init__(self,data_instance,trial_run=True,water_pole=True,number_of_poles=2,\
                  fit_mu=False,number_of_poles_mu=1,fit_conductivity=False,\
                  number_of_fits=1,start_freq=None,end_freq=None,\
                  initial_parameters=None,nsteps=1000,nwalkers=100,nburn=500,\
-                 nthin=20):
+                 nthin=20,nworkers=1,ntemps=1):
         self.meas = data_instance
         # Get s params (corrected if they exist)
         if self.meas.corr:
@@ -159,6 +163,7 @@ class AirlineIter():
                 self.avg_mu_real = self.meas.avg_mu_real
                 self.avg_mu_imag = self.meas.avg_mu_imag
         self.trial = trial_run
+        self.water_pole = water_pole
         self.fit_mu = fit_mu
         self.fit_sigma = fit_conductivity
         self.poles = number_of_poles
@@ -171,6 +176,8 @@ class AirlineIter():
         self.nwalkers = nwalkers
         self.nburn = nburn
         self.nthin = nthin
+        self.nworkers = nworkers
+        self.ntemps = ntemps
         
         # Data cutoff
         if self.end_freq:
@@ -256,6 +263,8 @@ class AirlineIter():
                 n+=1    # Start names at 1 intead of 0
                 if mu and self.poles_mu != 0:
                     k += (v['mu_dc_{}'.format(n)] - v['mu_inf'])/(1 + (1j*2*np.pi*freq*v['mutau_{}'.format(n)])**v['mualpha_{}'.format(n)])
+                elif self.water_pole and n == 1:
+                    k += v['c_w'] * (v['k_dc_{}'.format(n)] - v['k_w_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)]))
                 else:
                     k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)])**v['alpha_{}'.format(n)])
         
@@ -358,6 +367,9 @@ class AirlineIter():
             params.add('k_imag',value=initial_values['k_imag'],min=0)
         else:
             params.add('k_inf',value=initial_values['k_inf'],min=1)
+        if self.water_pole:
+            params.add('k_w_inf',value=4.9,vary=False) # k_inf for water
+            params.add('c_w',value=0.9,min=0,max=1) # water pole strength factor
         if self.fit_sigma:
             params.add('sigma',value=initial_values['sigma'],min=0)
         
@@ -371,11 +383,28 @@ class AirlineIter():
         if not eps_flag:
             for n in range(pole_num[0]):
                 n+=1 # start variable names at 1 instead of 0
-                params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=1)
-                params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0)
-                params.add('alpha_{}'.format(n),value=initial_values['alpha_{}'.format(n)],min=0,max=1)
+                if self.water_pole and n == 1:
+                    tau_w, k_w_dc = self._calc_water_pole_params()
+                    params.add('k_dc_{}'.format(n),value=k_w_dc,vary=False)
+                    params.add('tau_{}'.format(n),value=tau_w,vary=False)
+                else:
+                    params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=1)
+                    params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0)
+                    params.add('alpha_{}'.format(n),value=initial_values['alpha_{}'.format(n)],min=0,max=1)
             
         return params
+    
+    def _calc_water_pole_params(self):
+        if not self.meas.temperature:
+            raise Exception('AirlineData class instance must be given a temperature if using a Debye water pole')
+        else:
+            temp = self.meas.temperature
+        
+        tau_w = (1.1109e-10 - 3.824e-12*temp + 6.938e-14*temp**2 - \
+               5.096e-16*temp**3)/(2*np.pi)
+        k_w_dc = 88.045 - 0.4147*temp + 6.295e-4*temp**2 + 1.075e-5*temp**3
+        
+        return tau_w, k_w_dc
     
     def _fix_parameters(self,params,pole_num,unfix=False,mu=False):
         # Check if fixing or unfixing parameters
@@ -572,7 +601,7 @@ class AirlineIter():
         
         from timeit import default_timer as timer
         start = timer()
-        result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin)
+        result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin,workers=self.nworkers,ntemps=self.ntemps)
 #        result = minner.emcee(steps=3)#,burn=150,thin=10)
         end = timer()
         m, s = divmod(end - start, 60)
@@ -827,6 +856,7 @@ class AirlineIter():
             corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
                           truths=list(result_sp.params.valuesdict().values()))
             
+            #Plot traces
             from matplotlib.ticker import MaxNLocator
             nplots = len(result_sp.var_names)
             fig, axes = plt.subplots(nplots, 1, sharex=True, figsize=(8,nplots*1.4))

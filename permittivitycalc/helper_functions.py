@@ -36,6 +36,7 @@ def _get_file(airline=None,file_path=None):
             file = file_path
         elif isinstance(airline, float):
             L_in = airline
+            file = file_path
         else:
             file = file_path
     elif file_path and not airline:

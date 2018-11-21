@@ -331,10 +331,14 @@ class AirlineData:
                 norm_complex_dielec = complex_dielec*((1.92)**\
                     (norm_val-self.bulk_density))
             elif self.norm_eqn == 'LLL':
-                # Landau-Lifshitz-Looyenga equation
-                #   alpha from Hickson et al., 2018
-                norm_complex_dielec = complex_dielec*((norm_val*0.2589 + 1)**3 / \
-                                            (self.bulk_density*0.2589 + 1)**3)
+                if isinstance(self.norm_eqn, (float,int)):
+                    norm_complex_dielec = complex_dielec*((norm_val*self.norm_eqn + 1)**3 / \
+                                                (self.bulk_density*self.norm_eqn + 1)**3)
+                else:
+                    # Landau-Lifshitz-Looyenga equation
+                    #   alpha from Hickson et al., 2018
+                    norm_complex_dielec = complex_dielec*((norm_val*0.307 + 1)**3 / \
+                                                (self.bulk_density*0.307 + 1)**3)
             # Get uncertainty
             if self.corr:
                 unc_real = unp.std_devs(self.corr_avg_dielec)

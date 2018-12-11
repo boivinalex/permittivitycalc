@@ -467,14 +467,26 @@ class AirlineData:
             tand_part_diff = np.abs(unp.nominal_values(self.forward_losstan) \
                             - unp.nominal_values(self.reverse_losstan))
             
-        if self.freq_cutoff:
-            real_part_diff_calc = real_part_diff[self.freq >= self.freq_cutoff]
-            imag_part_diff_calc = imag_part_diff[self.freq >= self.freq_cutoff]
-            tand_part_diff_calc = tand_part_diff[self.freq >= self.freq_cutoff]
+        if self.corr:
+            real_avg = unp.nominal_values(self.corr_avg_dielec)
+            imag_avg = unp.nominal_values(self.corr_avg_lossfac)
+            tand_avg = unp.nominal_values(self.corr_avg_losstan)
         else:
-            real_part_diff_calc = real_part_diff
-            imag_part_diff_calc = imag_part_diff
-            tand_part_diff_calc = tand_part_diff
+            real_avg = unp.nominal_values(self.avg_dielec)
+            imag_avg = unp.nominal_values(self.avg_lossfac)
+            tand_avg = unp.nominal_values(self.avg_losstan)
+            
+        if self.freq_cutoff:
+            real_part_diff_calc = real_part_diff[self.freq >= self.freq_cutoff]\
+                /real_avg[self.freq >= self.freq_cutoff]
+            imag_part_diff_calc = imag_part_diff[self.freq >= self.freq_cutoff]\
+                /imag_avg[self.freq >= self.freq_cutoff]
+            tand_part_diff_calc = tand_part_diff[self.freq >= self.freq_cutoff]\
+                /tand_avg[self.freq >= self.freq_cutoff]
+        else:
+            real_part_diff_calc = real_part_diff/real_avg
+            imag_part_diff_calc = imag_part_diff/imag_avg
+            tand_part_diff_calc = tand_part_diff/tand_avg
         
         max_real_diff = np.max(real_part_diff_calc)
         max_imag_diff = np.max(imag_part_diff_calc)

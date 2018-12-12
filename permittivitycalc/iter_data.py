@@ -264,7 +264,7 @@ class AirlineIter():
                 if mu and self.poles_mu != 0:
                     k += (v['mu_dc_{}'.format(n)] - v['mu_inf'])/(1 + (1j*2*np.pi*freq*v['mutau_{}'.format(n)])**v['mualpha_{}'.format(n)])
                 elif self.water_pole and n == 1:
-                    k += v['c_w'] * (v['k_dc_{}'.format(n)] - v['k_w_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)]))
+                    k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)]))
                 else:
                     k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)])**v['alpha_{}'.format(n)])
         
@@ -367,9 +367,9 @@ class AirlineIter():
             params.add('k_imag',value=initial_values['k_imag'],min=0)
         else:
             params.add('k_inf',value=initial_values['k_inf'],min=1)
-        if self.water_pole:
-            params.add('k_w_inf',value=4.9,vary=False) # k_inf for water
-            params.add('c_w',value=0.9,min=0,max=1) # water pole strength factor
+#        if self.water_pole:
+#            params.add('k_w_inf',value=4.9,vary=False) # k_inf for water
+#            params.add('c_w',value=0.9,min=0,max=1) # water pole strength factor
         if self.fit_sigma:
             params.add('sigma',value=initial_values['sigma'],min=0)
         
@@ -384,9 +384,9 @@ class AirlineIter():
             for n in range(pole_num[0]):
                 n+=1 # start variable names at 1 instead of 0
                 if self.water_pole and n == 1:
-                    tau_w, k_w_dc = self._calc_water_pole_params()
-                    params.add('k_dc_{}'.format(n),value=k_w_dc,vary=False)
+                    tau_w = self._calc_water_pole_params()
                     params.add('tau_{}'.format(n),value=tau_w,vary=False)
+                    params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=1)
                 else:
                     params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=1)
                     params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0)
@@ -402,9 +402,8 @@ class AirlineIter():
         
         tau_w = (1.1109e-10 - 3.824e-12*temp + 6.938e-14*temp**2 - \
                5.096e-16*temp**3)/(2*np.pi)
-        k_w_dc = 88.045 - 0.4147*temp + 6.295e-4*temp**2 + 1.075e-5*temp**3
         
-        return tau_w, k_w_dc
+        return tau_w
     
     def _fix_parameters(self,params,pole_num,unfix=False,mu=False):
         # Check if fixing or unfixing parameters

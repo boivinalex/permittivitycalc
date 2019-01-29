@@ -804,7 +804,7 @@ class AirlineData:
             err_s_t = unp.std_devs(s12)
         
         # Initialize arrays
-        delta_length = 0.001 #in cm
+        delta_length = 0.002 #in cm
         dgam_dS_reflect = np.zeros(nrows,dtype=complex)
         dgam_dS_trans = np.zeros(nrows,dtype=complex)
         

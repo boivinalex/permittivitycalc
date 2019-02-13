@@ -35,7 +35,7 @@ def _dirprompt():
 def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
               plot_title=None, ylabel=None, xlabel=None, spacing=None, \
               buffer=None, xlim=None, ylim=None, figure_size=(16,10), \
-              round_val=None, freq_cutoff=None, publish=False):
+              round_val=None, freq_cutoff=None, publish=False, plot_legend=True):
     """
     Takes input from sparam_data and plots calculated permittivity. Can 
     handle multiple data sets. Plots uncertainty countour if plotting single 
@@ -285,7 +285,8 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
                         capthick=1, capsize=2,lw=2,label=legend_label[n])
 #            ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
 #                    label=legend_label[n])
-    ax.legend(fontsize=30,loc='best')
+    if plot_legend:
+        ax.legend(fontsize=30,loc='best')
     if publish:
 #        # Make file name    
         datapath = _dirprompt()     # prompt for save dir

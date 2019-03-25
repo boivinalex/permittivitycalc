@@ -236,7 +236,10 @@ class AirlineData:
         if corr:
             try:
                 if not np.isnan(unp.nominal_values(self.avg_dielec)).any():
-                    self.Lcorr = self.L - 0.34 # Remove total washer length 
+                    if isinstance(self.corr, (float,int)):
+                        self.Lcorr = self.L - 2*(self.corr) # Remove total washer length 
+                    else:
+                        self.Lcorr = self.L - 0.34 # Remove total washer length 
                     self.corr_s11, self.corr_s21, self.corr_s12, \
                         self.corr_s22 = self._de_embed()
                     if nrw:
@@ -1035,23 +1038,45 @@ class AirlineData:
         Perform S-parameter de-embedding to remove influence of washers on 
         measurement.
         """
+        # Get washer length
+        if isinstance(self.corr, (list)):
+            L_washer1 = self.corr[0]
+            L_washer2 = self.corr[1]
+        elif isinstance(self.corr, (float)):
+            L_washer = self.corr
+        else:
+            L_washer = 0.17
         # Create synthetic teflon washer s-parameters
         epsilon = -1j*0.0007;
         epsilon += 2.1
         mu = 1 - 1j*0
-        L = 0.17/100 # (m)
         lam_0 = (C/self.freq) # (m)
         small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
-                    (lam_0/LAM_C)**2)
+                        (lam_0/LAM_C)**2)
         small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
-        t = np.exp(-small_gam*L)
         big_gam = (small_gam_0*mu - small_gam) / (small_gam_0*mu + \
-          small_gam)
-        sw11_complex = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
-        sw21_complex = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
-        # Symetrical washers
-        sw22_complex = sw11_complex
-        sw12_complex = sw21_complex
+              small_gam)
+        if not isinstance(self.corr, (list)):
+            L = L_washer/100 # (m)
+            t = np.exp(-small_gam*L)
+            sw11_complex_1 = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
+            sw21_complex_1 = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
+            # Symetrical washers
+            sw22_complex_1 = sw11_complex_1
+            sw12_complex_1 = sw21_complex_1
+        else:
+            L_1 = L_washer1/100 # (m)
+            t_1 = np.exp(-small_gam*L_1)
+            sw11_complex_1 = (big_gam*(1-t_1**2))/(1-(big_gam**2)*(t_1**2))
+            sw21_complex_1 = t_1*(1-big_gam**2) / (1-(big_gam**2)*(t_1**2))
+            sw22_complex_1 = sw11_complex_1
+            sw12_complex_1 = sw21_complex_1
+            L_2 = L_washer2/100 # (m)
+            t_2 = np.exp(-small_gam*L_2)
+            sw11_complex_2 = (big_gam*(1-t_2**2))/(1-(big_gam**2)*(t_2**2))
+            sw21_complex_2 = t_2*(1-big_gam**2) / (1-(big_gam**2)*(t_2**2))
+            sw22_complex_2 = sw11_complex_2
+            sw12_complex_2 = sw21_complex_2
 
         # Split measured sparams into mag and phase since uncertainties package 
         #   does not support complex numbers
@@ -1084,11 +1109,17 @@ class AirlineData:
         ## De-embed
         # Convert to T-parameters
         # Washers
-        tw11_left = -(sw11_complex*sw22_complex-sw12_complex*\
-                          sw21_complex)/sw21_complex
-        tw12_left = sw11_complex/sw21_complex
-        tw21_left = -sw22_complex/sw21_complex
-        tw22_left = 1/sw21_complex
+        tw11_left = -(sw11_complex_1*sw22_complex_1-sw12_complex_1*\
+                          sw21_complex_1)/sw21_complex_1
+        tw12_left = sw11_complex_1/sw21_complex_1
+        tw21_left = -sw22_complex_1/sw21_complex_1
+        tw22_left = 1/sw21_complex_1
+        if isinstance(self.corr, (list)):
+            tw11_right = -(sw11_complex_2*sw22_complex_2-sw12_complex_2*\
+                          sw21_complex_2)/sw21_complex_2
+            tw12_right = sw11_complex_2/sw21_complex_2
+            tw21_right = -sw22_complex_2/sw21_complex_2
+            tw22_right = 1/sw21_complex_2
         # Measured
         tm11 = -(sm11_complex*sm22_complex-sm12_complex*\
                  sm21_complex)/sm21_complex
@@ -1097,8 +1128,13 @@ class AirlineData:
         tm22 = 1/sm21_complex
         # Make matrices
         left_matrix = np.dstack([tw11_left,tw12_left,tw21_left,\
-                                 tw22_left]).reshape(len(sw11_complex),2,2)
-        right_matrix = left_matrix  # Washers are symetrical
+                                 tw22_left]).reshape(len(sw11_complex_1),2,2)
+        if isinstance(self.corr, (list)):
+            right_matrix = np.dstack([tw11_right,tw12_right,tw21_right,\
+                                 tw22_right]).reshape(len(sw11_complex_1),2,2)
+        else:
+            # Washers are symetrical
+            right_matrix = left_matrix  
         meas_matrix = np.dstack([tm11,tm12,tm21,\
                                  tm22]).reshape(len(sm11_complex),2,2)
         # Perform de-embeding

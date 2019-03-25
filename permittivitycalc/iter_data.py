@@ -262,11 +262,14 @@ class AirlineIter():
             for n in range(number_of_poles):
                 n+=1    # Start names at 1 intead of 0
                 if mu and self.poles_mu != 0:
-                    k += (v['mu_dc_{}'.format(n)] - v['mu_inf'])/(1 + (1j*2*np.pi*freq*v['mutau_{}'.format(n)])**v['mualpha_{}'.format(n)])
+#                    k += (v['mu_dc_{}'.format(n)] - v['mu_inf'])/(1 + (1j*2*np.pi*freq*v['mutau_{}'.format(n)])**v['mualpha_{}'.format(n)])
+                    k += (v['mu_dc_{}'.format(n)])/(1 + (1j*2*np.pi*freq*v['mutau_{}'.format(n)])**v['mualpha_{}'.format(n)])
                 elif self.water_pole and n == 1:
-                    k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)]))
+#                    k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)]))
+                    k += (v['k_dc_{}'.format(n)])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)]))
                 else:
-                    k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)])**v['alpha_{}'.format(n)])
+#                    k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)])**v['alpha_{}'.format(n)])
+                    k += (v['k_dc_{}'.format(n)])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)])**v['alpha_{}'.format(n)])
         
         return k
     
@@ -377,7 +380,7 @@ class AirlineIter():
             if not mu_flag:
                 for m in range(pole_num[1]):
                     m+=1
-                    params.add('mu_dc_{}'.format(m),value=initial_values['mu_dc_{}'.format(m)],min=1)
+                    params.add('mu_dc_{}'.format(m),value=initial_values['mu_dc_{}'.format(m)],min=0)#,min=1)
                     params.add('mutau_{}'.format(m),value=initial_values['mutau_{}'.format(m)],min=0)
                     params.add('mualpha_{}'.format(m),value=initial_values['mualpha_{}'.format(m)],min=0,max=1)
         if not eps_flag:
@@ -386,9 +389,9 @@ class AirlineIter():
                 if self.water_pole and n == 1:
                     tau_w = self._calc_water_pole_params()
                     params.add('tau_{}'.format(n),value=tau_w,vary=False)
-                    params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=1)
+                    params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=0)#,min=1)
                 else:
-                    params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=1)
+                    params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=0)#,min=1)
                     params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0)
                     params.add('alpha_{}'.format(n),value=initial_values['alpha_{}'.format(n)],min=0,max=1)
             
@@ -525,7 +528,7 @@ class AirlineIter():
         return s11_predicted, s21_predicted, s12_predicted, s11m_unc, \
             s11p_unc, s21m_unc, s21p_unc, s12m_unc, s12p_unc
     
-    def _iterate_objective_function(self,params,L,freq_0,s11c,s21c,s12c):
+    def _iterate_objective_function(self,params,L,freq_0,s11c,s21c,s12c,s22c=None):
         """
         Objective funtion to minimize from modified Baker-Jarvis (NIST) 
             iterative method (Houtz et al. 2016).
@@ -591,17 +594,17 @@ class AirlineIter():
             report.
         """
         # Fit data
-#        minner = Minimizer(self._iterate_objective_function,\
-#                   params,fcn_args=(L,freq_0,s11,s21,s12,s22),\
-#                   nan_policy='omit')
-        minner = Minimizer(self.log_likelihood,\
-                   params,fcn_args=(L,freq_0,s11,s21,s12),\
+        minner = Minimizer(self._iterate_objective_function,\
+                   params,fcn_args=(L,freq_0,s11,s21,s12,s22),\
                    nan_policy='omit')
+#        minner = Minimizer(self.log_likelihood,\
+#                   params,fcn_args=(L,freq_0,s11,s21,s12),\
+#                   nan_policy='omit')
         
         from timeit import default_timer as timer
         start = timer()
-        result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin,workers=self.nworkers,ntemps=self.ntemps)
-#        result = minner.emcee(steps=3)#,burn=150,thin=10)
+#        result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin,workers=self.nworkers,ntemps=self.ntemps)
+        result = minner.minimize()
         end = timer()
         m, s = divmod(end - start, 60)
         h, m = divmod(m, 60)
@@ -831,24 +834,48 @@ class AirlineIter():
             # Plot s-params
             s11_predicted, s21_predicted, s12_predicted = self._model_sparams(freq,L/100,epsilon_iter,1)
             import matplotlib.pyplot as plt
-            plt.figure()
-            plt.plot(freq, np.absolute(s11c),label='Measured')
-            plt.plot(freq, np.absolute(s11_predicted),label='Predicted')
-            plt.title('s11mag')
-            plt.legend()
-            plt.figure()
-            plt.plot(freq, np.angle(s11c),label='Measured')
-            plt.plot(freq, np.angle(s11_predicted),label='Predicted')
-            plt.title('s11phase')
-            plt.figure()
-            plt.plot(freq, np.absolute(s21c),label='Measured')
-            plt.plot(freq, np.absolute(s21_predicted),label='Predicted')
-            plt.title('s21mag')
-            plt.legend()
-            plt.figure()
-            plt.plot(freq, np.angle(s21c),label='Measured')
-            plt.plot(freq, np.angle(s21_predicted),label='Predicted')
-            plt.title('s21phase')
+            # Plot    
+            f,ax = plt.subplots(3, 2, sharex=True, figsize=(18, 15))
+            ax[0,0].plot(freq,np.absolute(s11c),label='Measured') #s11mag
+            ax[0,0].plot(freq,np.absolute(s11_predicted),label='Predicted')
+            ax[0,0].set_title('Magnitude of S11')
+            ax[0,1].plot(freq,np.angle(s11c),label='Measured') #s11phase
+            ax[0,1].plot(freq,np.angle(s11_predicted),label='Predicted')
+            ax[0,1].set_title('Phase of S11')
+            ax[1,0].plot(freq,np.absolute(s21c),label='Measured') #s21mag
+            ax[1,0].plot(freq,np.absolute(s21_predicted),label='Predicted')
+            ax[1,0].set_title('Magnitude of S21')
+            ax[1,1].plot(freq,np.angle(s21c),label='Measured') #s21phase
+            ax[1,1].plot(freq,np.angle(s21_predicted),label='Predicted')
+            ax[1,1].set_title('Phase of S21')
+            ax[2,0].plot(freq,np.absolute(s12c),label='Measured') #s12mag
+            ax[2,0].plot(freq,np.absolute(s12_predicted),label='Predicted')
+            ax[2,0].set_title('Magnitude of S12')
+            ax[2,1].plot(freq,np.angle(s12c),label='Measured') #s12phase
+            ax[2,1].plot(freq,np.angle(s12_predicted),label='Predicted')
+            ax[2,1].set_title('Phase of S12')
+            # Hide redundant x-axis tick marks
+            plt.setp([a.get_xticklabels() for a in ax[0, :]], visible=False)
+            ax[0,0].legend(loc=1)
+            
+#            plt.figure()
+#            plt.plot(freq, np.absolute(s11c),label='Measured')
+#            plt.plot(freq, np.absolute(s11_predicted),label='Predicted')
+#            plt.title('s11mag')
+#            plt.legend()
+#            plt.figure()
+#            plt.plot(freq, np.angle(s11c),label='Measured')
+#            plt.plot(freq, np.angle(s11_predicted),label='Predicted')
+#            plt.title('s11phase')
+#            plt.figure()
+#            plt.plot(freq, np.absolute(s21c),label='Measured')
+#            plt.plot(freq, np.absolute(s21_predicted),label='Predicted')
+#            plt.title('s21mag')
+#            plt.legend()
+#            plt.figure()
+#            plt.plot(freq, np.angle(s21c),label='Measured')
+#            plt.plot(freq, np.angle(s21_predicted),label='Predicted')
+#            plt.title('s21phase')
             
             #Corner plot
             import corner

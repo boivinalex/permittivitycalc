@@ -120,7 +120,7 @@ class AirlineIter():
         Model parameters for epsilon and mu (if fit_mu is True).
         
     """
-    def __init__(self,data_instance,trial_run=True,water_pole=True,number_of_poles=2,\
+    def __init__(self,data_instance,trial_run=True,water_pole=False,number_of_poles=2,\
                  fit_mu=False,number_of_poles_mu=1,fit_conductivity=False,\
                  number_of_fits=1,start_freq=None,end_freq=None,\
                  initial_parameters=None,nsteps=1000,nwalkers=100,nburn=500,\
@@ -809,6 +809,9 @@ class AirlineIter():
                     params = self._iteration_parameters([number_of_poles[0],number_of_mu_poles[0]],initial_values,mu=True)
                 else:
                     params = self._iteration_parameters(number_of_poles,initial_values)
+                ####TEST###
+#                params['tau_1'].vary = False
+                ####
                 # Fit data
                 result_sp, time_str = self._sparam_iterator(params,L,freq[0],s11c,s21c,s12c,s22c)
                 # Update initial values for next run
@@ -823,6 +826,8 @@ class AirlineIter():
             epsilon_iter_sp = self._colecole(number_of_poles[0],freq,values_sp)
             if self.fit_mu:
                 mu_iter_sp = self._colecole(number_of_mu_poles[0],freq,values_sp,mu=True)
+            else:
+                mu_iter_sp = 1
             
             # Plot                    
             pc.pplot.make_plot([freq,freq],[epsilon_plot_real,epsilon_iter_sp.real],legend_label=['Analytical','Iterative'])
@@ -832,7 +837,7 @@ class AirlineIter():
                 pc.pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter_sp.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu'])
         
             # Plot s-params
-            s11_predicted, s21_predicted, s12_predicted = self._model_sparams(freq,L/100,epsilon_iter,1)
+            s11_predicted, s21_predicted, s12_predicted = self._model_sparams(freq,L/100,epsilon_iter_sp,mu_iter_sp)
             import matplotlib.pyplot as plt
             # Plot    
             f,ax = plt.subplots(3, 2, sharex=True, figsize=(18, 15))

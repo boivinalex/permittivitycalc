@@ -26,7 +26,7 @@ Scripts to calculate and plot the complex permittivity from S-parameter data acq
 
 Overview
 --------
-permittivitycalc is a Python package made to take S-parameter data output from METAS VNA Tools II (https://www.metas.ch/metas/en/home/fabe/hochfrequenz/vna-tools.html) and process it to calculate and plot the complex permittivity of a material measured in a coaxial transmission line.
+permittivitycalc is a Python package made to take S-parameter data output from METAS VNA Tools II (https://www.metas.ch/vnatools) and process it to calculate and plot the complex permittivity of a material measured in a coaxial transmission line.
 
 Currently, permittivitycalc uses the New Non-iterative Method for permittivity calculation from S-parameters from [Boughriet1997]_ which assumes that the material is non-magnetic (i.e. \mu = 1).
 

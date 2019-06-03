@@ -47,18 +47,19 @@ after_success:
   - codecov
 deploy:
   - provider: pypi
+    skip_cleanup: true
+    skip_existing: true
     user: boivinalex
     password:
       secure: SY//dya737T6xKYA2bUXNb62B3lrUFBdGlsUXdRtDUolTzIFibpXyUevZxcQ1mDCgsGR5oRI6ABUXsE8tqwuBjBGd3DU+Tzt0fnAhb6RUTM8HPyVRRPYAnriZE/yVCroBI4XRmZ3+VgKsFrZAAKkw12eMK/BIrtpNXjC3V7LdcgKB2pisveEwsTlDZchTW3iQTlZ6Wo+iTwM21mEDeriuJFZff+i0yOYksk1ylDO/1+nOHRqKYtNZVWWXfZngWLNqCWgt1o0T+sHmyf2hz2QrvpzUA6vgl/ZhyqjBG4Kh+4IBCSVgEeU+8YZrwmFHf/enZvgNIeBAfGsnwPkoXeBi7THOzqsisx5KmkWmjSysLZi4TuvChpbLUHIhwq/U8PrbyjfuktuEtqmtiu6cA0GNQysS/gbM8QW2GnfobPJSxnIqizyjIn1KYTHDGCgy1WZe+xVD/XEkC//ESliAWc5Cp2FvUAnLY0s51WFSbBpSZOw4aEeOr6pSdg+zoVXdZeyeXdvI6EASrT0UEzj2bW/mAakrlrPSpRI2JjNSbw9PoXQ0qhWmFEgkoTGnaFz/YER5OYy1tdZLzMqm3HURe2RghYtKy0zDndJ/rr0fMRjGyT+hlYQ01noWUX6AAxRX5aB5t4Z8kjZ72dTXiX0Wo96UXDLcelyTl5vp3C9mi5rWZQ=
     distributions: sdist bdist_wheel
     on:
       tags: true
-      os: osx
   - provider: releases
+    skip_cleanup: true
+    skip_existing: true
     api_key:
       secure: RuL7Lu11w6OejJsRZthbG7jzx1uXGnIEUrQ9GBtpVfUAKduq0DKbn+nRECYw0EBAek7FBRCNL5bdfcRuMHM9dQORHV6I3lfwAHQkLs98FmvRDm4By3nJuSsYwJ1fW1NbBaMgWsy7MWnpPvevL/MQYC2ShscQqZJ0aiH5mgWAV/fV1vzWVd0E+sx9IKQoIbY3g4yD5Doc7jjnFeFfDbGrm4ZzXqOCkfeYqtNTmNCVppmSEVWNjdayloiVklrH6gp+nJUpCWQM0N/NzLJf98LNew8mU72q7MoJCgzBhhYNbTb+0tMI2XEB5qIB+H8ii7wHBEABuKbkDrSN3nT2Xmt1RhsmJgcbFcqylWKFMyMCTy4Z5P89zbtn0TBPnAPVnHyti0oRaDlzwaNDSg04m1RslnBJdt12jo7LAaxU0GISJgMqsfqXCHKAUsPUy02nhLcB1vpQxaqeajZJaBZx/CqNRKP+sJbyj85XE/diIAGrnesk3mhCmLyyjuBw8oxgqsGBqx20O0WMsVN6KnS+P4aEVIjC6xK4PcJkmqtNNmM/iiucOYmK64YSlM6Qyc0+OTc/cFAeaSR7TmsfiJuuMzgymdwT7Bir69Wm/pDGgNircZkrTKILyjmyOLetGNWs73TEI6ACN8cdbzLnO7Ww97d+eNzl0k17BYhsaa73s1nyUS8=
-    skip_cleanup: true
     on:
       repo: boivinalex/permittivitycalc
       tags: true
-      os: osx

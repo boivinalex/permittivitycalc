@@ -8,6 +8,7 @@ Created on Mon Jun  4 13:28:19 2018
 import numpy as np
 #Citation: Uncertainties: a Python package for calculations with uncertainties,
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
+import uncertainties
 from uncertainties import unumpy as unp
 # Nonlinear fitting
 import lmfit
@@ -578,10 +579,37 @@ class AirlineIter():
 #        s12c_sigma = 1j*s12m_sigma + np.sin(s12p_sigma);
 #        s12c_sigma += s12m_sigma + np.cos(s12p_sigma)
         # Total error
-        unc_m = np.sqrt(s11m_unc**2 + s21m_unc**2 + s12m_unc**2)
-        unc_p = np.sqrt(s11p_unc**2 + s21p_unc**2 + s12p_unc**2)
-        unc = np.concatenate((unc_m,unc_p))
-        loglik = -0.5 * np.sum(np.log(2*np.pi*unc**2) + (self._iterate_objective_function(params,L,freq_0,s11c,s21c,s12c))**2)
+        #unc_m = np.sqrt(s11m_unc**2 + s21m_unc**2 + s12m_unc**2)
+        #unc_p = np.sqrt(s11p_unc**2 + s21p_unc**2 + s12p_unc**2)
+        #unc = np.concatenate((unc_m,unc_p))
+        #loglik = -0.5 * np.sum(np.log(2*np.pi*unc**2) + (self._iterate_objective_function(params,L,freq_0,s11c,s21c,s12c))**2)
+        # create s-parameter row matrix
+        global large_x
+        large_x = np.array([\
+                  np.abs(np.absolute(s11c) - np.absolute(s11_predicted)),\
+                  np.abs(np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted))),\
+                  np.abs(np.absolute(s21c) - np.absolute(s21_predicted)),\
+                  np.abs(np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted))),
+                  np.abs(np.absolute(s12c) - np.absolute(s12_predicted)),\
+                  np.abs(np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))])
+        # create s_parameter arrays with uncertainty
+        s11m_e = unp.uarray(np.absolute(s11c),s11m_unc)
+        s11p_e = unp.uarray(np.unwrap(np.angle(s11c)),s11p_unc)
+        s21m_e = unp.uarray(np.absolute(s21c),s21m_unc)
+        s21p_e = unp.uarray(np.unwrap(np.angle(s21c)),s21p_unc)
+        s12m_e = unp.uarray(np.absolute(s12c),s12m_unc)
+        s12p_e = unp.uarray(np.unwrap(np.angle(s12c)),s12p_unc)
+        global c
+        c = []
+        for i in range(len(s11m_e)):
+            c.append(uncertainties.covariance_matrix([s11m_e[i],s11p_e[i],s21m_e[i],s21p_e[i],s12m_e[i],s12p_e[i]]))
+        global unc, loglik
+        unc = np.array([s11m_unc,s11p_unc,s21m_unc,s21p_unc,s12m_unc,s12p_unc])
+        #c = np.cov(unc)
+        loglik = 0
+        for i in range(len(s11m_e)):
+#            loglik += -3*np.log(2*np.pi) - 0.5*np.log(np.linalg.det(c[i])) + 0.5*np.dot(np.dot(large_x[:,i].T,np.linalg.inv(c[i])),large_x[:,i])
+            loglik += -3*np.log(2*np.pi) - 0.5*np.log(np.linalg.det(c[i])) -0.5*np.dot(np.dot(large_x[:,i].T,np.linalg.inv(c[i])),large_x[:,i])
         return loglik
     
 #    def log_posterior(self,params,L,freq_0,s11c,s21c,s12c):
@@ -594,17 +622,17 @@ class AirlineIter():
             report.
         """
         # Fit data
-        minner = Minimizer(self._iterate_objective_function,\
-                   params,fcn_args=(L,freq_0,s11,s21,s12,s22),\
-                   nan_policy='omit')
-#        minner = Minimizer(self.log_likelihood,\
-#                   params,fcn_args=(L,freq_0,s11,s21,s12),\
+#        minner = Minimizer(self._iterate_objective_function,\
+#                   params,fcn_args=(L,freq_0,s11,s21,s12,s22),\
 #                   nan_policy='omit')
+        minner = Minimizer(self.log_likelihood,\
+                   params,fcn_args=(L,freq_0,s11,s21,s12),\
+                   nan_policy='omit')
         
         from timeit import default_timer as timer
         start = timer()
-#        result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin,workers=self.nworkers,ntemps=self.ntemps)
-        result = minner.minimize()
+        result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin,workers=self.nworkers,ntemps=self.ntemps)
+#        result = minner.minimize()
         end = timer()
         m, s = divmod(end - start, 60)
         h, m = divmod(m, 60)

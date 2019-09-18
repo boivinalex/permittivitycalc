@@ -27,10 +27,11 @@ DATE = str(datetime.date.today())
 def _dirprompt():
     root = tk.Tk()
     root.withdraw()
-    save_path = askdirectory(title='Select Directory to Save Figure')
+    global save_path_for_plots
+    save_path_for_plots = askdirectory(title='Select Directory to Save Figure')
     root.update()
     
-    return save_path
+    return save_path_for_plots
 
 def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
               plot_title=None, ylabel=None, xlabel=None, spacing=None, \
@@ -213,9 +214,9 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     # Makes sure the lowest point is 0 if y_min is 0
     if y_min == 0:
         y_min+=buffer
-#    elif y_min-buffer < 0:
-#        # Make sure buffer does not make ymin negative
-#        y_min = buffer
+    elif y_min-buffer < 0:
+        # Make sure buffer does not make ymin negative
+        y_min = buffer
     
     # Plot
     f = plt.figure(figsize=figure_size)
@@ -283,12 +284,14 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
             ax.errorbar(unp.nominal_values(x[n]), unp.nominal_values(y[n]), \
                         yerr=unp.std_devs(y[n]), errorevery=25, elinewidth=1, \
                         capthick=1, capsize=2,lw=2,label=legend_label[n])
-#            ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
-#                    label=legend_label[n])
     ax.legend(fontsize=30,loc='best')
     if publish:
-#        # Make file name    
-        datapath = _dirprompt()     # prompt for save dir
+        # Make file name
+        #If save_path_for_plots already exits, use it, otherwise promt for path
+        if 'save_path_for_plots' in globals():
+            datapath = save_path_for_plots
+        else:
+            datapath = _dirprompt()     # prompt for save dir
         savename = name.replace(' ','-') + '_' + plot_title.replace(' ','-') \
             + '_' + DATE + '.eps'
         filepath = os.path.join(datapath,savename)
@@ -296,7 +299,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         plt.savefig(filepath,dpi=300,format='eps',pad_inches=0)
     plt.show()
     
-def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
+def make_sparam_plot(freq,s11,s22,s21,s12,label=None,shorted=False,s11_short=None):
     """
     Plot raw S-Parameter data from S_Param_Script_V5. Supports multiple \
     datasets for comparisson. Multilple datasets much be stored in a list and \
@@ -323,6 +326,8 @@ def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
         s22 = [s22]
         s21 = [s21]
         s12 = [s12]
+        if shorted:
+            s11_short = [s11_short]
     
     # Plot    
     f,ax = plt.subplots(4, 2, sharex=True, figsize=(18, 15))
@@ -332,6 +337,8 @@ def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
         else:
             kwargs = {}    
         ax[0,0].plot(freq,unp.nominal_values(s11[n][0]),**kwargs) #s11mag
+        if shorted:
+            ax[0,0].plot(freq,unp.nominal_values(s11_short[n][0]))
         ax[0,0].set_title('Magnitude of S11')
         ax[0,1].plot(freq,unp.nominal_values(s11[n][1])) #s11phase
         ax[0,1].set_title('Phase of S11')

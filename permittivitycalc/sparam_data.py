@@ -1471,7 +1471,10 @@ class AirlineData:
                                    self.corr_s21],[self.s12,self.corr_s12],\
                                    label=['Uncorrected','Corrected'])
         else:
-            pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12)
+            if self.shorted:
+                pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12,shorted=True,s11_short=self.s11_short)
+            else:
+                pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12)
             
     def difference_plot(self):
         """

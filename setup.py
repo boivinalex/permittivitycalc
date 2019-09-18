@@ -60,7 +60,7 @@ setup(
                       'cycler',
                       'scipy',
                       'lmfit',
-                      'emcee',
+                      'emcee==3.0rc2',
                       'corner',
                       ],
                       

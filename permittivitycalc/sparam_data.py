@@ -100,7 +100,7 @@ class AirlineData:
         Date measurement was made.
             
     freq_cutoff : float, optional
-        Default: 4e8. Starting frequency for forward and reverse difference 
+        Default: 1e8. Starting frequency for forward and reverse difference 
         calculations.
     
     Attributes:
@@ -162,7 +162,7 @@ class AirlineData:
         the real and imaginary parts of the permittivity.
     """
     def __init__(self,L,airline,dataArray,file,name=None,date=None,\
-                 freq_cutoff=4e8,nrw=False,shorted=False,corr=False,\
+                 freq_cutoff=1e8,nrw=False,shorted=False,corr=False,\
                  normalize_density=False,norm_eqn='LI',bulk_density=None,\
                  solid_dielec=None,solid_losstan=None,particle_diameter=None,\
                  particle_density=None,temperature=None):

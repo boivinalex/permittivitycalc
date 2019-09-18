@@ -1304,7 +1304,8 @@ class AirlineData:
         return corr_dielec, corr_lossfac, corr_losstan
         
         
-    def draw_plots(self,default_settings=True,publish=False,**kwargs):
+    def draw_plots(self,default_settings=True,publish=False,log_y_axis=False,\
+                   xticks=None,yticks=None,**kwargs):
         """
         Plots permittivity data using make_plot from permittivity_plot.
         
@@ -1317,11 +1318,26 @@ class AirlineData:
             Default: True. If True, plots average real part of the permittivity, 
             imaginary part of the permittivity and loss tangent. If corrected
             or normalized data exist, it will be used in the plot. If False 
-            prompts user to determine wether to plot, Average, Forward, 
+            prompts user to determine whether to plot, Average, Forward, 
             Reverse, or All results.
         
         publish : bool 
             Default: False. If True, save figures.
+            
+        log_y_axis : bool
+            Default: False. If True, plot log y-axis. yticks must be provided 
+            if True.
+            
+        xticks : list, optional
+            Use to manually set y-axis tick make locations. Must be a list 
+            containing tick mark locations.
+            
+        yticks : list of lists, optional
+            Use to manually set y-axis tick make locations. Must be a list of
+            lists containing tick mark locations for each individual plot in 
+            the following order: real part, imaginary part, loss tangent. If 
+            nrw=True, must additionaly provide: real part of mu, 
+            imaginary part of mu. Required if log_y_axis=True.
             
         Additional Keyword Arguments
         ----------------------------
@@ -1341,10 +1357,12 @@ class AirlineData:
         # If default_settings
         #   Use first of normalized, corrected, or regular data
         if default_settings and self.normalize_density:
+            print('Plotting normalized data')
             plot_dielec = self.norm_dielec
             plot_lossfac = self.norm_lossfac
             plot_losstan = self.norm_losstan
         elif default_settings and self.corr:
+            print('Plotting corrected data')
             plot_dielec = self.corr_avg_dielec
             plot_lossfac = self.corr_avg_lossfac
             plot_losstan = self.corr_avg_losstan
@@ -1452,13 +1470,25 @@ class AirlineData:
         # Pass freq_cutoff
         if self.freq_cutoff:
             plot_kwargs['freq_cutoff'] = self.freq_cutoff
+        if log_y_axis:
+            plot_kwargs['y_axis_type'] = 'log'
+        if xticks:
+            plot_kwargs['xticks'] = xticks
         # Make plots
-        pplot.make_plot(x,y1,'d',**plot_kwargs)
-        pplot.make_plot(x,y2,'lf',**plot_kwargs)
-        pplot.make_plot(x,y3,'lt',**plot_kwargs)
-        if self.nrw:
-            pplot.make_plot(x,y4,'ur',**plot_kwargs)
-            pplot.make_plot(x,y5,'ui',**plot_kwargs)
+        if yticks:
+            pplot.make_plot(x,y1,'d',yticks=yticks[0],**plot_kwargs)
+            pplot.make_plot(x,y2,'lf',yticks=yticks[1],**plot_kwargs)
+            pplot.make_plot(x,y3,'lt',yticks=yticks[2],**plot_kwargs)
+            if self.nrw:
+                pplot.make_plot(x,y4,'ur',yticks=yticks[3],**plot_kwargs)
+                pplot.make_plot(x,y5,'ui',yticks=yticks[4],**plot_kwargs)
+        else:
+            pplot.make_plot(x,y1,'d',**plot_kwargs)
+            pplot.make_plot(x,y2,'lf',**plot_kwargs)
+            pplot.make_plot(x,y3,'lt',**plot_kwargs)
+            if self.nrw:
+                pplot.make_plot(x,y4,'ur',**plot_kwargs)
+                pplot.make_plot(x,y5,'ui',**plot_kwargs)
         
     def s_param_plot(self,corr=False):
         """

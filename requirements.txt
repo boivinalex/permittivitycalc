@@ -7,7 +7,7 @@
 asteval==0.9.15           # via lmfit
 corner==2.0.1
 cycler==0.10.0
-emcee==2.2.1
+emcee==3.0rc2
 kiwisolver==1.0.1         # via matplotlib
 lmfit==0.9.14
 matplotlib==2.2.3

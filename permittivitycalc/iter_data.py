@@ -8,7 +8,6 @@ Created on Mon Jun  4 13:28:19 2018
 import numpy as np
 #Citation: Uncertainties: a Python package for calculations with uncertainties,
 #    Eric O. LEBIGOT, http://pythonhosted.org/uncertainties/
-import uncertainties
 from uncertainties import unumpy as unp
 # Nonlinear fitting
 import lmfit
@@ -18,6 +17,10 @@ import emcee
 print(emcee.__version__)
 # Plotting
 import permittivitycalc as pc
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+import corner
+            
 
 # GLOBAL VARIABLES
 E_0 = 8.854187817620*10**-12 #Permittivity of vacuum (F/m) 
@@ -51,11 +54,17 @@ class AirlineIter():
         results. Useful for determining the number of poles to be used
         in the Cole-Cole model before perfoming the more time consuming
         final fit to the S-parameters (Default: True).
+        
+    water_pole : bool
+        If True, make the first pole in the permittivity model be a Debye type
+        pole with tau initialized near temperature-dependant water relaxation.
+        The temperature parameter of the data instance must be set to use a 
+        water pole (Default: False).
             
     number_of_poles : int
         Number of poles to be used in the Cole-Cole model for epsilon. When
         number_of_poles is 0, a flat model will be used instead of a Cole-Cole
-        model (epsilon* = epsilon_real - 1j*epsilon_imag) (Default: 2).
+        model (epsilon* = epsilon_real - 1j*epsilon_imag) (Default: 1).
         
     fit_mu : bool
         If True, fit both permittivity and permeability (Default: False).
@@ -77,7 +86,8 @@ class AirlineIter():
         new fit (Default: 1).
         
     start_freq : float or int, optional
-        Start frequency in Hz for iteration (Default: 4e8).
+        Start frequency in Hz for iteration. If None, will use the starting 
+        frequency of the data instance (Default: None).
     
     end_freq : float or int, optional
         End frequency in Hz for iteration (Default: None).
@@ -105,7 +115,10 @@ class AirlineIter():
         
     nthin : int, optional
         Only accept every nthin samples in emcee for iteration when trial_run 
-        is False. See lmfit and emcee documentation for details (Default: 20).
+        is False. See lmfit and emcee documentation for details (Default: 1).
+        
+    nworkers : int or pool, optional
+        Number of workers or pool object for paralelization (Default: 1).
         
     Attributes
     ----------
@@ -117,15 +130,18 @@ class AirlineIter():
         Complex array containing the results of the iterative fit for mu.
         trial_run must be set to False and fit_mu must be set to True.
         
-    cc_parmas : dict
+    param_results : dict
         Model parameters for epsilon and mu (if fit_mu is True).
         
+    lmfit_results : lmfit.minimizer.MinimizerResult object
+        Results from lmfit. See lmfit documentation.
+        
     """
-    def __init__(self,data_instance,trial_run=True,water_pole=False,number_of_poles=2,\
+    def __init__(self,data_instance,trial_run=True,water_pole=False,number_of_poles=1,\
                  fit_mu=False,number_of_poles_mu=1,fit_conductivity=False,\
                  number_of_fits=1,start_freq=None,end_freq=None,\
                  initial_parameters=None,nsteps=1000,nwalkers=100,nburn=500,\
-                 nthin=20,nworkers=1,ntemps=1):
+                 nthin=1,nworkers=1):
         self.meas = data_instance
         # Get s params (corrected if they exist)
         if self.meas.corr:
@@ -170,7 +186,10 @@ class AirlineIter():
         self.poles = number_of_poles
         self.poles_mu = number_of_poles_mu
         self.fits = number_of_fits
-        self.start_freq = start_freq
+        if start_freq:
+            self.start_freq = start_freq
+        else:
+            self.start_freq = self.meas.freq_cutoff
         self.end_freq = end_freq
         self.initial_parameters = initial_parameters
         self.nsteps = nsteps
@@ -178,7 +197,6 @@ class AirlineIter():
         self.nburn = nburn
         self.nthin = nthin
         self.nworkers = nworkers
-        self.ntemps = ntemps
         
         # Data cutoff
         if self.end_freq:
@@ -199,9 +217,9 @@ class AirlineIter():
         if self.trial:
             self._permittivity_iterate()
         elif self.fit_mu:
-            self.epsilon_iter, self.mu_iter, cc_params = self._permittivity_iterate()
+            self.epsilon_iter, self.mu_iter, self.param_results, self.lmfit_results = self._permittivity_iterate()
         else:
-            self.epsilon_iter, cc_params = self._permittivity_iterate()
+            self.epsilon_iter, self.param_results, self.lmfit_results = self._permittivity_iterate()
             
     def _colecole(self,number_of_poles,freq,v,mu=False):
         """
@@ -263,13 +281,10 @@ class AirlineIter():
             for n in range(number_of_poles):
                 n+=1    # Start names at 1 intead of 0
                 if mu and self.poles_mu != 0:
-#                    k += (v['mu_dc_{}'.format(n)] - v['mu_inf'])/(1 + (1j*2*np.pi*freq*v['mutau_{}'.format(n)])**v['mualpha_{}'.format(n)])
                     k += (v['mu_dc_{}'.format(n)])/(1 + (1j*2*np.pi*freq*v['mutau_{}'.format(n)])**v['mualpha_{}'.format(n)])
                 elif self.water_pole and n == 1:
-#                    k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)]))
                     k += (v['k_dc_{}'.format(n)])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)]))
                 else:
-#                    k += (v['k_dc_{}'.format(n)] - v['k_inf'])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)])**v['alpha_{}'.format(n)])
                     k += (v['k_dc_{}'.format(n)])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)])**v['alpha_{}'.format(n)])
         
         return k
@@ -488,7 +503,6 @@ class AirlineIter():
         
         # Residuals
         resid1 = k_predicted.real - k.real
-#        resid2 = (np.abs(k_predicted.imag) - np.abs(k.imag))
         resid2 = k_predicted.imag - k.imag
         
         return np.concatenate((resid1,resid2))
@@ -543,48 +557,17 @@ class AirlineIter():
         obj_func_real = ((np.absolute(s21c) - np.absolute(s21_predicted))/s21m_unc + \
                          (np.absolute(s12c) - np.absolute(s12_predicted))/s12m_unc + \
                          (np.absolute(s11c) - np.absolute(s11_predicted))/s11m_unc)
-#        obj_func_imag = ((np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted)))**2/s21p_sigma**2 + \
-#                         (np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))**2/s12p_sigma**2 + \
-#                         (np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted)))**2/s11p_sigma**2)
         obj_func_imag = ((np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted)))/s21p_unc + \
                          (np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))/s12p_unc + \
                          (np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted)))/s11p_unc)
-#        # Un-weighed objective fucntion
-#        obj_func_real = ((np.absolute(s21c) - np.absolute(s21_predicted)) + \
-#                         (np.absolute(s12c) - np.absolute(s12_predicted)) + \
-#                         (np.absolute(s11c) - np.absolute(s11_predicted)))
-#        obj_func_imag = ((np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted)))**2 + \
-#                         (np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))**2 + \
-#                         (np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted)))**2)
         
         return np.concatenate((obj_func_real,obj_func_imag))
     
-#    def log_prior(self,sigma):
-#        if sigma < 0:
-#            return -np.inf
-#        else:
-#            return 0
-        
     def log_likelihood(self,params,L,freq_0,s11c,s21c,s12c):
-#        y = s11c + s21c + s12c
         s11_predicted, s21_predicted, s12_predicted, s11m_unc, s11p_unc, \
             s21m_unc, s21p_unc, s12m_unc, s12p_unc = \
             self._iterate_model(params,L,freq_0)
-#        model = s11_predicted + s21_predicted + s12_predicted
-        # Cast error to complex
-#        s11c_sigma = 1j*s11m_sigma + np.sin(s11p_sigma);
-#        s11c_sigma += s11m_sigma + np.cos(s11p_sigma)
-#        s21c_sigma = 1j*s21m_sigma + np.sin(s21p_sigma);
-#        s21c_sigma += s21m_sigma + np.cos(s21p_sigma)
-#        s12c_sigma = 1j*s12m_sigma + np.sin(s12p_sigma);
-#        s12c_sigma += s12m_sigma + np.cos(s12p_sigma)
-        # Total error
-        #unc_m = np.sqrt(s11m_unc**2 + s21m_unc**2 + s12m_unc**2)
-        #unc_p = np.sqrt(s11p_unc**2 + s21p_unc**2 + s12p_unc**2)
-        #unc = np.concatenate((unc_m,unc_p))
-        #loglik = -0.5 * np.sum(np.log(2*np.pi*unc**2) + (self._iterate_objective_function(params,L,freq_0,s11c,s21c,s12c))**2)
         # create s-parameter row matrix
-        global large_x
         large_x = np.array([\
                   np.abs(np.absolute(s11c) - np.absolute(s11_predicted)),\
                   np.abs(np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted))),\
@@ -593,28 +576,10 @@ class AirlineIter():
                   np.abs(np.absolute(s12c) - np.absolute(s12_predicted)),\
                   np.abs(np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))])
         # create s_parameter arrays with uncertainty
-        s11m_e = unp.uarray(np.absolute(s11c),s11m_unc)
-        s11p_e = unp.uarray(np.unwrap(np.angle(s11c)),s11p_unc)
-        s21m_e = unp.uarray(np.absolute(s21c),s21m_unc)
-        s21p_e = unp.uarray(np.unwrap(np.angle(s21c)),s21p_unc)
-        s12m_e = unp.uarray(np.absolute(s12c),s12m_unc)
-        s12p_e = unp.uarray(np.unwrap(np.angle(s12c)),s12p_unc)
-        global c
-        c = []
-        for i in range(len(s11m_e)):
-            c.append(uncertainties.covariance_matrix([s11m_e[i],s11p_e[i],s21m_e[i],s21p_e[i],s12m_e[i],s12p_e[i]]))
-        global unc, loglik
-        unc = np.array([s11m_unc,s11p_unc,s21m_unc,s21p_unc,s12m_unc,s12p_unc])
-        #c = np.cov(unc)
-        loglik = 0
-        for i in range(len(s11m_e)):
-#            loglik += -3*np.log(2*np.pi) - 0.5*np.log(np.linalg.det(c[i])) + 0.5*np.dot(np.dot(large_x[:,i].T,np.linalg.inv(c[i])),large_x[:,i])
-            loglik += -3*np.log(2*np.pi) - 0.5*np.log(np.linalg.det(c[i])) -0.5*np.dot(np.dot(large_x[:,i].T,np.linalg.inv(c[i])),large_x[:,i])
+        s_mat = np.array([np.absolute(s11c),np.unwrap(np.angle(s11c)),np.absolute(s21c),np.unwrap(np.angle(s21c)),np.absolute(s12c),np.unwrap(np.angle(s12c))])
+        c = np.cov(s_mat)
+        loglik = np.sum(-3*np.log(2*np.pi) - 0.5*np.log(np.linalg.det(c)) -0.5*np.dot(np.dot(large_x.T,np.linalg.inv(c)),large_x))
         return loglik
-    
-#    def log_posterior(self,params,L,freq_0,s11c,s21c,s12c):
-#        sigma, loglik = self.log_likelihood(params,L,freq_0,s11c,s21c,s12c)
-#        return self.log_prior(sigma) + loglik
     
     def _sparam_iterator(self,params,L,freq_0,s11,s21,s12,s22):
         """
@@ -622,17 +587,13 @@ class AirlineIter():
             report.
         """
         # Fit data
-#        minner = Minimizer(self._iterate_objective_function,\
-#                   params,fcn_args=(L,freq_0,s11,s21,s12,s22),\
-#                   nan_policy='omit')
         minner = Minimizer(self.log_likelihood,\
                    params,fcn_args=(L,freq_0,s11,s21,s12),\
                    nan_policy='omit')
         
         from timeit import default_timer as timer
         start = timer()
-        result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin,workers=self.nworkers,ntemps=self.ntemps)
-#        result = minner.minimize()
+        result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin,workers=self.nworkers)
         end = timer()
         m, s = divmod(end - start, 60)
         h, m = divmod(m, 60)
@@ -667,16 +628,8 @@ class AirlineIter():
                 mu = -1j*unp.nominal_values(self.avg_mu_real);
                 mu += unp.nominal_values(self.avg_mu_imag)
                 mu = mu[self.freq>=freq[0]]
-            else:   #create mu via nrw
-                self.meas.nrw = True
-                dielec, lossfac, losstan, mu_real, mu_imag = \
-                    self.meas._permittivity_calc('a')
-                self.avg_mu_real = mu_real
-                self.avg_mu_imag = mu_imag
-                mu = -1j*unp.nominal_values(mu_imag);
-                mu += unp.nominal_values(mu_real)
-                mu = mu[self.freq>=freq[0]]
-                self.meas.nrw = False    # Reset to previous setting
+            else:   #raise exception if nrw not used
+                raise Exception('permittivitycalc needs to be run with nrw=True if fit_mu=True')
             # Uarrays for plotting
             mu_plot_real = self.avg_mu_real[self.freq>=freq[0]]
             mu_plot_imag = self.avg_mu_imag[self.freq>=freq[0]]
@@ -746,7 +699,6 @@ class AirlineIter():
                 report_fit(result_mu[m])
         
         # Get parameter values
-        global values
         values = []
         for n in range(len(number_of_poles)):
             values_temp = result[n].params
@@ -794,7 +746,6 @@ class AirlineIter():
         
         # If not in trial mode (no iterative fitting of sparams), perform iteration
         if not self.trial:
-            ## Perform Modified Baker-Jarvis iteration
             # Check if using corrected S-params
             if corr:
                 s11 = unp.nominal_values(self.s11)
@@ -837,9 +788,6 @@ class AirlineIter():
                     params = self._iteration_parameters([number_of_poles[0],number_of_mu_poles[0]],initial_values,mu=True)
                 else:
                     params = self._iteration_parameters(number_of_poles,initial_values)
-                ####TEST###
-#                params['tau_1'].vary = False
-                ####
                 # Fit data
                 result_sp, time_str = self._sparam_iterator(params,L,freq[0],s11c,s21c,s12c,s22c)
                 # Update initial values for next run
@@ -866,7 +814,6 @@ class AirlineIter():
         
             # Plot s-params
             s11_predicted, s21_predicted, s12_predicted = self._model_sparams(freq,L/100,epsilon_iter_sp,mu_iter_sp)
-            import matplotlib.pyplot as plt
             # Plot    
             f,ax = plt.subplots(3, 2, sharex=True, figsize=(18, 15))
             ax[0,0].plot(freq,np.absolute(s11c),label='Measured') #s11mag
@@ -891,32 +838,11 @@ class AirlineIter():
             plt.setp([a.get_xticklabels() for a in ax[0, :]], visible=False)
             ax[0,0].legend(loc=1)
             
-#            plt.figure()
-#            plt.plot(freq, np.absolute(s11c),label='Measured')
-#            plt.plot(freq, np.absolute(s11_predicted),label='Predicted')
-#            plt.title('s11mag')
-#            plt.legend()
-#            plt.figure()
-#            plt.plot(freq, np.angle(s11c),label='Measured')
-#            plt.plot(freq, np.angle(s11_predicted),label='Predicted')
-#            plt.title('s11phase')
-#            plt.figure()
-#            plt.plot(freq, np.absolute(s21c),label='Measured')
-#            plt.plot(freq, np.absolute(s21_predicted),label='Predicted')
-#            plt.title('s21mag')
-#            plt.legend()
-#            plt.figure()
-#            plt.plot(freq, np.angle(s21c),label='Measured')
-#            plt.plot(freq, np.angle(s21_predicted),label='Predicted')
-#            plt.title('s21phase')
-            
             #Corner plot
-            import corner
             corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
                           truths=list(result_sp.params.valuesdict().values()))
             
             #Plot traces
-            from matplotlib.ticker import MaxNLocator
             nplots = len(result_sp.var_names)
             fig, axes = plt.subplots(nplots, 1, sharex=True, figsize=(8,nplots*1.4))
             for n in range(nplots):
@@ -930,6 +856,6 @@ class AirlineIter():
             
             # Return results
             if self.fit_mu:
-                return epsilon_iter_sp, mu_iter_sp, values_sp
+                return epsilon_iter_sp, mu_iter_sp, values_sp, result_sp
             else:
-                return epsilon_iter_sp, values_sp
+                return epsilon_iter_sp, values_sp, result_sp

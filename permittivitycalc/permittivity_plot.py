@@ -12,7 +12,12 @@ from uncertainties import unumpy as unp
 import os
 import datetime
 # Plotting
-import matplotlib.pyplot as plt
+import matplotlib
+try:
+    from matplotlib import pyplot as plt
+except:
+    matplotlib.use('TkAgg',warn=False, force=True)
+    import matplotlib.pyplot as plt
 from matplotlib.ticker import FixedLocator, LogLocator, EngFormatter, NullFormatter, LogFormatter
 import seaborn as sns
 from cycler import cycler

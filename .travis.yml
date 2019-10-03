@@ -14,7 +14,7 @@ matrix:
         - xvfb
     - name: "Python 3.7 on macOS"
       os: osx
-      osx_image: xcode10.2  
+      osx_image: xcode11 
       language: shell
       sudo: required
       before_script:

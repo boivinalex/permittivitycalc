@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Contains the AirlineData class object"""
 
 # Array math
 import numpy as np
@@ -30,12 +29,12 @@ class AirlineData:
     calculate the complex relative permittivity of a sample in a coaxial 
     transmission line
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     L : float 
         Length of airline in cm.
         
-    airline : {'VAL','PAL','GAL','7','custom'} 
+    airline : {'VAL', 'PAL', 'GAL', '7', 'custom'}
         Name of airline used for measurement.
         
     dataArray : array
@@ -46,7 +45,7 @@ class AirlineData:
         
     corr : bool, optional
         Default = False. If True, also correct S-parameter data and produce 
-        corr_* arrays. 
+        corrected arrays. 
             
     nrw : bool, optional 
         Default = False. If True, use Nicolson, Rross, Weir (NRW) algorithm to 
@@ -103,38 +102,36 @@ class AirlineData:
         Default: 1e8. Starting frequency for forward and reverse difference 
         calculations.
     
-    Attributes:
-    ----------
     freq : array 
         Frequency points.
     
     s11, s21, s12, s22 : array 
         Mag and Phase S-Parameters.
     
-    *_dielec : array 
+    avg_dielec, forward_dielec, reverse_dielec : array 
         Real part of the permittivity. Can be avg_dielec, forward_dielec, or 
         reverse_dielec for average, forward (S11,S21), or reverse (S22,S12) 
         permittivity.
     
-    *_lossfac : array 
+    avg_lossfac, forward_lossfac, reverse_lossfac : array 
         Imaginary part of the permittivity. Same as above.
     
-    *_losstan : array 
+    avg_losstan, forward_losstan, reverse_losstan : array 
         Loss tangent. Same as above.
         
-    *_mu_real : array
+    avg_mu_real, forward_mu_real, reverse_mu_real : array
         Real part of the magnetic permeability. Same as above.
         
-    *_mu_imag : array
+    avg_mu_imag, forward_mu_imag, reverse_mu_imag : array
         Imaginary part of the magnetic permeability. Same as above.
     
-    corr_* : array 
+    corr_ : array 
         De-embeded version of S-parameters or electromagnetic data. Only average 
         S-parameters are used for EM calculations with corrected 
         S-parameters. Examples: corr_s11, corr_avg_losstan, corr_avg_mu_real. 
         Only created if corr = True.
             
-    norm_* : array
+    norm_ : array
         Bulk density normalized permittivity data. Uses averaged permittivity 
         data. Only created if normalize_density = True.
         
@@ -610,8 +607,8 @@ class AirlineData:
         
         Assumes the magnetic permeability of the sample = 1 (i.e non-magnetic).
         
-        Arguments
-        ---------
+        Parameters
+        ----------
         s_param : str 
             Calculates complex permittivity using either 
             the forward ('f') (S11,S21), or the reverse ('r') (S22 S12) 
@@ -1262,8 +1259,8 @@ class AirlineData:
         Follows Baker-Jarvis et al., 1993 and Rhode & Schwarz 
         Application Note RAC0607-0019_1_4E
         
-        Arguments
-        ---------
+        Parameters
+        ----------
         Ds2 : float 
             The inner diameter (cm) of the solid toroid sample to be specified 
             by user
@@ -1305,15 +1302,15 @@ class AirlineData:
         
         
     def draw_plots(self,default_settings=True,publish=False,log_y_axis=False,\
-                   xticks=None,yticks=None,**kwargs):
+                   xticks=None,yticks=None,corr=False,normalized=False,**kwargs):
         """
         Plots permittivity data using make_plot from permittivity_plot.
         
         If freq_cutoff exists, all frequency points lower than freq_cutoff 
         will not be plotted.
         
-        Arguments
-        ---------
+        Parameters
+        ----------
         default_settings : bool 
             Default: True. If True, plots average real part of the permittivity, 
             imaginary part of the permittivity and loss tangent. If corrected
@@ -1339,20 +1336,15 @@ class AirlineData:
             nrw=True, must additionaly provide: real part of mu, 
             imaginary part of mu. Required if log_y_axis=True.
             
-        Additional Keyword Arguments
-        ----------------------------
-        These additional arguments can be supplied if default_settings is False.
-        
-            If default_settings is False and neither of these are provided, 
-            uncorrected and unnormalized data will be ploted! 
-            
         corr : bool, optional
-            Can be used with any of the plot types.
-            If True, use corrected sparam data, otheriwse use uncorrected data.
+            Can be used when default_settings is False. Can be used with any of 
+            the plot types. If True, use corrected sparam data, otheriwse use 
+            uncorrected data.
             
         normalized : bool, optional
-            Can only be used with Average plots.
-            If True, use normalized permittivity data. Supersedes corr if True.
+            Can be used when default_settings is False. Can only be used with 
+            Average plots. If True, use normalized permittivity data. 
+            Supersedes corr if True.
         """
         # If default_settings
         #   Use first of normalized, corrected, or regular data
@@ -1395,11 +1387,11 @@ class AirlineData:
                            'Reverse (S22,S12), or "all" for All three: ')
             if s_plot not in ('f','r','all','a'):
                 raise Exception('Wrong input')
-            if s_plot == 'a' and 'normalized' in kwargs:
+            if s_plot == 'a' and normalized:
                 y1 = self.norm_dielec
                 y2 = self.norm_lossfac
                 y3 = self.norm_losstan
-            elif s_plot == 'a' and 'corr' in kwargs:
+            elif s_plot == 'a' and corr:
                 y1 = self.corr_avg_dielec
                 y2 = self.corr_avg_lossfac
                 y3 = self.corr_avg_losstan
@@ -1413,10 +1405,10 @@ class AirlineData:
                 if self.nrw:
                     y4 = self.avg_mu_real
                     y5 = self.avg_mu_imag
-            elif 'normalized' in kwargs:
+            elif normalized:
                 raise Exception('normalized=True can only be used with Average "a" plots')
             elif s_plot == 'f':
-                if 'corr' in kwargs:
+                if corr:
                     y1 = self.corr_forward_dielec
                     y2 = self.corr_forward_lossfac
                     y3 = self.corr_forward_losstan
@@ -1431,7 +1423,7 @@ class AirlineData:
                         y4 = self.forward_mu_real
                         y5 = self.forward_mu_imag
             elif s_plot == 'r':
-                if 'corr' in kwargs:
+                if corr:
                     y1 = self.corr_reverse_dielec
                     y2 = self.corr_reverse_lossfac
                     y3 = self.corr_reverse_losstan
@@ -1445,7 +1437,7 @@ class AirlineData:
                     if self.nrw:
                         y4 = self.reverse_mu_real
                         y5 = self.reverse_mu_imag
-            elif s_plot == 'all' and 'corr' in kwargs:
+            elif s_plot == 'all' and corr:
                 x = [x,x,x]
                 y1 = [self.corr_forward_dielec,self.corr_reverse_dielec,self.corr_avg_dielec]
                 y2 = [self.corr_forward_lossfac,self.corr_reverse_lossfac,self.corr_avg_lossfac]
@@ -1576,8 +1568,8 @@ def multiple_meas(file_path=None,airline_name=None):
     Generate an instance of AirlineData for every file in a directory. Store 
     the intances in a list, and plot them all using perm_compare.
         
-    Arguments
-    ---------
+    Parameters
+    ----------
     file_path : str, optional 
         Full path of any file in the source directory. Will produce file dialog 
         box if not provided.
@@ -1623,7 +1615,7 @@ def multiple_meas(file_path=None,airline_name=None):
 def run_default(airline_name='VAL',file_path=None,**kwargs):
     """
     Run AirlineData on get_METAS_data with all the prompts and return the 
-    instance.
+    instance. Optional AirlineData kwargs can be provided (Example: shorted=True).
     """
     return AirlineData(*get_METAS_data(airline_name,file_path),**kwargs)
 

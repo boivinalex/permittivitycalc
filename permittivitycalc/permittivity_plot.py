@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 22 14:24:19 2017
-
-@author: alex
+Fucntions to plot permittivity and permeability results and S-parameters.
 """
 # File input
 import tkinter as tk

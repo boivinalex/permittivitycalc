@@ -120,8 +120,6 @@ class AirlineIter():
     nworkers : int or pool, optional
         Number of workers or pool object for paralelization (Default: 1).
         
-    Attributes
-    ----------
     epsilon_iter : array
         Complex array containing the results of the iterrative fit for epsilon.
         trail_run must be set to False.
@@ -226,7 +224,7 @@ class AirlineIter():
         Unpack Cole-Cole paramaterd and retuns Cole-Cole model based on 
         number of poles.
         
-        Attributes
+        Parameters
         ----------
         number_of_poles : int 
             Number of poles in the Cole-Cole model 
@@ -235,15 +233,15 @@ class AirlineIter():
             Frequency vector for model
         
         v : dict 
-            Cole-Cole parameters to be used in model
-            v must be a dictionary with the following values:
+            Cole-Cole parameters to be used in model. v must be a dictionary 
+            with the following values:
                 - k_inf
                 - sigma
                 - k_dc_n
                 - tau_n
                 - alpha_n
-                
-                Where n is the pole number in the Cole-Cole model from 1 to inf.
+            
+            Where n is the pole number in the Cole-Cole model from 1 to inf.
                 
         mu : bool
             If True use mu parameters in v:
@@ -251,8 +249,8 @@ class AirlineIter():
                 - mu_dc_n
                 - mutau_n
                 - mualpha_n
-                
-                Where n is the pole number in the Cole-Cole model from 1 to inf.
+            
+            Where n is the pole number in the Cole-Cole model from 1 to inf.
                 
         Return
         ------
@@ -322,7 +320,7 @@ class AirlineIter():
         """
         Creates Parameter object to be used in _permittivity_iterate
         
-        Attributes
+        Parameters
         ----------
         number_of_poles : int or list of ints
             Number if poles in the Cole-Cole model.
@@ -563,7 +561,7 @@ class AirlineIter():
         
         return np.concatenate((obj_func_real,obj_func_imag))
     
-    def log_likelihood(self,params,L,freq_0,s11c,s21c,s12c):
+    def _log_likelihood(self,params,L,freq_0,s11c,s21c,s12c):
         s11_predicted, s21_predicted, s12_predicted, s11m_unc, s11p_unc, \
             s21m_unc, s21p_unc, s12m_unc, s12p_unc = \
             self._iterate_model(params,L,freq_0)
@@ -587,7 +585,7 @@ class AirlineIter():
             report.
         """
         # Fit data
-        minner = Minimizer(self.log_likelihood,\
+        minner = Minimizer(self._log_likelihood,\
                    params,fcn_args=(L,freq_0,s11,s21,s12),\
                    nan_policy='omit')
         

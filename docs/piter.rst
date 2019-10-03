@@ -1,3 +1,5 @@
+.. module:: permittivitycalc
+
 MCMC-based Permittivity/Permeability Determination
 ==================================================
 .. autoclass:: permittivitycalc.piter

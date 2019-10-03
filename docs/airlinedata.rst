@@ -1,3 +1,4 @@
+.. module:: permittivitycalc
 
 Scattering Parameter Data and the AirlineData Class
 ===================================================

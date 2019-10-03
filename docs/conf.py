@@ -32,6 +32,7 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
+    'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting'
 ]
 

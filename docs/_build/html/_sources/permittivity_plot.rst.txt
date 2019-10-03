@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+.. module:: permittivitycalc
+
+>>>>>>> parent of dc37fe0... remove extra files
 Plotting Fucntions
 ==================
 .. automodule:: permittivitycalc.permittivity_plot

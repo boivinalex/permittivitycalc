@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+.. module:: permittivitycalc
+>>>>>>> parent of dc37fe0... remove extra files
 
 Scattering Parameter Data and the AirlineData Class
 ===================================================

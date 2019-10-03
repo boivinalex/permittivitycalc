@@ -157,15 +157,27 @@
 <h1>permittivitycalc<a class="headerlink" href="#permittivitycalc" title="Permalink to this headline">¶</a></h1>
 <table class="docutils align-default">
 <colgroup>
+<<<<<<< HEAD
 <col style="width: 35%" />
 <col style="width: 21%" />
 <col style="width: 24%" />
 <col style="width: 21%" />
+=======
+<col style="width: 29%" />
+<col style="width: 17%" />
+<col style="width: 20%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+>>>>>>> parent of dc37fe0... remove extra files
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Continuous Integration</p></th>
 <th class="head"><p>Code Coverage</p></th>
 <th class="head"><p>PyPI Package</p></th>
+<<<<<<< HEAD
+=======
+<th class="head"><p>Docs</p></th>
+>>>>>>> parent of dc37fe0... remove extra files
 <th class="head"><p>Citation</p></th>
 </tr>
 </thead>
@@ -173,16 +185,33 @@
 <tr class="row-even"><td><p><a class="reference external" href="https://travis-ci.org/boivinalex/permittivitycalc"><img alt="TravisCI" src="https://travis-ci.org/boivinalex/permittivitycalc.svg?branch=master" /></a> <a class="reference external" href="https://ci.appveyor.com/project/boivinalex/permittivitycalc"><img alt="Appveyor" src="https://ci.appveyor.com/api/projects/status/xh0t09l9hnnpn0po/branch/master?svg=true" /></a></p></td>
 <td><p><a class="reference external" href="https://codecov.io/gh/boivinalex/permittivitycalc"><img alt="Codecov" src="https://codecov.io/gh/boivinalex/permittivitycalc/branch/master/graph/badge.svg" /></a></p></td>
 <td><p><a class="reference external" href="https://badge.fury.io/py/permittivitycalc"><img alt="PyPiBadge" src="https://badge.fury.io/py/permittivitycalc.svg" /></a></p></td>
+<<<<<<< HEAD
+=======
+<td><p><a class="reference external" href="https://permittivitycalc.readthedocs.io/en/latest/?badge=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/permittivitycalc/badge/?version=latest" /></a></p></td>
+>>>>>>> parent of dc37fe0... remove extra files
 <td><p><a class="reference external" href="https://zenodo.org/badge/latestdoi/98680301"><img alt="DOIBadge" src="https://zenodo.org/badge/98680301.svg" /></a></p></td>
 </tr>
 </tbody>
 </table>
+<<<<<<< HEAD
 <p>Scripts to calculate and plot the complex permittivity from S-parameter data acquired with transmission-line measurements</p>
 <div class="section" id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>permittivitycalc is a Python package made to take S-parameter data output from METAS VNA Tools II (<a class="reference external" href="https://www.metas.ch/vnatools">https://www.metas.ch/vnatools</a>) and process it to calculate and plot the complex permittivity of a material measured in a coaxial transmission line.</p>
 <p>Currently, permittivitycalc uses the New Non-iterative Method for permittivity calculation from S-parameters from <a class="reference internal" href="#boughriet1997" id="id1"><span>[Boughriet1997]</span></a> which assumes that the material is non-magnetic (i.e. mu = 1).</p>
 <p>permittivitycalc can also use the Nicholson-Ross-Weir method to calculate the complex permittivity and permeability of a sample. This method, however, is unstable at multiples of one-half wavelength in the sample <a class="reference internal" href="#nicolsonross1970" id="id2"><span>[NicolsonRoss1970]</span></a> <a class="reference internal" href="#weir1974" id="id3"><span>[Weir1974]</span></a>.</p>
+=======
+<p>Scripts to calculate and plot the complex permittivity (and permeability) from S-parameter data acquired from transmission-line measurements</p>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>permittivitycalc is a Python package made to take S-parameter data output from METAS VNA Tools II (<a class="reference external" href="https://www.metas.ch/vnatools">https://www.metas.ch/vnatools</a>) and process it to determine and plot the complex electric permittivity (and magnetic permeability) of a material measured in a coaxial transmission line.</p>
+<p>Two analytical calculation methiods are currently implemented:</p>
+<ul class="simple">
+<li><p>The New Non-iterative Method for permittivity calculation from S-parameters from <a class="reference internal" href="#boughriet1997" id="id1"><span>[Boughriet1997]</span></a> which assumes that the material is non-magnetic (i.e. mu = 1).</p></li>
+<li><p>The Nicholson-Ross-Weir method to calculate the complex permittivity and permeability of a sample. This method, however, is unstable at multiples of one-half wavelength in the sample <a class="reference internal" href="#nicolsonross1970" id="id2"><span>[NicolsonRoss1970]</span></a> <a class="reference internal" href="#weir1974" id="id3"><span>[Weir1974]</span></a>.</p></li>
+</ul>
+<p>permittivitycalc can also use MCMC-based Bayesian model fitting/parameter estimation to fit Cole-Cole type models directly to the measured S-parameters to determine the frequency-dependant complex permittivity (and permeability, if desired). Cole-Cole models support multiple relaxation poles as well as a conductivity term.</p>
+>>>>>>> parent of dc37fe0... remove extra files
 <p>You can use permittivitycalc to:</p>
 <ul class="simple">
 <li><p>Input and plot raw S-parameter data in tabular form with or without uncertainties.</p></li>
@@ -191,11 +220,19 @@
 <li><p>Correct for the boundary effect in the transmission line when measuring powdered samples after <a class="reference internal" href="#hickson2017" id="id4"><span>[Hickson2017]</span></a>.</p></li>
 <li><p>Correct for the air gap when measuring solid samples after <a class="reference internal" href="#baker-jarvis1993" id="id5"><span>[Baker-Jarvis1993]</span></a>.</p></li>
 <li><p>Plot data from multiple measurements together for comparison.</p></li>
+<<<<<<< HEAD
+=======
+<li><p>Model measured S-parameters directly with a Cole-Cole model using MCMC-based Bayesian model fitting.</p></li>
+>>>>>>> parent of dc37fe0... remove extra files
 </ul>
 </div>
 <div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<<<<<<< HEAD
 <p>For usage examples and a walkthrough on how to use permittivitycalc, see the <a class="reference external" href="https://gist.github.com/boivinalex/175313bf8fdfa0dfd6a7501cf8a28087">Tutorial</a></p>
+=======
+<p>For usage examples and a walkthrough on how to use permittivitycalc, see the <a class="reference external" href="https://permittivitycalc.readthedocs.io">Docs</a></p>
+>>>>>>> parent of dc37fe0... remove extra files
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
@@ -204,6 +241,10 @@
 <p>permittivitycalc was written for Python 3 and tested on the following versions of Python:</p>
 <ul class="simple">
 <li><p>3.6</p></li>
+<<<<<<< HEAD
+=======
+<li><p>3.7</p></li>
+>>>>>>> parent of dc37fe0... remove extra files
 </ul>
 <p>permittivitycalc uses the following packages:</p>
 <ul class="simple">
@@ -214,6 +255,12 @@
 <li><p>matplotlib</p></li>
 <li><p>seaborn</p></li>
 <li><p>cycler</p></li>
+<<<<<<< HEAD
+=======
+<li><p>lmfit</p></li>
+<li><p>emcee</p></li>
+<li><p>corner</p></li>
+>>>>>>> parent of dc37fe0... remove extra files
 </ul>
 </div>
 <div class="section" id="installing-anaconda">
@@ -222,12 +269,21 @@
 <ol class="arabic">
 <li><p><a class="reference external" href="https://www.anaconda.com/download/">Install Anaconda</a>.</p></li>
 <li><p>Open a terminal window and create a <a class="reference external" href="https://conda.io/docs/using/envs">conda virtual environment</a> (name it anything you like, and set the python version to a compatible version in <a class="reference internal" href="#requirements">Requirements</a>):</p>
+<<<<<<< HEAD
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">your_env_name</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.6</span>
 </pre></div>
 </div>
 </li>
 <li><p>Activate the environment (on Windows, omit “source”):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="n">activate</span> <span class="n">your_env_name</span>
+=======
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">your_env_name</span> <span class="n">anaconda</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.7</span>
+</pre></div>
+</div>
+</li>
+<li><p>Activate the environment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">your_env_name</span>
+>>>>>>> parent of dc37fe0... remove extra files
 </pre></div>
 </div>
 </li>

@@ -1,0 +1,388 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>permittivitycalc.helper_functions &mdash; permittivitycalc  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> permittivitycalc
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../airlinedata.html">Scattering Parameter Data and the AirlineData Class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../permittivity_plot.html">Plotting Fucntions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../piter.html">MCMC-based Permittivity/Permeability Determination</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/basic/permittivitycalc_tutorial.html">Basic Usage</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">permittivitycalc</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>permittivitycalc.helper_functions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for permittivitycalc.helper_functions</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;Contains helper functions for file input&quot;&quot;&quot;</span>
+
+<span class="c1"># File input</span>
+<span class="kn">import</span> <span class="nn">tkinter</span> <span class="k">as</span> <span class="nn">tk</span>
+<span class="kn">from</span> <span class="nn">tkinter.filedialog</span> <span class="k">import</span> <span class="n">askopenfilename</span>
+<span class="kn">import</span> <span class="nn">codecs</span>
+<span class="c1"># Array math</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="c1"># Plotting</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">permittivity_plot</span> <span class="k">as</span> <span class="n">pplot</span>
+
+<span class="k">def</span> <span class="nf">_prompt</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Prompt for VNA Tools II text file&quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Select the VNA Tools II Output Data Table&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
+    <span class="n">root</span><span class="o">.</span><span class="n">withdraw</span><span class="p">()</span>
+    <span class="n">file</span> <span class="o">=</span> <span class="n">askopenfilename</span><span class="p">(</span><span class="n">filetypes</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;text files&#39;</span><span class="p">,</span> <span class="s1">&#39;*.txt&#39;</span><span class="p">)],</span>\
+                            <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Select the VNA Tools II Output Data Table&#39;</span><span class="p">)</span>
+    <span class="n">root</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">file</span>
+    
+<span class="k">def</span> <span class="nf">_get_file</span><span class="p">(</span><span class="n">airline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">file_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the file path and airline name. Use prompts if needed.&quot;&quot;&quot;</span>
+    <span class="n">L_in</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># Figure out the file path and the airline name</span>
+    <span class="k">if</span> <span class="n">file_path</span> <span class="ow">and</span> <span class="n">airline</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">airline</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;VAL&#39;</span><span class="p">,</span><span class="s1">&#39;PAL&#39;</span><span class="p">,</span><span class="s1">&#39;GAL&#39;</span><span class="p">,</span><span class="s1">&#39;7&#39;</span><span class="p">,</span><span class="s1">&#39;washer&#39;</span><span class="p">,</span><span class="s1">&#39;custom&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Wrong airline name. You used </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">airline</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">airline</span> <span class="o">==</span> <span class="s1">&#39;custom&#39;</span><span class="p">:</span>
+            <span class="n">L_in</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Enter the length of the airline (cm): &#39;</span><span class="p">)</span>
+            <span class="n">file</span> <span class="o">=</span> <span class="n">file_path</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">file</span> <span class="o">=</span> <span class="n">file_path</span>
+    <span class="k">elif</span> <span class="n">file_path</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">airline</span><span class="p">:</span>
+        <span class="c1"># Prompt for airline</span>
+        <span class="n">airline</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Are you using the &quot;VAL&quot;, &quot;PAL&quot;, &quot;GAL&quot;, &quot;7&quot; mm, &#39;</span> <span class="o">+</span> \
+                        <span class="s1">&#39;or &quot;custom&quot; airline?: &#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">airline</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;VAL&#39;</span><span class="p">,</span><span class="s1">&#39;PAL&#39;</span><span class="p">,</span><span class="s1">&#39;GAL&#39;</span><span class="p">,</span><span class="s1">&#39;7&#39;</span><span class="p">,</span><span class="s1">&#39;custom&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Wrong input&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">airline</span> <span class="o">==</span> <span class="s1">&#39;custom&#39;</span><span class="p">:</span>
+            <span class="n">L_in</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Enter the length of the airline (cm): &#39;</span><span class="p">)</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="n">file_path</span>
+    <span class="k">elif</span> <span class="n">airline</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">file_path</span><span class="p">:</span>
+        <span class="c1"># Check airline</span>
+        <span class="k">if</span> <span class="n">airline</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;VAL&#39;</span><span class="p">,</span><span class="s1">&#39;PAL&#39;</span><span class="p">,</span><span class="s1">&#39;GAL&#39;</span><span class="p">,</span><span class="s1">&#39;7&#39;</span><span class="p">,</span><span class="s1">&#39;custom&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Wrong input&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">airline</span> <span class="o">==</span> <span class="s1">&#39;custom&#39;</span><span class="p">:</span>
+            <span class="n">L_in</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Enter the length of the airline (cm): &#39;</span><span class="p">)</span>
+        <span class="c1"># Prompt for file</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="n">_prompt</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>   <span class="c1"># Prompt for both</span>
+        <span class="c1"># Airline</span>
+        <span class="n">airline</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Are you using the &quot;VAL&quot;, &quot;PAL&quot;, &quot;GAL&quot;, &quot;7&quot; mm, &#39;</span> <span class="o">+</span> \
+                        <span class="s1">&#39;or &quot;custom&quot; airline?: &#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">airline</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;VAL&#39;</span><span class="p">,</span><span class="s1">&#39;PAL&#39;</span><span class="p">,</span><span class="s1">&#39;GAL&#39;</span><span class="p">,</span><span class="s1">&#39;7&#39;</span><span class="p">,</span><span class="s1">&#39;custom&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Wrong input&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">airline</span> <span class="o">==</span> <span class="s1">&#39;custom&#39;</span><span class="p">:</span>
+            <span class="n">L_in</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s1">&#39;Enter the length of the airline (cm): &#39;</span><span class="p">)</span>
+        <span class="c1"># File</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="n">_prompt</span><span class="p">()</span>
+        
+    <span class="k">return</span> <span class="n">airline</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">L_in</span>
+    
+<div class="viewcode-block" id="get_METAS_data"><a class="viewcode-back" href="../../airlinedata.html#permittivitycalc.get_METAS_data">[docs]</a><span class="k">def</span> <span class="nf">get_METAS_data</span><span class="p">(</span><span class="n">airline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">file_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return data arrays from METAS VNA Tools II text file based on user input </span>
+<span class="sd">    Frequencies must be in Hz. Recomeneded precision in VNA Tools II is f9.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns the first four arguments required by the AirlineData class.</span>
+<span class="sd">    </span>
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    airline : str </span>
+<span class="sd">        Airline used for measurement. Options are: &#39;VAL&#39;, </span>
+<span class="sd">        &#39;PAL&#39;, &#39;GAL&#39;, &#39;7&#39;. If not provided, will prompt user. Prompt will </span>
+<span class="sd">        allow user to input a custom airline length.</span>
+<span class="sd">    </span>
+<span class="sd">    file_path : str </span>
+<span class="sd">        If a path is not given, will prompt user for file. </span>
+<span class="sd">        Default: None</span>
+<span class="sd">    </span>
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+<span class="sd">    L : float </span>
+<span class="sd">        Length of airline in cm.</span>
+<span class="sd">        </span>
+<span class="sd">    airline : str</span>
+<span class="sd">        Name of the airline used.</span>
+<span class="sd">    </span>
+<span class="sd">    dataArray : array </span>
+<span class="sd">        S-parameters and their uncertainties (if present).</span>
+<span class="sd">        </span>
+<span class="sd">    file : str</span>
+<span class="sd">        File path.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># Get the file path and the airline name</span>
+    <span class="n">airline</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">L_in</span> <span class="o">=</span> <span class="n">_get_file</span><span class="p">(</span><span class="n">airline</span><span class="p">,</span><span class="n">file_path</span><span class="p">)</span>
+
+    <span class="c1"># Open the file and make array    </span>
+    <span class="n">open_file</span> <span class="o">=</span> <span class="n">codecs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="n">dataArray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">open_file</span><span class="p">,</span><span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span><span class="n">skiprows</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">open_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    
+    <span class="c1"># Coaxial Airline Length</span>
+    <span class="k">if</span> <span class="n">airline</span> <span class="o">==</span> <span class="s1">&#39;7&#39;</span><span class="p">:</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="mf">9.9873</span>     <span class="c1"># 7 mm airline - 10 cm</span>
+    <span class="k">elif</span> <span class="n">airline</span> <span class="o">==</span> <span class="s1">&#39;VAL&#39;</span> <span class="ow">or</span> <span class="n">airline</span> <span class="o">==</span> <span class="s1">&#39;PAL&#39;</span><span class="p">:</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="mf">14.989</span>
+        <span class="c1">#L = 14.9835    # 14mm airline - 15 cm </span>
+    <span class="k">elif</span> <span class="n">airline</span> <span class="o">==</span> <span class="s1">&#39;GAL&#39;</span><span class="p">:</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="mf">14.991</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">L_in</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">L</span><span class="p">,</span> <span class="n">airline</span><span class="p">,</span> <span class="n">dataArray</span><span class="p">,</span> <span class="n">file</span></div>
+
+<div class="viewcode-block" id="perm_compare"><a class="viewcode-back" href="../../airlinedata.html#permittivitycalc.perm_compare">[docs]</a><span class="k">def</span> <span class="nf">perm_compare</span><span class="p">(</span><span class="n">classlist</span><span class="p">,</span><span class="n">allplots</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a list of AirlineData instances, plot their permittivity results </span>
+<span class="sd">    together using permittivity_plot. Fot each </span>
+<span class="sd">    item in the list, will plot the first available data type out of: </span>
+<span class="sd">    normalized data, corrected (de-embeded) data, uncorrected data.</span>
+<span class="sd">    </span>
+<span class="sd">    Will use the smallest freq_cutoff value in the list (if avaialbe) for </span>
+<span class="sd">    plotting.</span>
+<span class="sd">    </span>
+<span class="sd">    Can provide permittivity_plot.make_plot kwargs.</span>
+<span class="sd">        </span>
+<span class="sd">    Arguments</span>
+<span class="sd">    ---------</span>
+<span class="sd">    classlist</span>
+<span class="sd">        List of instances of AirlineData.</span>
+<span class="sd">    </span>
+<span class="sd">    allplots : bool </span>
+<span class="sd">        Default: False. If True plot all of real and imaginary parts of the </span>
+<span class="sd">        permittivity and the loss tangent. If Flase plot only the real part</span>
+<span class="sd">        and the loss tangent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check that classlist is a list</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">classlist</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;AirlineData instances must be provided in a list&#39;</span><span class="p">)</span>
+    <span class="c1"># Create data lists</span>
+    <span class="n">freq</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">dielec</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">losstan</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cutoffs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">classlist</span><span class="p">:</span>
+        <span class="n">freq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+        <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">cutoffs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">freq_cutoff</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">normalize_density</span><span class="p">:</span> <span class="c1"># Check for normalize_density</span>
+            <span class="n">dielec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">norm_dielec</span><span class="p">)</span>
+            <span class="n">losstan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">norm_losstan</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">item</span><span class="o">.</span><span class="n">corr</span><span class="p">:</span>
+            <span class="n">dielec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">corr_avg_dielec</span><span class="p">)</span>
+            <span class="n">losstan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">corr_avg_losstan</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dielec</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">avg_dielec</span><span class="p">)</span>
+            <span class="n">losstan</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">avg_losstan</span><span class="p">)</span>
+    <span class="c1"># Also get lossfac if allplots</span>
+    <span class="k">if</span> <span class="n">allplots</span><span class="p">:</span>
+        <span class="n">lossfac</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">classlist</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">normalize_density</span><span class="p">:</span>
+                <span class="n">lossfac</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">norm_lossfac</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">item</span><span class="o">.</span><span class="n">corr</span><span class="p">:</span>
+                <span class="n">lossfac</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">corr_avg_lossfac</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lossfac</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">avg_lossfac</span><span class="p">)</span>
+    <span class="c1"># Pass arguments to make_plot</span>
+    <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;legend_label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">labels</span>
+    <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="n">cutoffs</span><span class="p">:</span>     <span class="c1">#pass None as freq_cutoff if any of them are None</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;freq_cutoff&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>   <span class="c1">#else pass the smallest one</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;freq_cutoff&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="c1"># Make the plots</span>
+    <span class="k">if</span> <span class="n">allplots</span><span class="p">:</span>
+        <span class="n">pplot</span><span class="o">.</span><span class="n">make_plot</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span><span class="n">dielec</span><span class="p">,</span><span class="s1">&#39;d&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">pplot</span><span class="o">.</span><span class="n">make_plot</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span><span class="n">lossfac</span><span class="p">,</span><span class="s1">&#39;lf&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">pplot</span><span class="o">.</span><span class="n">make_plot</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span><span class="n">losstan</span><span class="p">,</span><span class="s1">&#39;lt&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pplot</span><span class="o">.</span><span class="n">make_plot</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span><span class="n">dielec</span><span class="p">,</span><span class="s1">&#39;d&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">pplot</span><span class="o">.</span><span class="n">make_plot</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span><span class="n">losstan</span><span class="p">,</span><span class="s1">&#39;lt&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Alexandre Boivin
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -93,7 +93,7 @@ class permittivity_plot_TestCase(unittest.TestCase):
         try:
             x = np.arange(0,6)*300000
             y = np.arange(0,6)
-            pp.make_plot(x,y,plot_type='c',plot_title='test',ylabel='test',xlabel='test',xticks=[0,2,4,6]*300000,yticks=[0,2,4,6])
+            pp.make_plot(x,y,plot_type='c',plot_title='test',ylabel='test',xlabel='test',xticks=[0,2,4,6],yticks=[0,2,4,6])
         except Exception as e:
             raise
         plt.close('all')
@@ -136,7 +136,7 @@ class permittivity_plot_TestCase(unittest.TestCase):
     def test_save_plot(self):
         """Test publish"""
         print(sys._getframe().f_code.co_name)
-        with patch('permittivitycalc.permittivity_plot._dirprompt',return_value='./'):
+        with patch('permittivitycalc.pplot._dirprompt',return_value='./'):
             try:
                 x = np.arange(0,6)*300000
                 y = np.arange(0,6)

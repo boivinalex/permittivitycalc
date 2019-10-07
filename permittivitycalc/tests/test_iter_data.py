@@ -46,18 +46,27 @@ class iter_data_TestCase(unittest.TestCase):
         
     def mcmc_run(self):
         print(sys._getframe().f_code.co_name)
-        test_iter = pc.piter(self.dataset1,trial_run=False,nsteps=5,nwalkers=5,number_of_poles=0,nburn=1,nthin=1)
-        self.assertIsNotNone(test_iter.meas)
+        try:
+            test_iter = pc.piter(self.dataset1,trial_run=False,nsteps=5,nwalkers=5,number_of_poles=0,nburn=1,nthin=1)
+        except Exception as e:
+            raise
+        plt.close('all')
         
     def mcmc_nrw_corr_run(self):
         print(sys._getframe().f_code.co_name)
-        test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=10,number_of_poles=0,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=0,fit_conductivity=True)
-        self.assertIsNotNone(test_iter.meas)
+        try:
+            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=10,number_of_poles=0,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=0,fit_conductivity=True)
+        except Exception as e:
+            raise
+        plt.close('all')
         
     def mcmc_nrw_corr_1pole_run(self):
         print(sys._getframe().f_code.co_name)
-        test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=15,number_of_poles=1,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=1,fit_conductivity=True)
-        self.assertIsNotNone(test_iter.meas)
+        try:
+            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=15,number_of_poles=1,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=1,fit_conductivity=True)
+        except Exception as e:
+            raise
+        plt.close('all')
         
 if __name__ == '__main__':
     unittest.main()

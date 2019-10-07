@@ -5,6 +5,10 @@ Created on Mon Oct  7 16:10:37 2019
 @author: alex
 """
 import os
+if os.environ.get('DISPLAY','') == '':
+    print('No display found. Using non-interactive Agg backend')
+    import matplotlib
+    matplotlib.use('Agg')
 import sys
 import numpy as np
 import unittest
@@ -46,16 +50,14 @@ class iter_data_TestCase(unittest.TestCase):
         
     def mcmc_run(self):
         print(sys._getframe().f_code.co_name)
-        try:
-            test_iter = pc.piter(self.dataset1,trial_run=False,nsteps=5,nwalkers=5,number_of_poles=0,nburn=1,nthin=1)
-        except Exception as e:
-            raise
-        plt.close('all')
+        test_iter = pc.piter(self.dataset1,trial_run=False,nsteps=5,nwalkers=5,number_of_poles=0,nburn=1,nthin=1)
+        self.assertIsNotNone(test_iter.epsilon_iter_sp,test_iter.values_sp,test_iter.result_sp)
+
         
     def mcmc_nrw_corr_run(self):
         print(sys._getframe().f_code.co_name)
         try:
-            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=10,number_of_poles=0,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=0,fit_conductivity=True)
+            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=10,number_of_poles=0,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=0)
         except Exception as e:
             raise
         plt.close('all')
@@ -63,7 +65,7 @@ class iter_data_TestCase(unittest.TestCase):
     def mcmc_nrw_corr_1pole_run(self):
         print(sys._getframe().f_code.co_name)
         try:
-            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=15,number_of_poles=1,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=1,fit_conductivity=True)
+            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=15,number_of_poles=1,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=1)
         except Exception as e:
             raise
         plt.close('all')

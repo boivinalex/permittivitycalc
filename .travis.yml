@@ -14,14 +14,14 @@ matrix:
       dist: xenial
       services:
         - xvfb
-    - name: "Python 3.7 on macOS"
-      os: osx
-      osx_image: xcode11
-      language: shell
-      sudo: required
-      before_script:
-        - "export DISPLAY=:99.0"
-        - sudo Xvfb :99 -ac -screen 0 1024x768x16 &
+#    - name: "Python 3.7 on macOS"
+#      os: osx
+#      osx_image: xcode11
+#      language: shell
+#      sudo: required
+#      before_script:
+#        - "export DISPLAY=:99.0"
+#        - sudo Xvfb :99 -ac -screen 0 1024x768x16 &
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh ; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ; fi ;
   - bash miniconda.sh -b -p $HOME/miniconda
@@ -44,7 +44,6 @@ install:
   - rm -r dist
   - rm -r permittivitycalc.egg-info
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then xvfb-run --server-args="-screen 0 1024x768x24" make test ; fi ;
   - conda install --yes pytest-cov codecov
   - py.test --cov=./
 after_success:

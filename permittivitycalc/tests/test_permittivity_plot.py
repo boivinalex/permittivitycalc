@@ -93,7 +93,7 @@ class permittivity_plot_TestCase(unittest.TestCase):
         try:
             x = np.arange(0,6)*300000
             y = np.arange(0,6)
-            pp.make_plot(x,y,plot_type='c',plot_title='test',ylabel='test',xlabel='test',round_val=2)
+            pp.make_plot(x,y,plot_type='c',plot_title='test',ylabel='test',xlabel='test',xticks=[0,2,4,6]*300000,yticks=[0,2,4,6])
         except Exception as e:
             raise
         plt.close('all')

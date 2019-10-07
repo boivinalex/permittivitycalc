@@ -16,7 +16,7 @@ import matplotlib
 try:
     from matplotlib import pyplot as plt
 except:
-    matplotlib.use('TkAgg',warn=False, force=True)
+    matplotlib.use('MacOSX',warn=False, force=True)
     import matplotlib.pyplot as plt
 from matplotlib.ticker import FixedLocator, LogLocator, EngFormatter, NullFormatter, LogFormatter
 import seaborn as sns

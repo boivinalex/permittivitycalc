@@ -835,6 +835,7 @@ class AirlineIter():
             # Hide redundant x-axis tick marks
             plt.setp([a.get_xticklabels() for a in ax[0, :]], visible=False)
             ax[0,0].legend(loc=1)
+            plt.show()
             
             #Corner plot
             corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
@@ -849,6 +850,7 @@ class AirlineIter():
                 axes[n].set_ylabel(result_sp.var_names[n])
             axes[nplots-1].set_xlabel("step number")
             fig.tight_layout(h_pad=0.0)
+            plt.show()
             
             print(time_str)
             

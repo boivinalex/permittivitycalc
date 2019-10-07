@@ -130,6 +130,19 @@ class permittivity_plot_TestCase(unittest.TestCase):
         except Exception as e:
             raise
         plt.close('all')
+        
+    def test_make_plot_log_flat(self):
+        """Test make_plot with log plot"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            x = np.arange(0,6)*300000
+            y = [1,2,3,4,5,6]
+            pp.make_plot(x,y,plot_type='d',y_axis_type='log',xticks=[0,1,2,3], yticks=[0,1,2,3])
+            y = [-0.00005,-0.00004,-0.00003,-0.00002,-0.00001,0]
+            pp.make_plot(x,y,plot_type='lt',y_axis_type='log',xticks=[0,1,2,3], yticks=[0,1,2,3])
+        except Exception as e:
+            raise
+        plt.close('all')
 
     def test_make_plot_invalid_plot_type(self):
         """Test makes_plot with wrong plot_type"""

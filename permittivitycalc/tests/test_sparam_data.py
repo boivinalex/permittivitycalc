@@ -274,6 +274,15 @@ class sparam_data_TestCase(unittest.TestCase):
             raise
         plt.close('all')
         
+    def test_draw_plots_nrw_yticks(self):
+        """Test draw_plots nrw with yticks"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset3.draw_plots(yticks=[[1,2,3],[2,3,4],[3,4,5],[2,3,4],[3,4,5]])
+        except Exception as e:
+            raise
+        plt.close('all')
+        
     def test_draw_plots_nrw_corr(self):
         """Test draw_plots nrw and corr"""
         print(sys._getframe().f_code.co_name)

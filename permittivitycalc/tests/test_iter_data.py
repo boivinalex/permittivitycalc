@@ -30,13 +30,13 @@ class iter_data_TestCase(unittest.TestCase):
         self.assertIsNotNone(test_iter.meas)
         
     def test_run_nrw(self):
-        print(sys._getframe().f_code.co_name)
-        test_iter = pc.piter(self.dataset2)
+        print(sys._getframe().f_code.co_name,)
+        test_iter = pc.piter(self.dataset2,fit_mu=True,number_of_poles_mu=0)
         self.assertIsNotNone(test_iter.meas)
         
     def test_run_nrw_corr(self):
         print(sys._getframe().f_code.co_name)
-        test_iter = pc.piter(self.dataset3)
+        test_iter = pc.piter(self.dataset3,fit_mu=True,number_of_poles_mu=0)
         self.assertIsNotNone(test_iter.meas)
         
     def test_run_nrw_corr_freq_cutoff(self):
@@ -52,6 +52,11 @@ class iter_data_TestCase(unittest.TestCase):
     def mcmc_nrw_corr_run(self):
         print(sys._getframe().f_code.co_name)
         test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=10,number_of_poles=0,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=0,fit_conductivity=True)
+        self.assertIsNotNone(test_iter.meas)
+        
+    def mcmc_nrw_corr_1pole_run(self):
+        print(sys._getframe().f_code.co_name)
+        test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=15,number_of_poles=1,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=1,fit_conductivity=True)
         self.assertIsNotNone(test_iter.meas)
         
 if __name__ == '__main__':

@@ -25,7 +25,7 @@ class iter_data_TestCase(unittest.TestCase):
         self.data_path = os.path.join(pc.__path__[0], 'data')
         self.file_path = os.path.join(self.data_path, 'serpentine_dry.txt')
         self.dataset1 = pc.run_default(airline_name='VAL',file_path=self.file_path)
-        self.dataset2 = pc.run_default(airline_name='VAL',file_path=self.file_path,nrw=True)
+        self.dataset2 = pc.run_default(airline_name='VAL',file_path=self.file_path,nrw=True,temperature=35)
         self.dataset3 = pc.run_default(airline_name='VAL',file_path=self.file_path,nrw=True,corr=True)
         
     def test_run(self):
@@ -80,7 +80,7 @@ class iter_data_TestCase(unittest.TestCase):
     def test_mcmc_nrw_corr_run(self):
         print(sys._getframe().f_code.co_name)
         try:
-            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=10,number_of_poles=0,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=0)
+            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=15,number_of_poles=0,nburn=0,nthin=1,fit_mu=True,number_of_poles_mu=0)
             return test_iter
         except Exception as e:
             raise
@@ -93,6 +93,20 @@ class iter_data_TestCase(unittest.TestCase):
             return test_iter
         except Exception as e:
             raise
+        plt.close('all')
+        
+    def test_waterpole(self):
+        print(sys._getframe().f_code.co_name)
+        try:
+            test_iter = pc.piter(self.dataset2,trial_run=False,nsteps=5,nwalkers=25,number_of_poles=2,nburn=1,nthin=1,fit_conductivity=True,water_pole=True)
+            return test_iter
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    def test_waterpole_fail(self):
+        print(sys._getframe().f_code.co_name)
+        self.assertRaises(Exception,pc.piter,self.dataset1,trial_run=False,nsteps=5,nwalkers=5,number_of_poles=0,nburn=1,nthin=1,water_pole=True,msg='AirlineData class instance must be given a temperature if using a Debye water pole')
         plt.close('all')
         
 if __name__ == '__main__':

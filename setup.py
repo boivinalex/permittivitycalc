@@ -28,7 +28,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='permittivitycalc',  
 
-    version='0.5.1.post2',
+    version='0.6.0',
 
     description='Scripts to calculate and plot the complex permittivity from S-parameter data',  
 
@@ -46,7 +46,7 @@ setup(
         'Topic :: Scientific/Engineering',
         'Natural Language :: English',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
 
     keywords='python dielectric permittivity s-parameter data analysis',  
@@ -59,26 +59,16 @@ setup(
                       'seaborn',
                       'cycler',
                       'scipy',
+                      'lmfit',
+                      'emcee==3.0rc2',
+                      'corner',
                       ],
                       
     python_requires='>=3.6',
-
-#    extras_require={
-#        'dev': ['check-manifest'],
-#        'test': ['coverage'],
-#    },
 
     package_data={  # Optional
         'permittivitycalc': ['data/rexolite_PAL.txt',
                  'data/serpentine_dry.txt',
                  ],
     },
-
-   # data_files=[('data', ['data/rexolite_PAL.txt', 'data/serpentine_dry.txt'])],
-
-#    entry_points={
-#        'console_scripts': [
-#            'sample=sample:main',
-#        ],
-#    },
 )

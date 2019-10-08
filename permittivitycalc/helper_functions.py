@@ -71,6 +71,8 @@ def get_METAS_data(airline=None,file_path=None):
     Return data arrays from METAS VNA Tools II text file based on user input 
     Frequencies must be in Hz. Recomeneded precision in VNA Tools II is f9.
     
+    Returns the first four arguments required by the AirlineData class.
+    
     Arguments
     ---------
     airline : str 
@@ -86,9 +88,15 @@ def get_METAS_data(airline=None,file_path=None):
     ------
     L : float 
         Length of airline in cm.
+        
+    airline : str
+        Name of the airline used.
     
-    SparmArray : array 
+    dataArray : array 
         S-parameters and their uncertainties (if present).
+        
+    file : str
+        File path.
     """
     
     # Get the file path and the airline name
@@ -121,10 +129,12 @@ def perm_compare(classlist,allplots=False,**kwargs):
     
     Will use the smallest freq_cutoff value in the list (if avaialbe) for 
     plotting.
+    
+    Can provide permittivity_plot.make_plot kwargs.
         
     Arguments
     ---------
-    classlist : list of sparam_data.AirlineData
+    classlist
         List of instances of AirlineData.
     
     allplots : bool 

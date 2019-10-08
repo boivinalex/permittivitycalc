@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Contains the AirlineData class object"""
 
 # Array math
 import numpy as np
@@ -30,12 +29,12 @@ class AirlineData:
     calculate the complex relative permittivity of a sample in a coaxial 
     transmission line
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     L : float 
         Length of airline in cm.
         
-    airline : {'VAL','PAL','GAL','7','custom'} 
+    airline : {'VAL', 'PAL', 'GAL', '7', 'custom'}
         Name of airline used for measurement.
         
     dataArray : array
@@ -46,7 +45,7 @@ class AirlineData:
         
     corr : bool, optional
         Default = False. If True, also correct S-parameter data and produce 
-        corr_* arrays. 
+        corrected arrays. 
             
     nrw : bool, optional 
         Default = False. If True, use Nicolson, Rross, Weir (NRW) algorithm to 
@@ -100,41 +99,39 @@ class AirlineData:
         Date measurement was made.
             
     freq_cutoff : float, optional
-        Default: 4e8. Starting frequency for forward and reverse difference 
+        Default: 1e8. Starting frequency for forward and reverse difference 
         calculations.
     
-    Attributes:
-    ----------
     freq : array 
         Frequency points.
     
     s11, s21, s12, s22 : array 
         Mag and Phase S-Parameters.
     
-    *_dielec : array 
+    avg_dielec, forward_dielec, reverse_dielec : array 
         Real part of the permittivity. Can be avg_dielec, forward_dielec, or 
         reverse_dielec for average, forward (S11,S21), or reverse (S22,S12) 
         permittivity.
     
-    *_lossfac : array 
+    avg_lossfac, forward_lossfac, reverse_lossfac : array 
         Imaginary part of the permittivity. Same as above.
     
-    *_losstan : array 
+    avg_losstan, forward_losstan, reverse_losstan : array 
         Loss tangent. Same as above.
         
-    *_mu_real : array
+    avg_mu_real, forward_mu_real, reverse_mu_real : array
         Real part of the magnetic permeability. Same as above.
         
-    *_mu_imag : array
+    avg_mu_imag, forward_mu_imag, reverse_mu_imag : array
         Imaginary part of the magnetic permeability. Same as above.
     
-    corr_* : array 
+    corr_ : array 
         De-embeded version of S-parameters or electromagnetic data. Only average 
         S-parameters are used for EM calculations with corrected 
         S-parameters. Examples: corr_s11, corr_avg_losstan, corr_avg_mu_real. 
         Only created if corr = True.
             
-    norm_* : array
+    norm_ : array
         Bulk density normalized permittivity data. Uses averaged permittivity 
         data. Only created if normalize_density = True.
         
@@ -162,7 +159,7 @@ class AirlineData:
         the real and imaginary parts of the permittivity.
     """
     def __init__(self,L,airline,dataArray,file,name=None,date=None,\
-                 freq_cutoff=4e8,nrw=False,shorted=False,corr=False,\
+                 freq_cutoff=1e8,nrw=False,shorted=False,corr=False,\
                  normalize_density=False,norm_eqn='LI',bulk_density=None,\
                  solid_dielec=None,solid_losstan=None,particle_diameter=None,\
                  particle_density=None,temperature=None):
@@ -236,7 +233,10 @@ class AirlineData:
         if corr:
             try:
                 if not np.isnan(unp.nominal_values(self.avg_dielec)).any():
-                    self.Lcorr = self.L - 0.34 # Remove total washer length 
+                    if isinstance(self.corr, (float,int)):
+                        self.Lcorr = self.L - 2*(self.corr) # Remove total washer length 
+                    else:
+                        self.Lcorr = self.L - 0.34 # Remove total washer length 
                     self.corr_s11, self.corr_s21, self.corr_s12, \
                         self.corr_s22 = self._de_embed()
                     if nrw:
@@ -607,8 +607,8 @@ class AirlineData:
         
         Assumes the magnetic permeability of the sample = 1 (i.e non-magnetic).
         
-        Arguments
-        ---------
+        Parameters
+        ----------
         s_param : str 
             Calculates complex permittivity using either 
             the forward ('f') (S11,S21), or the reverse ('r') (S22 S12) 
@@ -804,7 +804,7 @@ class AirlineData:
             err_s_t = unp.std_devs(s12)
         
         # Initialize arrays
-        delta_length = 0.001 #in cm
+        delta_length = 0.002 #in cm
         dgam_dS_reflect = np.zeros(nrows,dtype=complex)
         dgam_dS_trans = np.zeros(nrows,dtype=complex)
         
@@ -1035,23 +1035,45 @@ class AirlineData:
         Perform S-parameter de-embedding to remove influence of washers on 
         measurement.
         """
+        # Get washer length
+        if isinstance(self.corr, (list)):
+            L_washer1 = self.corr[0]
+            L_washer2 = self.corr[1]
+        elif isinstance(self.corr, (float)):
+            L_washer = self.corr
+        else:
+            L_washer = 0.17
         # Create synthetic teflon washer s-parameters
         epsilon = -1j*0.0007;
         epsilon += 2.1
         mu = 1 - 1j*0
-        L = 0.17/100 # (m)
         lam_0 = (C/self.freq) # (m)
         small_gam = (1j*2*np.pi/lam_0)*np.sqrt(epsilon*mu - \
-                    (lam_0/LAM_C)**2)
+                        (lam_0/LAM_C)**2)
         small_gam_0 = (1j*2*np.pi/lam_0)*np.sqrt(1- (lam_0/LAM_C)**2)
-        t = np.exp(-small_gam*L)
         big_gam = (small_gam_0*mu - small_gam) / (small_gam_0*mu + \
-          small_gam)
-        sw11_complex = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
-        sw21_complex = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
-        # Symetrical washers
-        sw22_complex = sw11_complex
-        sw12_complex = sw21_complex
+              small_gam)
+        if not isinstance(self.corr, (list)):
+            L = L_washer/100 # (m)
+            t = np.exp(-small_gam*L)
+            sw11_complex_1 = (big_gam*(1-t**2))/(1-(big_gam**2)*(t**2))
+            sw21_complex_1 = t*(1-big_gam**2) / (1-(big_gam**2)*(t**2))
+            # Symetrical washers
+            sw22_complex_1 = sw11_complex_1
+            sw12_complex_1 = sw21_complex_1
+        else:
+            L_1 = L_washer1/100 # (m)
+            t_1 = np.exp(-small_gam*L_1)
+            sw11_complex_1 = (big_gam*(1-t_1**2))/(1-(big_gam**2)*(t_1**2))
+            sw21_complex_1 = t_1*(1-big_gam**2) / (1-(big_gam**2)*(t_1**2))
+            sw22_complex_1 = sw11_complex_1
+            sw12_complex_1 = sw21_complex_1
+            L_2 = L_washer2/100 # (m)
+            t_2 = np.exp(-small_gam*L_2)
+            sw11_complex_2 = (big_gam*(1-t_2**2))/(1-(big_gam**2)*(t_2**2))
+            sw21_complex_2 = t_2*(1-big_gam**2) / (1-(big_gam**2)*(t_2**2))
+            sw22_complex_2 = sw11_complex_2
+            sw12_complex_2 = sw21_complex_2
 
         # Split measured sparams into mag and phase since uncertainties package 
         #   does not support complex numbers
@@ -1084,11 +1106,17 @@ class AirlineData:
         ## De-embed
         # Convert to T-parameters
         # Washers
-        tw11_left = -(sw11_complex*sw22_complex-sw12_complex*\
-                          sw21_complex)/sw21_complex
-        tw12_left = sw11_complex/sw21_complex
-        tw21_left = -sw22_complex/sw21_complex
-        tw22_left = 1/sw21_complex
+        tw11_left = -(sw11_complex_1*sw22_complex_1-sw12_complex_1*\
+                          sw21_complex_1)/sw21_complex_1
+        tw12_left = sw11_complex_1/sw21_complex_1
+        tw21_left = -sw22_complex_1/sw21_complex_1
+        tw22_left = 1/sw21_complex_1
+        if isinstance(self.corr, (list)):
+            tw11_right = -(sw11_complex_2*sw22_complex_2-sw12_complex_2*\
+                          sw21_complex_2)/sw21_complex_2
+            tw12_right = sw11_complex_2/sw21_complex_2
+            tw21_right = -sw22_complex_2/sw21_complex_2
+            tw22_right = 1/sw21_complex_2
         # Measured
         tm11 = -(sm11_complex*sm22_complex-sm12_complex*\
                  sm21_complex)/sm21_complex
@@ -1097,8 +1125,13 @@ class AirlineData:
         tm22 = 1/sm21_complex
         # Make matrices
         left_matrix = np.dstack([tw11_left,tw12_left,tw21_left,\
-                                 tw22_left]).reshape(len(sw11_complex),2,2)
-        right_matrix = left_matrix  # Washers are symetrical
+                                 tw22_left]).reshape(len(sw11_complex_1),2,2)
+        if isinstance(self.corr, (list)):
+            right_matrix = np.dstack([tw11_right,tw12_right,tw21_right,\
+                                 tw22_right]).reshape(len(sw11_complex_1),2,2)
+        else:
+            # Washers are symetrical
+            right_matrix = left_matrix  
         meas_matrix = np.dstack([tm11,tm12,tm21,\
                                  tm22]).reshape(len(sm11_complex),2,2)
         # Perform de-embeding
@@ -1226,8 +1259,8 @@ class AirlineData:
         Follows Baker-Jarvis et al., 1993 and Rhode & Schwarz 
         Application Note RAC0607-0019_1_4E
         
-        Arguments
-        ---------
+        Parameters
+        ----------
         Ds2 : float 
             The inner diameter (cm) of the solid toroid sample to be specified 
             by user
@@ -1268,47 +1301,60 @@ class AirlineData:
         return corr_dielec, corr_lossfac, corr_losstan
         
         
-    def draw_plots(self,default_settings=True,publish=False,**kwargs):
+    def draw_plots(self,default_settings=True,publish=False,log_y_axis=False,\
+                   xticks=None,yticks=None,corr=False,normalized=False,**kwargs):
         """
         Plots permittivity data using make_plot from permittivity_plot.
         
         If freq_cutoff exists, all frequency points lower than freq_cutoff 
         will not be plotted.
         
-        Arguments
-        ---------
+        Parameters
+        ----------
         default_settings : bool 
             Default: True. If True, plots average real part of the permittivity, 
             imaginary part of the permittivity and loss tangent. If corrected
             or normalized data exist, it will be used in the plot. If False 
-            prompts user to determine wether to plot, Average, Forward, 
+            prompts user to determine whether to plot, Average, Forward, 
             Reverse, or All results.
         
         publish : bool 
             Default: False. If True, save figures.
             
-        Additional Keyword Arguments
-        ----------------------------
-        These additional arguments can be supplied if default_settings is False.
-        
-            If default_settings is False and neither of these are provided, 
-            uncorrected and unnormalized data will be ploted! 
+        log_y_axis : bool
+            Default: False. If True, plot log y-axis. yticks must be provided 
+            if True.
+            
+        xticks : list, optional
+            Use to manually set y-axis tick make locations. Must be a list 
+            containing tick mark locations.
+            
+        yticks : list of lists, optional
+            Use to manually set y-axis tick make locations. Must be a list of
+            lists containing tick mark locations for each individual plot in 
+            the following order: real part, imaginary part, loss tangent. If 
+            nrw=True, must additionaly provide: real part of mu, 
+            imaginary part of mu. Required if log_y_axis=True.
             
         corr : bool, optional
-            Can be used with any of the plot types.
-            If True, use corrected sparam data, otheriwse use uncorrected data.
+            Can be used when default_settings is False. Can be used with any of 
+            the plot types. If True, use corrected sparam data, otheriwse use 
+            uncorrected data.
             
         normalized : bool, optional
-            Can only be used with Average plots.
-            If True, use normalized permittivity data. Supersedes corr if True.
+            Can be used when default_settings is False. Can only be used with 
+            Average plots. If True, use normalized permittivity data. 
+            Supersedes corr if True.
         """
         # If default_settings
         #   Use first of normalized, corrected, or regular data
         if default_settings and self.normalize_density:
+            print('Plotting normalized data')
             plot_dielec = self.norm_dielec
             plot_lossfac = self.norm_lossfac
             plot_losstan = self.norm_losstan
         elif default_settings and self.corr:
+            print('Plotting corrected data')
             plot_dielec = self.corr_avg_dielec
             plot_lossfac = self.corr_avg_lossfac
             plot_losstan = self.corr_avg_losstan
@@ -1341,11 +1387,11 @@ class AirlineData:
                            'Reverse (S22,S12), or "all" for All three: ')
             if s_plot not in ('f','r','all','a'):
                 raise Exception('Wrong input')
-            if s_plot == 'a' and 'normalized' in kwargs:
+            if s_plot == 'a' and normalized:
                 y1 = self.norm_dielec
                 y2 = self.norm_lossfac
                 y3 = self.norm_losstan
-            elif s_plot == 'a' and 'corr' in kwargs:
+            elif s_plot == 'a' and corr:
                 y1 = self.corr_avg_dielec
                 y2 = self.corr_avg_lossfac
                 y3 = self.corr_avg_losstan
@@ -1359,10 +1405,10 @@ class AirlineData:
                 if self.nrw:
                     y4 = self.avg_mu_real
                     y5 = self.avg_mu_imag
-            elif 'normalized' in kwargs:
+            elif normalized:
                 raise Exception('normalized=True can only be used with Average "a" plots')
             elif s_plot == 'f':
-                if 'corr' in kwargs:
+                if corr:
                     y1 = self.corr_forward_dielec
                     y2 = self.corr_forward_lossfac
                     y3 = self.corr_forward_losstan
@@ -1377,7 +1423,7 @@ class AirlineData:
                         y4 = self.forward_mu_real
                         y5 = self.forward_mu_imag
             elif s_plot == 'r':
-                if 'corr' in kwargs:
+                if corr:
                     y1 = self.corr_reverse_dielec
                     y2 = self.corr_reverse_lossfac
                     y3 = self.corr_reverse_losstan
@@ -1391,7 +1437,7 @@ class AirlineData:
                     if self.nrw:
                         y4 = self.reverse_mu_real
                         y5 = self.reverse_mu_imag
-            elif s_plot == 'all' and 'corr' in kwargs:
+            elif s_plot == 'all' and corr:
                 x = [x,x,x]
                 y1 = [self.corr_forward_dielec,self.corr_reverse_dielec,self.corr_avg_dielec]
                 y2 = [self.corr_forward_lossfac,self.corr_reverse_lossfac,self.corr_avg_lossfac]
@@ -1416,13 +1462,25 @@ class AirlineData:
         # Pass freq_cutoff
         if self.freq_cutoff:
             plot_kwargs['freq_cutoff'] = self.freq_cutoff
+        if log_y_axis:
+            plot_kwargs['y_axis_type'] = 'log'
+        if xticks:
+            plot_kwargs['xticks'] = xticks
         # Make plots
-        pplot.make_plot(x,y1,'d',**plot_kwargs)
-        pplot.make_plot(x,y2,'lf',**plot_kwargs)
-        pplot.make_plot(x,y3,'lt',**plot_kwargs)
-        if self.nrw:
-            pplot.make_plot(x,y4,'ur',**plot_kwargs)
-            pplot.make_plot(x,y5,'ui',**plot_kwargs)
+        if yticks:
+            pplot.make_plot(x,y1,'d',yticks=yticks[0],**plot_kwargs)
+            pplot.make_plot(x,y2,'lf',yticks=yticks[1],**plot_kwargs)
+            pplot.make_plot(x,y3,'lt',yticks=yticks[2],**plot_kwargs)
+            if self.nrw:
+                pplot.make_plot(x,y4,'ur',yticks=yticks[3],**plot_kwargs)
+                pplot.make_plot(x,y5,'ui',yticks=yticks[4],**plot_kwargs)
+        else:
+            pplot.make_plot(x,y1,'d',**plot_kwargs)
+            pplot.make_plot(x,y2,'lf',**plot_kwargs)
+            pplot.make_plot(x,y3,'lt',**plot_kwargs)
+            if self.nrw:
+                pplot.make_plot(x,y4,'ur',**plot_kwargs)
+                pplot.make_plot(x,y5,'ui',**plot_kwargs)
         
     def s_param_plot(self,corr=False):
         """
@@ -1435,7 +1493,10 @@ class AirlineData:
                                    self.corr_s21],[self.s12,self.corr_s12],\
                                    label=['Uncorrected','Corrected'])
         else:
-            pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12)
+            if self.shorted:
+                pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12,shorted=True,s11_short=self.s11_short)
+            else:
+                pplot.make_sparam_plot(self.freq,self.s11,self.s22,self.s21,self.s12)
             
     def difference_plot(self):
         """
@@ -1507,8 +1568,8 @@ def multiple_meas(file_path=None,airline_name=None):
     Generate an instance of AirlineData for every file in a directory. Store 
     the intances in a list, and plot them all using perm_compare.
         
-    Arguments
-    ---------
+    Parameters
+    ----------
     file_path : str, optional 
         Full path of any file in the source directory. Will produce file dialog 
         box if not provided.
@@ -1554,7 +1615,7 @@ def multiple_meas(file_path=None,airline_name=None):
 def run_default(airline_name='VAL',file_path=None,**kwargs):
     """
     Run AirlineData on get_METAS_data with all the prompts and return the 
-    instance.
+    instance. Optional AirlineData kwargs can be provided (Example: shorted=True).
     """
     return AirlineData(*get_METAS_data(airline_name,file_path),**kwargs)
 

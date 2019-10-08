@@ -9,3 +9,8 @@ permittivitycalc.egg-info/
 .pytest_cache/
 coverage.xml
 miniconda.sh
+docs/_build
+docs/_static
+docs/_templates
+docs/make.bat
+docs/Makefile

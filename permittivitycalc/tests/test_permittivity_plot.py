@@ -93,7 +93,7 @@ class permittivity_plot_TestCase(unittest.TestCase):
         try:
             x = np.arange(0,6)*300000
             y = np.arange(0,6)
-            pp.make_plot(x,y,plot_type='c',plot_title='test',ylabel='test',xlabel='test',round_val=2)
+            pp.make_plot(x,y,plot_type='c',plot_title='test',ylabel='test',xlabel='test',xticks=[0,2,4,6],yticks=[0,2,4,6])
         except Exception as e:
             raise
         plt.close('all')
@@ -119,6 +119,30 @@ class permittivity_plot_TestCase(unittest.TestCase):
         except Exception as e:
             raise
         plt.close('all')
+        
+    def test_make_plot_log(self):
+        """Test make_plot with log plot"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            x = np.arange(0,6)*300000
+            y = np.arange(0,6)
+            pp.make_plot(x,y,plot_type='d',y_axis_type='log',xticks=[0,1,2,3], yticks=[0,1,2,3])
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    def test_make_plot_log_flat(self):
+        """Test make_plot with log plot"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            x = np.arange(0,6)*300000
+            y = [1,2,3,4,5,6]
+            pp.make_plot(x,y,plot_type='d',y_axis_type='log',xticks=[0,1,2,3], yticks=[0,1,2,3])
+            y = [-0.00005,-0.00004,-0.00003,-0.00002,-0.00001,0]
+            pp.make_plot(x,y,plot_type='lt',y_axis_type='log',xticks=[0,1,2,3], yticks=[0,1,2,3])
+        except Exception as e:
+            raise
+        plt.close('all')
 
     def test_make_plot_invalid_plot_type(self):
         """Test makes_plot with wrong plot_type"""
@@ -136,7 +160,7 @@ class permittivity_plot_TestCase(unittest.TestCase):
     def test_save_plot(self):
         """Test publish"""
         print(sys._getframe().f_code.co_name)
-        with patch('permittivitycalc.permittivity_plot._dirprompt',return_value='./'):
+        with patch('permittivitycalc.pplot._dirprompt',return_value='./'):
             try:
                 x = np.arange(0,6)*300000
                 y = np.arange(0,6)

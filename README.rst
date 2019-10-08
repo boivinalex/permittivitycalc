@@ -1,17 +1,14 @@
 permittivitycalc 
 ================
 
-+-------------------------+---------------+-----------------+---------------+
-| Continuous Integration  | Code Coverage | PyPI Package    | Citation      |
-+=========================+===============+=================+===============+
-|  |TravisCI| |Appveyor|  |   |Codecov|   |   |PyPiBadge|   |   |DOIBadge|  |
-+-------------------------+---------------+-----------------+---------------+
++-------------------------+---------------+-----------------+---------------+---------------+
+| Continuous Integration  | Code Coverage | PyPI Package    | Docs          | Citation      |
++=========================+===============+=================+===============+===============+
+|  |TravisCI|             |   |Codecov|   |   |PyPiBadge|   |     |RTD|     |   |DOIBadge|  |
++-------------------------+---------------+-----------------+---------------+---------------+
 
 .. |TravisCI| image:: https://travis-ci.org/boivinalex/permittivitycalc.svg?branch=master
     :target: https://travis-ci.org/boivinalex/permittivitycalc
-
-.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/xh0t09l9hnnpn0po/branch/master?svg=true
-	:target: https://ci.appveyor.com/project/boivinalex/permittivitycalc
 
 .. |Codecov| image:: https://codecov.io/gh/boivinalex/permittivitycalc/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/boivinalex/permittivitycalc
@@ -19,18 +16,26 @@ permittivitycalc
 .. |PyPiBadge| image:: https://badge.fury.io/py/permittivitycalc.svg
     :target: https://badge.fury.io/py/permittivitycalc
 
+.. |RTD| image:: https://readthedocs.org/projects/permittivitycalc/badge/?version=latest
+	:target: https://permittivitycalc.readthedocs.io/en/latest/?badge=latest
+	:alt: Documentation Status
+
 .. |DOIBadge| image:: https://zenodo.org/badge/98680301.svg
    :target: https://zenodo.org/badge/latestdoi/98680301
 
-Scripts to calculate and plot the complex permittivity from S-parameter data acquired with transmission-line measurements
+Scripts to calculate and plot the complex permittivity (and permeability) from S-parameter data acquired from transmission-line measurements
 
 Overview
 --------
-permittivitycalc is a Python package made to take S-parameter data output from METAS VNA Tools II (https://www.metas.ch/vnatools) and process it to calculate and plot the complex permittivity of a material measured in a coaxial transmission line.
+permittivitycalc is a Python package made to take S-parameter data output from METAS VNA Tools II (https://www.metas.ch/vnatools) and process it to determine and plot the complex electric permittivity (and magnetic permeability) of a material measured in a coaxial transmission line.
 
-Currently, permittivitycalc uses the New Non-iterative Method for permittivity calculation from S-parameters from [Boughriet1997]_ which assumes that the material is non-magnetic (i.e. \mu = 1).
+Two analytical calculation methiods are currently implemented:
 
-permittivitycalc can also use the Nicholson-Ross-Weir method to calculate the complex permittivity and permeability of a sample. This method, however, is unstable at multiples of one-half wavelength in the sample [NicolsonRoss1970]_ [Weir1974]_.
+- The New Non-iterative Method for permittivity calculation from S-parameters from [Boughriet1997]_ which assumes that the material is non-magnetic (i.e. \mu = 1).
+
+- The Nicholson-Ross-Weir method to calculate the complex permittivity and permeability of a sample. This method, however, is unstable at multiples of one-half wavelength in the sample [NicolsonRoss1970]_ [Weir1974]_.
+
+permittivitycalc can also use MCMC-based Bayesian model fitting/parameter estimation to fit Cole-Cole type models directly to the measured S-parameters to determine the frequency-dependant complex permittivity (and permeability, if desired). Cole-Cole models support multiple relaxation poles as well as a conductivity term.
 
 You can use permittivitycalc to:
 
@@ -40,10 +45,11 @@ You can use permittivitycalc to:
 - Correct for the boundary effect in the transmission line when measuring powdered samples after [Hickson2017]_.
 - Correct for the air gap when measuring solid samples after [Baker-Jarvis1993]_.
 - Plot data from multiple measurements together for comparison.
+- Model measured S-parameters directly with a Cole-Cole model using MCMC-based Bayesian model fitting.
 
 Usage
 -----
-For usage examples and a walkthrough on how to use permittivitycalc, see the `Tutorial <https://gist.github.com/boivinalex/175313bf8fdfa0dfd6a7501cf8a28087>`_
+For usage examples and a walkthrough on how to use permittivitycalc, see the `Docs <https://permittivitycalc.readthedocs.io>`_
 
 Installation
 ------------
@@ -54,6 +60,7 @@ Requirements
 permittivitycalc was written for Python 3 and tested on the following versions of Python:
 
 - 3.6
+- 3.7
 
 permittivitycalc uses the following packages:
 
@@ -64,6 +71,9 @@ permittivitycalc uses the following packages:
 - matplotlib
 - seaborn
 - cycler
+- lmfit
+- emcee
+- corner
 
 Installing Anaconda
 ^^^^^^^^^^^^^^^^^^^
@@ -76,11 +86,11 @@ We recommend using `Anaconda`_ to manage your Python environments.
 
 2. Open a terminal window and create a `conda virtual environment`_ (name it anything you like, and set the python version to a compatible version in `Requirements`_)::
 
-    conda create --name your_env_name python=3.6
+    conda create --name your_env_name anaconda python=3.7
 
-3. Activate the environment (on Windows, omit "source")::
+3. Activate the environment::
 
-    source activate your_env_name
+    conda activate your_env_name
 
 .. _`conda virtual environment`: https://conda.io/docs/using/envs
 

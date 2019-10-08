@@ -83,6 +83,28 @@ class sparam_data_TestCase(unittest.TestCase):
         self.assertIsNotNone(test.corr_avg_dielec)
         self.assertIsNotNone(test.corr_avg_losstan)
         
+    def test_corr_nrw_1washer_value(self):
+        """Test corr and nrw with 1 washer value"""
+        print(sys._getframe().f_code.co_name)
+        test = pc.AirlineData\
+                (*pc.get_METAS_data(airline='VAL',file_path=self.file_path),nrw=True,corr=0.12)
+        self.assertIsNotNone(test)
+        self.assertIsNotNone(test.corr_avg_mu_real)
+        self.assertIsNotNone(test.corr_avg_mu_imag)
+        self.assertIsNotNone(test.corr_avg_dielec)
+        self.assertIsNotNone(test.corr_avg_losstan)
+        
+    def test_corr_nrw_2washers(self):
+        """Test corr and nrw with 2 washers"""
+        print(sys._getframe().f_code.co_name)
+        test = pc.AirlineData\
+                (*pc.get_METAS_data(airline='VAL',file_path=self.file_path),nrw=True,corr=[0.12,0.20])
+        self.assertIsNotNone(test)
+        self.assertIsNotNone(test.corr_avg_mu_real)
+        self.assertIsNotNone(test.corr_avg_mu_imag)
+        self.assertIsNotNone(test.corr_avg_dielec)
+        self.assertIsNotNone(test.corr_avg_losstan)
+        
     def test_normalize_density(self):
         """Test density normalization"""
         print(sys._getframe().f_code.co_name)
@@ -94,6 +116,15 @@ class sparam_data_TestCase(unittest.TestCase):
         with self.assertRaises(Exception):
             pc.AirlineData(*pc.get_METAS_data(airline='VAL',\
                             file_path=self.file_path),normalize_density=True)
+            
+    def test_normalize_density_value(self):
+        """Test density normalization with value"""
+        print(sys._getframe().f_code.co_name)
+        test = pc.AirlineData\
+                (*pc.get_METAS_data(airline='VAL',file_path=self.file_path)\
+                 ,normalize_density=1.2,bulk_density=3.5)
+        self.assertIsNotNone(test.norm_dielec)
+        self.assertIsNotNone(test.norm_losstan)
 
     def test_normalize_density_number(self):
             """Test density normalization using a value"""
@@ -206,6 +237,15 @@ class sparam_data_TestCase(unittest.TestCase):
         except Exception as e:
             raise
         plt.close('all')
+        
+    def test_draw_plots_log(self):
+        """Test draw_plots log axis"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset1.draw_plots(log_y_axis=True,yticks=[[1,2,3],[2,3,4],[3,4,5]],xticks=[[1,2,3],[2,3,4],[3,4,5]])
+        except Exception as e:
+            raise
+        plt.close('all')
             
     def test_draw_plots_normalized(self):
         """Test draw_plots with normalized data"""
@@ -230,6 +270,15 @@ class sparam_data_TestCase(unittest.TestCase):
         print(sys._getframe().f_code.co_name)
         try:
             self.dataset3.draw_plots()
+        except Exception as e:
+            raise
+        plt.close('all')
+        
+    def test_draw_plots_nrw_yticks(self):
+        """Test draw_plots nrw with yticks"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset3.draw_plots(yticks=[[1,2,3],[2,3,4],[3,4,5],[2,3,4],[3,4,5]])
         except Exception as e:
             raise
         plt.close('all')
@@ -451,6 +500,15 @@ class sparam_data_TestCase(unittest.TestCase):
         print(sys._getframe().f_code.co_name)
         try:
             self.dataset1.difference_plot()
+            plt.close('all')
+        except Exception as e:
+            raise
+            
+    def test_diff_plots2(self):
+        """Test diff plot for freq cutoff"""
+        print(sys._getframe().f_code.co_name)
+        try:
+            self.dataset2.difference_plot()
             plt.close('all')
         except Exception as e:
             raise

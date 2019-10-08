@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 22 14:24:19 2017
-
-@author: alex
+Fucntions to plot permittivity and permeability results and S-parameters.
 """
 # File input
 import tkinter as tk
@@ -14,7 +12,13 @@ from uncertainties import unumpy as unp
 import os
 import datetime
 # Plotting
-import matplotlib.pyplot as plt
+import matplotlib
+try:
+    from matplotlib import pyplot as plt
+except:
+    matplotlib.use('TKAgg',warn=False, force=True)
+    import matplotlib.pyplot as plt
+from matplotlib.ticker import FixedLocator, LogLocator, EngFormatter, NullFormatter, LogFormatter
 import seaborn as sns
 from cycler import cycler
 
@@ -27,15 +31,16 @@ DATE = str(datetime.date.today())
 def _dirprompt():
     root = tk.Tk()
     root.withdraw()
-    save_path = askdirectory(title='Select Directory to Save Figure')
+    global save_path_for_plots
+    save_path_for_plots = askdirectory(title='Select Directory to Save Figure')
     root.update()
     
-    return save_path
+    return save_path_for_plots
 
-def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
-              plot_title=None, ylabel=None, xlabel=None, spacing=None, \
-              buffer=None, xlim=None, ylim=None, figure_size=(16,10), \
-              round_val=None, freq_cutoff=None, publish=False):
+def make_plot(xval, yval, plot_type='d', y_axis_type='normal', \
+              legend_label=None, name=None, plot_title=None, ylabel=None, \
+              xlabel=None, xticks=None, yticks=None, figure_size=(16,10), \
+              freq_cutoff=None, publish=False):
     """
     Takes input from sparam_data and plots calculated permittivity. Can 
     handle multiple data sets. Plots uncertainty countour if plotting single 
@@ -54,8 +59,13 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         Flag for default plot types. Can be set to 'd' for the real 
         part of epsilon, 'lf' for the imaginary part of epsilon, 'lt' for 
         dielectric loss tangent, 'ur' for the real part of mu, 'ui' for the 
-        imaginary part of mu, or 'c' for Custom. If 'c' is used, plot_title, 
-        ylabel, xlabel, and round_val must be set.
+        imaginary part of mu, or 'c' for Custom. If 'c' is used, xticks and
+        yticks must be provided.
+        
+    y_axis_type : str, optional
+        Flag for type of axis to use for the y-axis. Can be either 'normal'
+        (default) or 'log' for a log axis. If set to log, y tick postions must
+        be manually provided to yticks.
         
     legend_label : list of str, optional
         Plot legend label. Each dataset much have it's 
@@ -65,39 +75,23 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         Required when publish=True. Used in file name of saved figure. 
     
     plot_title : str, optional
-        Required when plot_type='c'. Title of the plot.
+        For use when plot_type='c'. Title of the plot.
     
     ylabel : str, optional
-        Required when plot_type='c'. Y-axis label.
+        For use when plot_type='c'. Y-axis label.
     
     xlabel : str, optional
-        Required when plot_type='c'. X-axis label.
+        For use when plot_type='c'. X-axis label.
     
-    spacing : float, optional
-        Required when plot_type='c'. Sets the spacing between 
-        y-axis tick marks. Currently not implemented.
-        
-    buffer : float, optional
-        Required when plot_type='c'. Sets buffer space around the 
-        min and max y-axis values. Currently not implemented.
-        
-    xlim : tuple or float, optional
-        Required when plot_type='c'. Manually set x-axis limits. Currently not 
-        implemented.
+    xticks : list, optional
+        Manually set x-axis tick locations. Required when plot_type='c'. 
     
-    ylim : tuple or float, optional
-        Required when plot_type='c'. Manually set y-axis limits. Currently not 
-        implemented.
+    yticks : list, optional
+        Manually set y-axis tick locations. Required when plot_type='c' and 
+        when y_axis_type='log'. 
     
     figure_size : tuple or int, optional
         Set the matplotlib figsize. Default: (16,10).
-    
-    round_val : float, optional
-        Required when plot_type='c'. When automaticaly determining the axes 
-        limits by finding the max and min value in the input data, round_val 
-        determins what decimal point to round to. Small numbers should use more 
-        decimals. round_val is automatically set to 1 for plot_type 'd' and 2 
-        for plot_type 'lf' or 'lt'.
         
     freq_cutoff : float, optional
         Data points lower than freq_cutoff will not be plotted.
@@ -133,10 +127,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         xlabel = 'Frequency'
         rnd = 2 
     elif plot_type == 'c': # Custom plot
-        plot_title = plot_title
-        ylabel = ylabel
-        xlabel = xlabel
-        rnd = round_val
+        pass
     else:
         raise Exception('Invalid plot type')
     
@@ -172,50 +163,52 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
             x.append(xval[n])
             y.append(yval[n])
     
-    # Determined axes limits    
-    x_max = -np.inf
-    x_min = np.inf
-    y_max = -np.inf
-    y_min = np.inf
-    for n in range(0,number_to_compare):
-        x_chk = unp.nominal_values(x[n])
-        max_tmp = round(max(x_chk[~np.isnan(x_chk)]),rnd)
-        min_tmp = round(min(x_chk[~np.isnan(x_chk)]))
-        if max_tmp > x_max:
-            x_max = max_tmp
-        if min_tmp < x_min:
-            x_min = min_tmp
-        y_chk = unp.nominal_values(y[n])
-        max_tmp = round(max(y_chk[~np.isnan(y_chk)]),rnd)
-        min_tmp = round(min(y_chk[~np.isnan(y_chk)]),rnd)
-        if max_tmp > y_max:
-            y_max = max_tmp
-        if min_tmp < y_min:
-            y_min = min_tmp
+    # Determine axes limits
+    if plot_type!='c':  # skip for custom plots
+        x_max = -np.inf
+        x_min = np.inf
+        y_max = -np.inf
+        y_min = np.inf
+        for n in range(0,number_to_compare):
+            x_chk = unp.nominal_values(x[n])
+            max_tmp = round(max(x_chk[~np.isnan(x_chk)]),rnd)
+            min_tmp = round(min(x_chk[~np.isnan(x_chk)]))
+            if max_tmp > x_max:
+                x_max = max_tmp
+            if min_tmp < x_min:
+                x_min = min_tmp
+            y_chk = unp.nominal_values(y[n])
+            max_tmp = round(max(y_chk[~np.isnan(y_chk)]),rnd)
+            min_tmp = round(min(y_chk[~np.isnan(y_chk)]),rnd)
+            if max_tmp > y_max:
+                y_max = max_tmp
+            if min_tmp < y_min:
+                y_min = min_tmp
             
     # Determine appropriate buffer and spacing depedning on plot type
-    thickness = y_max - y_min
-    if plot_type in ('d','ur','ui'):
-        if thickness < 0.1:
-            buffer = 0.1
-            spacing = 0.02
-        else:
-            buffer = 0.2
-            spacing = round((thickness + 2*buffer)/9,1)
-    elif plot_type in ('lf','lt','c'):
-        if thickness < 0.01:
-            buffer = 0.01
-            spacing = 0.002
-        else:
-            buffer = 0.02
-            spacing = round((thickness + 2*buffer)/9,2)
-
-    # Makes sure the lowest point is 0 if y_min is 0
-    if y_min == 0:
-        y_min+=buffer
-    elif y_min-buffer < 0:
-        # Make sure buffer does not make ymin negative
-        y_min = buffer
+    if not yticks: # skip if y ticks are manually provided
+        thickness = y_max - y_min
+        if plot_type in ('d','ur','ui'):
+            if thickness < 0.1:
+                buffer = 0.1
+                spacing = 0.02
+            else:
+                buffer = 0.2
+                spacing = round((thickness + 2*buffer)/9,1)
+        elif plot_type in ('lf','lt','c'):
+            if thickness < 0.01:
+                buffer = 0.01
+                spacing = 0.002
+            else:
+                buffer = 0.02
+                spacing = round((thickness + 2*buffer)/9,2)
+    
+        # Makes sure the lowest point is 0 if y_min is 0
+        if y_min == 0:
+            y_min+=buffer
+        elif y_min-buffer < 0:
+            # Make sure buffer does not make ymin negative
+            y_min = buffer
     
     # Plot
     f = plt.figure(figsize=figure_size)
@@ -225,45 +218,64 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
     ax.set_ylabel(ylabel, fontsize=40)
     ax.set_xlabel(xlabel, fontsize=40)
     # Colours
-    if number_to_compare > 6:
+    if number_to_compare > 6: # cycle through cubehelix palette if plotting more than 6 things
         ax.set_prop_cycle(cycler('color',\
                             sns.cubehelix_palette(number_to_compare)))
-    else:
+    else: # otherise use Dark2 palette (should be colour blind safe)
         ax.set_prop_cycle(cycler('color',\
                             sns.color_palette("Dark2",number_to_compare)))
     # Plot axes
     ax.set_xscale('log')
-    ax.set_ylim(y_min-buffer, y_max+buffer)
-    ax.set_yticks(np.arange(y_min-buffer, y_max+buffer, spacing))
-    # Customize x ticks
-    from matplotlib.ticker import FixedLocator, LogLocator, EngFormatter, NullFormatter
-    if x_min == 0: # log of min and max x values
-        x_logmin = 0 # don't take log of 0
-    else:
-        x_logmin = np.log10(x_min) 
-    if x_max == 0:
-        x_logmax = 0
-    else:
-        x_logmax = np.log10(x_max)
-    x_logticks = np.logspace(x_logmin, x_logmax, num=4) # 4 equaly spaced points in log space
-    x_ticklocs = []
-    for n in range(len(x_logticks)): # round scientific values and make a list
-        x_ticklocs.append(np.float(np.format_float_scientific(x_logticks[n],\
-                        precision=0)))
-    if len(set(x_ticklocs)) < 4: # check that this produced 4 unique values
-        x_ticklocs = [] # if not do it again with precision = 1
-        for n in range(len(x_logticks)): 
-            x_ticklocs.append(np.float(np.format_float_scientific(x_logticks[n]\
-                        ,precision=1)))
-    majorLocator = FixedLocator(x_ticklocs)
-    majorFormatter = EngFormatter(unit='Hz') # Format major ticks with units
-    minorLocator = LogLocator(subs='all') # Use all interger multiples of the log base for minor ticks 
-    minorFormatter =  NullFormatter() # No minor tick labels 
+    # Set y ticks
+    if y_axis_type == 'log': # check if y axis should be log
+        ax.set_yscale('log')
+        ax.set_ylim(min(yticks),max(yticks))
+        majorLocator_y = FixedLocator(yticks)
+        majorFormatter_y = LogFormatter()
+        minorLocator_y = LogLocator(subs='all') # Use all interger multiples of the log base for minor ticks 
+        minorFormatter_y =  NullFormatter() # No minor tick labels
+        # Apply y ticks
+        ax.get_yaxis().set_major_locator(majorLocator_y)
+        ax.get_yaxis().set_major_formatter(majorFormatter_y)
+        ax.get_yaxis().set_minor_locator(minorLocator_y)
+        ax.get_yaxis().set_minor_formatter(minorFormatter_y)
+    elif yticks and y_axis_type == 'normal':
+        ax.set_ylim(min(yticks),max(yticks))
+        ax.set_yticks(yticks)
+    elif not yticks: # auto set
+        ax.set_ylim(y_min-buffer, y_max+buffer)
+        ax.set_yticks(np.arange(y_min-buffer, y_max+buffer, spacing))
+    # Set x ticks
+    if xticks:
+        x_ticklocs = xticks
+    elif not xticks: # auto set
+        if x_min == 0: # log of min and max x values
+            x_logmin = 0 # don't take log of 0
+        else:
+            x_logmin = np.log10(x_min) 
+        if x_max == 0:
+            x_logmax = 0
+        else:
+            x_logmax = np.log10(x_max)
+        x_logticks = np.logspace(x_logmin, x_logmax, num=4) # 4 equaly spaced points in log space
+        x_ticklocs = []
+        for n in range(len(x_logticks)): # round scientific values and make a list
+            x_ticklocs.append(np.float(np.format_float_scientific(x_logticks[n],\
+                            precision=0)))
+        if len(set(x_ticklocs)) < 4: # check that this produced 4 unique values
+            x_ticklocs = [] # if not do it again with precision = 1
+            for n in range(len(x_logticks)): 
+                x_ticklocs.append(np.float(np.format_float_scientific(x_logticks[n]\
+                            ,precision=1)))
+    majorLocator_x = FixedLocator(x_ticklocs)
+    majorFormatter_x = EngFormatter(unit='Hz') # Format major ticks with units
+    minorLocator_x = LogLocator(subs='all') # Use all interger multiples of the log base for minor ticks 
+    minorFormatter_x =  NullFormatter() # No minor tick labels 
     # Apply x ticks
-    ax.get_xaxis().set_major_locator(majorLocator)
-    ax.get_xaxis().set_major_formatter(majorFormatter)
-    ax.get_xaxis().set_minor_locator(minorLocator)
-    ax.get_xaxis().set_minor_formatter(minorFormatter)
+    ax.get_xaxis().set_major_locator(majorLocator_x)
+    ax.get_xaxis().set_major_formatter(majorFormatter_x)
+    ax.get_xaxis().set_minor_locator(minorLocator_x)
+    ax.get_xaxis().set_minor_formatter(minorFormatter_x)
     # Format the actual tick marks
     ax.tick_params(which='both', width=1, labelsize=30)
     ax.tick_params(which='major', length=7)
@@ -283,12 +295,14 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
             ax.errorbar(unp.nominal_values(x[n]), unp.nominal_values(y[n]), \
                         yerr=unp.std_devs(y[n]), errorevery=25, elinewidth=1, \
                         capthick=1, capsize=2,lw=2,label=legend_label[n])
-#            ax.plot(unp.nominal_values(x[n]), unp.nominal_values(y[n]), lw=2, \
-#                    label=legend_label[n])
     ax.legend(fontsize=30,loc='best')
     if publish:
-#        # Make file name    
-        datapath = _dirprompt()     # prompt for save dir
+        # Make file name
+        #If save_path_for_plots already exits, use it, otherwise promt for path
+        if 'save_path_for_plots' in globals():
+            datapath = save_path_for_plots
+        else:
+            datapath = _dirprompt()     # prompt for save dir
         savename = name.replace(' ','-') + '_' + plot_title.replace(' ','-') \
             + '_' + DATE + '.eps'
         filepath = os.path.join(datapath,savename)
@@ -296,7 +310,7 @@ def make_plot(xval, yval, plot_type='d', legend_label=None, name=None, \
         plt.savefig(filepath,dpi=300,format='eps',pad_inches=0)
     plt.show()
     
-def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
+def make_sparam_plot(freq,s11,s22,s21,s12,label=None,shorted=False,s11_short=None):
     """
     Plot raw S-Parameter data from S_Param_Script_V5. Supports multiple \
     datasets for comparisson. Multilple datasets much be stored in a list and \
@@ -323,6 +337,8 @@ def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
         s22 = [s22]
         s21 = [s21]
         s12 = [s12]
+        if shorted:
+            s11_short = [s11_short]
     
     # Plot    
     f,ax = plt.subplots(4, 2, sharex=True, figsize=(18, 15))
@@ -332,6 +348,8 @@ def make_sparam_plot(freq,s11,s22,s21,s12,label=None):
         else:
             kwargs = {}    
         ax[0,0].plot(freq,unp.nominal_values(s11[n][0]),**kwargs) #s11mag
+        if shorted:
+            ax[0,0].plot(freq,unp.nominal_values(s11_short[n][0]))
         ax[0,0].set_title('Magnitude of S11')
         ax[0,1].plot(freq,unp.nominal_values(s11[n][1])) #s11phase
         ax[0,1].set_title('Phase of S11')

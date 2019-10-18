@@ -17,9 +17,12 @@ import emcee
 print(emcee.__version__)
 # Plotting
 import permittivitycalc as pc
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import corner
+import os
+import datetime
             
 
 # GLOBAL VARIABLES
@@ -134,12 +137,18 @@ class AirlineIter():
     lmfit_results : lmfit.minimizer.MinimizerResult object
         Results from lmfit. See lmfit documentation.
         
+    publish : bool, optional
+        If True save figure as .eps file. Default: False.
+        
+    name : str, optional
+        Required when publish=True. Used in file name of saved figure. 
+        
     """
     def __init__(self,data_instance,trial_run=True,water_pole=False,number_of_poles=1,\
                  fit_mu=False,number_of_poles_mu=1,fit_conductivity=False,\
                  number_of_fits=1,start_freq=None,end_freq=None,\
                  initial_parameters=None,nsteps=1000,nwalkers=100,nburn=500,\
-                 nthin=1,nworkers=1):
+                 nthin=1,nworkers=1,publish=False,name=None):
         self.meas = data_instance
         # Get s params (corrected if they exist)
         if self.meas.corr:
@@ -195,6 +204,8 @@ class AirlineIter():
         self.nburn = nburn
         self.nthin = nthin
         self.nworkers = nworkers
+        self.publish = publish
+        self.name = name
         
         # Data cutoff
         if self.end_freq:
@@ -804,11 +815,11 @@ class AirlineIter():
                 mu_iter_sp = 1
             
             # Plot                    
-            pc.pplot.make_plot([freq,freq],[epsilon_plot_real,epsilon_iter_sp.real],legend_label=['Analytical','Iterative'])
-            pc.pplot.make_plot([freq,freq],[epsilon_plot_imag,-epsilon_iter_sp.imag],plot_type='lf',legend_label=['Analytical','Iterative'])
+            pc.pplot.make_plot([freq,freq],[epsilon_plot_real,epsilon_iter_sp.real],legend_label=['Analytical','Iterative'],publish=self.publish,name=self.name)
+            pc.pplot.make_plot([freq,freq],[epsilon_plot_imag,-epsilon_iter_sp.imag],plot_type='lf',legend_label=['Analytical','Iterative'],publish=self.publish,name=self.name)
             if self.fit_mu:
-                pc.pplot.make_plot([freq,freq],[mu_plot_real,mu_iter_sp.real],plot_type='ur',legend_label=['Analytical mu','Iterative mu'])
-                pc.pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter_sp.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu'])
+                pc.pplot.make_plot([freq,freq],[mu_plot_real,mu_iter_sp.real],plot_type='ur',legend_label=['Analytical mu','Iterative mu'],publish=self.publish,name=self.name)
+                pc.pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter_sp.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu'],publish=self.publish,name=self.name)
         
             # Plot s-params
             s11_predicted, s21_predicted, s12_predicted = self._model_sparams(freq,L/100,epsilon_iter_sp,mu_iter_sp)
@@ -838,19 +849,42 @@ class AirlineIter():
             plt.show()
             
             #Corner plot
-            corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
+            figure = corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
                           truths=list(result_sp.params.valuesdict().values()))
+            figure.subplots_adjust(right=1.5,top=1.5)
+            if self.publish:
+                for ax in figure.get_axes():
+                    ax.tick_params(axis='both', labelsize=16)
+                    #ax.labelpad = 20
+                DATE = str(datetime.date.today())
+                try:
+                    datapath = pc.pplot.save_path_for_plots
+                except:
+                    print('Save path is not in globals')
+                savename = self.name.replace(' ','-') + '_corner_ ' + DATE + '.eps'
+                filepath = os.path.join(datapath,savename)
+                figure.savefig(filepath,dpi=300,format='eps',pad_inches=0.3,bbox_inches='tight')
             
             #Plot traces
             nplots = len(result_sp.var_names)
-            fig, axes = plt.subplots(nplots, 1, sharex=True, figsize=(8,nplots*1.4))
+            fig, axes = plt.subplots(nplots, 1, sharex=True, figsize=(8,nplots*1.6))
             for n in range(nplots):
                 axes[n].plot(result_sp.chain[:, :, n].T, color="k", alpha=0.4)
-                axes[n].yaxis.set_major_locator(MaxNLocator(5))
+                axes[n].yaxis.set_major_locator(MaxNLocator(4))
                 axes[n].set_ylabel(result_sp.var_names[n])
             axes[nplots-1].set_xlabel("step number")
-            fig.tight_layout(h_pad=0.0)
+            fig.tight_layout(h_pad=0.1)
             plt.show()
+            if self.publish:
+                DATE = str(datetime.date.today())
+                try:
+                    datapath = pc.pplot.save_path_for_plots
+                except:
+                    print('Save path is not in globals')
+                savename = self.name.replace(' ','-') + '_traces_ ' + DATE + '.eps'
+                filepath = os.path.join(datapath,savename)
+                fig.savefig(filepath,dpi=300,format='eps',pad_inches=0)
+            
             
             print(time_str)
             

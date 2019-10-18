@@ -299,7 +299,7 @@ def make_plot(xval, yval, plot_type='d', y_axis_type='normal', \
     if publish:
         # Make file name
         #If save_path_for_plots already exits, use it, otherwise promt for path
-        if 'save_path_for_plots' in globals():
+        if 'save_path_for_plots' in globals() and not None:
             datapath = save_path_for_plots
         else:
             datapath = _dirprompt()     # prompt for save dir

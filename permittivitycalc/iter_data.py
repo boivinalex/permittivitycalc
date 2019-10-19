@@ -23,6 +23,7 @@ from matplotlib.ticker import MaxNLocator
 import corner
 import os
 import datetime
+import warnings
             
 
 # GLOBAL VARIABLES
@@ -849,13 +850,12 @@ class AirlineIter():
             plt.show()
             
             #Corner plot
+            default_font = matplotlib.rcParams["font.size"]
+            matplotlib.rcParams["font.size"] = 16
             figure = corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
                           truths=list(result_sp.params.valuesdict().values()))
             figure.subplots_adjust(right=1.5,top=1.5)
             if self.publish:
-                for ax in figure.get_axes():
-                    ax.tick_params(axis='both', labelsize=16)
-                    #ax.labelpad = 20
                 DATE = str(datetime.date.today())
                 try:
                     datapath = pc.pplot.save_path_for_plots
@@ -863,7 +863,9 @@ class AirlineIter():
                     print('Save path is not in globals')
                 savename = self.name.replace(' ','-') + '_corner_ ' + DATE + '.eps'
                 filepath = os.path.join(datapath,savename)
-                figure.savefig(filepath,dpi=300,format='eps',pad_inches=0.3,bbox_inches='tight')
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    figure.savefig(filepath,dpi=300,format='eps',pad_inches=0.3,bbox_inches='tight')
             
             #Plot traces
             nplots = len(result_sp.var_names)
@@ -883,7 +885,10 @@ class AirlineIter():
                     print('Save path is not in globals')
                 savename = self.name.replace(' ','-') + '_traces_ ' + DATE + '.eps'
                 filepath = os.path.join(datapath,savename)
-                fig.savefig(filepath,dpi=300,format='eps',pad_inches=0)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    fig.savefig(filepath,dpi=300,format='eps',pad_inches=0)
+            matplotlib.rcParams["font.size"] = default_font
             
             
             print(time_str)

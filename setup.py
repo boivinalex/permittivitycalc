@@ -63,6 +63,7 @@ setup(
                       'lmfit',
                       'emcee==3.0rc2',
                       'corner',
+                      'tqdm',
                       ],
                       
     python_requires='>=3.6',

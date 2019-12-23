@@ -815,80 +815,92 @@ class AirlineIter():
             else:
                 mu_iter_sp = 1
             
-            # Plot                    
-            pc.pplot.make_plot([freq,freq],[epsilon_plot_real,epsilon_iter_sp.real],legend_label=['Analytical','Iterative'],publish=self.publish,name=self.name)
-            pc.pplot.make_plot([freq,freq],[epsilon_plot_imag,-epsilon_iter_sp.imag],plot_type='lf',legend_label=['Analytical','Iterative'],publish=self.publish,name=self.name)
-            if self.fit_mu:
-                pc.pplot.make_plot([freq,freq],[mu_plot_real,mu_iter_sp.real],plot_type='ur',legend_label=['Analytical mu','Iterative mu'],publish=self.publish,name=self.name)
-                pc.pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter_sp.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu'],publish=self.publish,name=self.name)
+            # Plot
+            try:                 
+                pc.pplot.make_plot([freq,freq],[epsilon_plot_real,epsilon_iter_sp.real],legend_label=['Analytical','Iterative'],publish=self.publish,name=self.name)
+                pc.pplot.make_plot([freq,freq],[epsilon_plot_imag,-epsilon_iter_sp.imag],plot_type='lf',legend_label=['Analytical','Iterative'],publish=self.publish,name=self.name)
+                if self.fit_mu:
+                    pc.pplot.make_plot([freq,freq],[mu_plot_real,mu_iter_sp.real],plot_type='ur',legend_label=['Analytical mu','Iterative mu'],publish=self.publish,name=self.name)
+                    pc.pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter_sp.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu'],publish=self.publish,name=self.name)
+            except:
+                pass
         
             # Plot s-params
             s11_predicted, s21_predicted, s12_predicted = self._model_sparams(freq,L/100,epsilon_iter_sp,mu_iter_sp)
-            # Plot    
-            f,ax = plt.subplots(3, 2, sharex=True, figsize=(18, 15))
-            ax[0,0].plot(freq,np.absolute(s11c),label='Measured') #s11mag
-            ax[0,0].plot(freq,np.absolute(s11_predicted),label='Predicted')
-            ax[0,0].set_title('Magnitude of S11')
-            ax[0,1].plot(freq,np.angle(s11c),label='Measured') #s11phase
-            ax[0,1].plot(freq,np.angle(s11_predicted),label='Predicted')
-            ax[0,1].set_title('Phase of S11')
-            ax[1,0].plot(freq,np.absolute(s21c),label='Measured') #s21mag
-            ax[1,0].plot(freq,np.absolute(s21_predicted),label='Predicted')
-            ax[1,0].set_title('Magnitude of S21')
-            ax[1,1].plot(freq,np.angle(s21c),label='Measured') #s21phase
-            ax[1,1].plot(freq,np.angle(s21_predicted),label='Predicted')
-            ax[1,1].set_title('Phase of S21')
-            ax[2,0].plot(freq,np.absolute(s12c),label='Measured') #s12mag
-            ax[2,0].plot(freq,np.absolute(s12_predicted),label='Predicted')
-            ax[2,0].set_title('Magnitude of S12')
-            ax[2,1].plot(freq,np.angle(s12c),label='Measured') #s12phase
-            ax[2,1].plot(freq,np.angle(s12_predicted),label='Predicted')
-            ax[2,1].set_title('Phase of S12')
-            # Hide redundant x-axis tick marks
-            plt.setp([a.get_xticklabels() for a in ax[0, :]], visible=False)
-            ax[0,0].legend(loc=1)
-            plt.show()
+            # Plot
+            try:
+                f,ax = plt.subplots(3, 2, sharex=True, figsize=(18, 15))
+                ax[0,0].plot(freq,np.absolute(s11c),label='Measured') #s11mag
+                ax[0,0].plot(freq,np.absolute(s11_predicted),label='Predicted')
+                ax[0,0].set_title('Magnitude of S11')
+                ax[0,1].plot(freq,np.angle(s11c),label='Measured') #s11phase
+                ax[0,1].plot(freq,np.angle(s11_predicted),label='Predicted')
+                ax[0,1].set_title('Phase of S11')
+                ax[1,0].plot(freq,np.absolute(s21c),label='Measured') #s21mag
+                ax[1,0].plot(freq,np.absolute(s21_predicted),label='Predicted')
+                ax[1,0].set_title('Magnitude of S21')
+                ax[1,1].plot(freq,np.angle(s21c),label='Measured') #s21phase
+                ax[1,1].plot(freq,np.angle(s21_predicted),label='Predicted')
+                ax[1,1].set_title('Phase of S21')
+                ax[2,0].plot(freq,np.absolute(s12c),label='Measured') #s12mag
+                ax[2,0].plot(freq,np.absolute(s12_predicted),label='Predicted')
+                ax[2,0].set_title('Magnitude of S12')
+                ax[2,1].plot(freq,np.angle(s12c),label='Measured') #s12phase
+                ax[2,1].plot(freq,np.angle(s12_predicted),label='Predicted')
+                ax[2,1].set_title('Phase of S12')
+                # Hide redundant x-axis tick marks
+                plt.setp([a.get_xticklabels() for a in ax[0, :]], visible=False)
+                ax[0,0].legend(loc=1)
+                plt.show()
+            except:
+                pass
             
             #Corner plot
-            default_font = matplotlib.rcParams["font.size"]
-            matplotlib.rcParams["font.size"] = 16
-            figure = corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
-                          truths=list(result_sp.params.valuesdict().values()))
-            figure.subplots_adjust(right=1.5,top=1.5)
-            if self.publish:
-                DATE = str(datetime.date.today())
-                try:
-                    datapath = pc.pplot.save_path_for_plots
-                except:
-                    print('Save path is not in globals')
-                savename = self.name.replace(' ','-') + '_corner_ ' + DATE + '.eps'
-                filepath = os.path.join(datapath,savename)
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    figure.savefig(filepath,dpi=300,format='eps',pad_inches=0.3,bbox_inches='tight')
+            try:
+                default_font = matplotlib.rcParams["font.size"]
+                matplotlib.rcParams["font.size"] = 16
+                figure = corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
+                              truths=list(result_sp.params.valuesdict().values()))
+                figure.subplots_adjust(right=1.5,top=1.5)
+                if self.publish:
+                    DATE = str(datetime.date.today())
+                    try:
+                        datapath = pc.pplot.save_path_for_plots
+                    except:
+                        print('Save path is not in globals')
+                    savename = self.name.replace(' ','-') + '_corner_ ' + DATE + '.pdf'
+                    filepath = os.path.join(datapath,savename)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        figure.savefig(filepath,dpi=300,format='pdf',pad_inches=0.3,bbox_inches='tight')
+            except:
+                pass
             
             #Plot traces
-            nplots = len(result_sp.var_names)
-            fig, axes = plt.subplots(nplots, 1, sharex=True, figsize=(8,nplots*1.6))
-            for n in range(nplots):
-                axes[n].plot(result_sp.chain[:, :, n].T, color="k", alpha=0.4)
-                axes[n].yaxis.set_major_locator(MaxNLocator(4))
-                axes[n].set_ylabel(result_sp.var_names[n])
-            axes[nplots-1].set_xlabel("step number")
-            fig.tight_layout(h_pad=0.1)
-            plt.show()
-            if self.publish:
-                DATE = str(datetime.date.today())
-                try:
-                    datapath = pc.pplot.save_path_for_plots
-                except:
-                    print('Save path is not in globals')
-                savename = self.name.replace(' ','-') + '_traces_ ' + DATE + '.eps'
-                filepath = os.path.join(datapath,savename)
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    fig.savefig(filepath,dpi=300,format='eps',pad_inches=0)
-            matplotlib.rcParams["font.size"] = default_font
+            try:
+                nplots = len(result_sp.var_names)
+                fig, axes = plt.subplots(nplots, 1, sharex=True, figsize=(8,nplots*1.6))
+                for n in range(nplots):
+                    axes[n].plot(result_sp.chain[:, :, n].T, color="k", alpha=0.4)
+                    axes[n].yaxis.set_major_locator(MaxNLocator(4))
+                    axes[n].set_ylabel(result_sp.var_names[n])
+                axes[nplots-1].set_xlabel("step number")
+                fig.tight_layout(h_pad=0.1)
+                plt.show()
+                if self.publish:
+                    DATE = str(datetime.date.today())
+                    try:
+                        datapath = pc.pplot.save_path_for_plots
+                    except:
+                        print('Save path is not in globals')
+                    savename = self.name.replace(' ','-') + '_traces_ ' + DATE + '.eps'
+                    filepath = os.path.join(datapath,savename)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fig.savefig(filepath,dpi=300,format='eps',pad_inches=0)
+                matplotlib.rcParams["font.size"] = default_font
+            except:
+                pass
             
             
             print(time_str)

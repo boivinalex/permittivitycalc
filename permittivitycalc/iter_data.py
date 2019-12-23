@@ -223,6 +223,50 @@ class AirlineIter():
             if self.shorted:
                 self.s11_short = np.array((self.s11_short[0][self.freq<=self.end_freq],self.s11_short[1][self.freq<=self.end_freq]))
             self.freq = self.freq[self.freq<=self.end_freq]
+            
+        # Seperate uncertainty
+        #nominal values
+        self.s11 = unp.nominal_values(self.s11)
+        self.s21 = unp.nominal_values(self.s21)
+        self.s22 = unp.nominal_values(self.s22)
+        self.s12 = unp.nominal_values(self.s12)
+        self.avg_dielec = unp.nominal_values(self.avg_dielec)
+        self.avg_lossfac = unp.nominal_values(self.avg_lossfac)
+        self.avg_losstan = unp.nominal_values(self.avg_losstan)
+        #unc
+        self.s11_unc = unp.std_devs(self.s11)
+        self.s21_unc = unp.std_devs(self.s21)
+        self.s22_unc = unp.std_devs(self.s22)
+        self.s12_unc = unp.std_devs(self.s12)
+        self.avg_dielec_unc = unp.std_devs(self.avg_dielec)
+        self.avg_lossfac_unc = unp.std_devs(self.avg_lossfac)
+        self.avg_losstan_unc = unp.std_devs(self.avg_losstan)
+        if self.meas.nrw:
+            #nominal valiues
+            self.avg_mu_real = unp.nominal_values(self.avg_mu_real)
+            self.avg_mu_imag = unp.nominal_values(self.avg_mu_imag)
+            #unc
+            self.avg_mu_real_unc = unp.std_devs(self.avg_mu_real)
+            self.avg_mu_imag_unc = unp.std_devs(self.avg_mu_imag)
+        if self.shorted:
+            #nominal
+            self.s11_short = unp.nominal_values(self.s11_short)
+            #unc
+            self.s11_short_unc = unp.std_devs(self.s11_short)
+            
+        # Get mag and phase uncertainties cutoff at start_freq
+        if self.shorted:
+            self.s11m_unc = self.s11_short_unc[0][self.freq>=self.start_freq]
+            self.s11p_unc = np.radians(self.s11_short_unc[1][self.freq>=self.start_freq])
+        else:
+            self.s11m_unc = self.s11_unc[0][self.freq>=self.start_freq]
+            self.s11p_unc = np.radians(self.s11_unc[1][self.freq>=self.start_freq])
+        self.s21m_unc = self.s21_unc[0][self.freq>=self.start_freq]
+        self.s21p_unc = np.radians(self.s21_unc[1][self.freq>=self.start_freq])
+        self.s22m_unc = self.s22_unc[0][self.freq>=self.start_freq]
+        self.s22p_unc = np.radians(self.s22_unc[1][self.freq>=self.start_freq])
+        self.s12m_unc = self.s12_unc[0][self.freq>=self.start_freq]
+        self.s12p_unc = np.radians(self.s12_unc[1][self.freq>=self.start_freq])
         
         if self.trial:
             self._permittivity_iterate()
@@ -538,20 +582,20 @@ class AirlineIter():
         
         s11_predicted, s21_predicted, s12_predicted = self._model_sparams(freq,L,epsilon,mu)
         
-        # Get uncertainty (weights)
-        if self.shorted:
-            s11m_unc = unp.std_devs(self.s11_short[0][self.freq>=freq[0]])
-            s11p_unc = unp.std_devs(unp.radians(self.s11_short[1][self.freq>=freq[0]]))
-        else:   #NOTE: Update to use S22 for non-shorted case
-            s11m_unc = unp.std_devs(self.s11[0][self.freq>=freq[0]])
-            s11p_unc = unp.std_devs(unp.radians(self.s11[1][self.freq>=freq[0]]))
-        s21m_unc = unp.std_devs(self.s21[0][self.freq>=freq[0]])
-        s21p_unc = unp.std_devs(unp.radians(self.s21[1][self.freq>=freq[0]]))
-        s12m_unc = unp.std_devs(self.s12[0][self.freq>=freq[0]])
-        s12p_unc = unp.std_devs(unp.radians(self.s12[1][self.freq>=freq[0]]))
+#        # Get uncertainty (weights)
+#        if self.shorted:
+#            s11m_unc = unp.std_devs(self.s11_short[0][self.freq>=freq[0]])
+#            s11p_unc = unp.std_devs(unp.radians(self.s11_short[1][self.freq>=freq[0]]))
+#        else:   #NOTE: Update to use S22 for non-shorted case
+#            s11m_unc = unp.std_devs(self.s11[0][self.freq>=freq[0]])
+#            s11p_unc = unp.std_devs(unp.radians(self.s11[1][self.freq>=freq[0]]))
+#        s21m_unc = unp.std_devs(self.s21[0][self.freq>=freq[0]])
+#        s21p_unc = unp.std_devs(unp.radians(self.s21[1][self.freq>=freq[0]]))
+#        s12m_unc = unp.std_devs(self.s12[0][self.freq>=freq[0]])
+#        s12p_unc = unp.std_devs(unp.radians(self.s12[1][self.freq>=freq[0]]))
         
-        return s11_predicted, s21_predicted, s12_predicted, s11m_unc, \
-            s11p_unc, s21m_unc, s21p_unc, s12m_unc, s12p_unc
+        return s11_predicted, s21_predicted, s12_predicted#, s11m_unc, \
+#            s11p_unc, s21m_unc, s21p_unc, s12m_unc, s12p_unc
     
     def _iterate_objective_function(self,params,L,freq_0,s11c,s21c,s12c,s22c=None):
         """
@@ -559,23 +603,28 @@ class AirlineIter():
             iterative method (Houtz et al. 2016).
         """
         
-        s11_predicted, s21_predicted, s12_predicted, s11m_unc, s11p_unc, \
-            s21m_unc, s21p_unc, s12m_unc, s12p_unc = \
+#        s11_predicted, s21_predicted, s12_predicted, s11m_unc, s11p_unc, \
+#            s21m_unc, s21p_unc, s12m_unc, s12p_unc = \
+#            self._iterate_model(params,L,freq_0)
+        
+        s11_predicted, s21_predicted, s12_predicted = \
             self._iterate_model(params,L,freq_0)
         
         # Create weighted objective functions for magnitute and phase seperately
-        obj_func_real = ((np.absolute(s21c) - np.absolute(s21_predicted))/s21m_unc + \
-                         (np.absolute(s12c) - np.absolute(s12_predicted))/s12m_unc + \
-                         (np.absolute(s11c) - np.absolute(s11_predicted))/s11m_unc)
-        obj_func_imag = ((np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted)))/s21p_unc + \
-                         (np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))/s12p_unc + \
-                         (np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted)))/s11p_unc)
+        obj_func_real = ((np.absolute(s21c) - np.absolute(s21_predicted))/self.s21m_unc + \
+                         (np.absolute(s12c) - np.absolute(s12_predicted))/self.s12m_unc + \
+                         (np.absolute(s11c) - np.absolute(s11_predicted))/self.s11m_unc)
+        obj_func_imag = ((np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted)))/self.s21p_unc + \
+                         (np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))/self.s12p_unc + \
+                         (np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted)))/self.s11p_unc)
         
         return np.concatenate((obj_func_real,obj_func_imag))
     
     def _log_likelihood(self,params,L,freq_0,s11c,s21c,s12c):
-        s11_predicted, s21_predicted, s12_predicted, s11m_unc, s11p_unc, \
-            s21m_unc, s21p_unc, s12m_unc, s12p_unc = \
+#        s11_predicted, s21_predicted, s12_predicted, s11m_unc, s11p_unc, \
+#            s21m_unc, s21p_unc, s12m_unc, s12p_unc = \
+#            self._iterate_model(params,L,freq_0)
+        s11_predicted, s21_predicted, s12_predicted = \
             self._iterate_model(params,L,freq_0)
         # create s-parameter row matrix
         large_x = np.array([\
@@ -626,8 +675,8 @@ class AirlineIter():
         else:   #use full frequency range
             freq = self.freq
         # Get epsilon
-        epsilon = -1j*unp.nominal_values(self.avg_lossfac);
-        epsilon += unp.nominal_values(self.avg_dielec)
+        epsilon = -1j*self.avg_lossfac;
+        epsilon += self.avg_dielec
         epsilon = epsilon[self.freq>=freq[0]]
         # Uarrays fot plotting
         epsilon_plot_real = self.avg_dielec[self.freq>=freq[0]]
@@ -635,8 +684,8 @@ class AirlineIter():
         # If ierating for mu, get mu
         if self.fit_mu:
             if self.meas.nrw:   #get epsilon and mu
-                mu = -1j*unp.nominal_values(self.avg_mu_real);
-                mu += unp.nominal_values(self.avg_mu_imag)
+                mu = -1j*self.avg_mu_real;
+                mu += self.avg_mu_imag
                 mu = mu[self.freq>=freq[0]]
             else:   #raise exception if nrw not used
                 raise Exception('permittivitycalc needs to be run with nrw=True if fit_mu=True')
@@ -758,18 +807,18 @@ class AirlineIter():
         if not self.trial:
             # Check if using corrected S-params
             if corr:
-                s11 = unp.nominal_values(self.s11)
+                s11 = self.s11
                 L = self.meas.Lcorr
             else:
                 # Use shorted S11 if available
                 if self.shorted:
-                    s11 = unp.nominal_values(self.s11_short)
+                    s11 = self.s11_short
                 else:
-                    s11 = unp.nominal_values(self.s11)
+                    s11 = self.s11
                 L = self.meas.L
-            s21 = unp.nominal_values(self.s21)
-            s12 = unp.nominal_values(self.s12)
-            s22 = unp.nominal_values(self.s22)
+            s21 = self.s21
+            s12 = self.s12
+            s22 = self.s22
             
             # Start arrays at start_freq
             s11 = np.array((s11[0][self.freq>=freq[0]],s11[1][self.freq>=freq[0]]))

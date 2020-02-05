@@ -160,6 +160,7 @@ class AirlineIter():
             print('Using corrected S-Parameter data.')
         else:
             self.s11 = self.meas.s11
+#            print(self.s11)
             self.s21 = self.meas.s21
             self.s22 = self.meas.s22
             self.s12 = self.meas.s12
@@ -223,50 +224,70 @@ class AirlineIter():
             if self.shorted:
                 self.s11_short = np.array((self.s11_short[0][self.freq<=self.end_freq],self.s11_short[1][self.freq<=self.end_freq]))
             self.freq = self.freq[self.freq<=self.end_freq]
-            
+        
+        # Calc real and imag unc
+        if self.shorted:
+            self.s11r_unc = unp.std_devs(self.s11_short[0]*unp.cos(unp.radians(self.s11_short[1])))[self.freq>=self.start_freq]
+            self.s11i_unc = unp.std_devs(self.s11_short[0]*unp.sin(unp.radians(self.s11_short[1])))[self.freq>=self.start_freq]
+        else:
+            self.s11r_unc = unp.std_devs(self.s11[0]*unp.cos(unp.radians(self.s11[1])))[self.freq>=self.start_freq]
+            self.s11i_unc = unp.std_devs(self.s11[0]*unp.sin(unp.radians(self.s11[1])))[self.freq>=self.start_freq]
+        self.s21r_unc = unp.std_devs(self.s21[0]*unp.cos(unp.radians(self.s21[1])))[self.freq>=self.start_freq]
+        self.s21i_unc = unp.std_devs(self.s21[0]*unp.sin(unp.radians(self.s21[1])))[self.freq>=self.start_freq]
+        self.s22r_unc = unp.std_devs(self.s22[0]*unp.cos(unp.radians(self.s22[1])))[self.freq>=self.start_freq]
+        self.s22i_unc = unp.std_devs(self.s22[0]*unp.sin(unp.radians(self.s22[1])))[self.freq>=self.start_freq]
+        self.s12r_unc = unp.std_devs(self.s12[0]*unp.cos(unp.radians(self.s12[1])))[self.freq>=self.start_freq]
+        self.s12i_unc = unp.std_devs(self.s12[0]*unp.sin(unp.radians(self.s12[1])))[self.freq>=self.start_freq]
         # Seperate uncertainty
-        #nominal values
-        self.s11 = unp.nominal_values(self.s11)
-        self.s21 = unp.nominal_values(self.s21)
-        self.s22 = unp.nominal_values(self.s22)
-        self.s12 = unp.nominal_values(self.s12)
-        self.avg_dielec = unp.nominal_values(self.avg_dielec)
-        self.avg_lossfac = unp.nominal_values(self.avg_lossfac)
-        self.avg_losstan = unp.nominal_values(self.avg_losstan)
         #unc
         self.s11_unc = unp.std_devs(self.s11)
+#        print(self.s11_unc)
         self.s21_unc = unp.std_devs(self.s21)
         self.s22_unc = unp.std_devs(self.s22)
         self.s12_unc = unp.std_devs(self.s12)
         self.avg_dielec_unc = unp.std_devs(self.avg_dielec)
         self.avg_lossfac_unc = unp.std_devs(self.avg_lossfac)
         self.avg_losstan_unc = unp.std_devs(self.avg_losstan)
+        #nominal values
+        self.s11 = unp.nominal_values(self.s11)
+#        print(self.s11)
+        self.s21 = unp.nominal_values(self.s21)
+        self.s22 = unp.nominal_values(self.s22)
+        self.s12 = unp.nominal_values(self.s12)
+        self.avg_dielec = unp.nominal_values(self.avg_dielec)
+        self.avg_lossfac = unp.nominal_values(self.avg_lossfac)
+        self.avg_losstan = unp.nominal_values(self.avg_losstan)
         if self.meas.nrw:
-            #nominal valiues
-            self.avg_mu_real = unp.nominal_values(self.avg_mu_real)
-            self.avg_mu_imag = unp.nominal_values(self.avg_mu_imag)
             #unc
             self.avg_mu_real_unc = unp.std_devs(self.avg_mu_real)
             self.avg_mu_imag_unc = unp.std_devs(self.avg_mu_imag)
+            #nominal valiues
+            self.avg_mu_real = unp.nominal_values(self.avg_mu_real)
+            self.avg_mu_imag = unp.nominal_values(self.avg_mu_imag)
         if self.shorted:
-            #nominal
-            self.s11_short = unp.nominal_values(self.s11_short)
             #unc
             self.s11_short_unc = unp.std_devs(self.s11_short)
+            #nominal
+            self.s11_short = unp.nominal_values(self.s11_short)
             
         # Get mag and phase uncertainties cutoff at start_freq
         if self.shorted:
             self.s11m_unc = self.s11_short_unc[0][self.freq>=self.start_freq]
             self.s11p_unc = np.radians(self.s11_short_unc[1][self.freq>=self.start_freq])
+            self.s11p_unc_deg = self.s11_short_unc[1][self.freq>=self.start_freq]
         else:
             self.s11m_unc = self.s11_unc[0][self.freq>=self.start_freq]
             self.s11p_unc = np.radians(self.s11_unc[1][self.freq>=self.start_freq])
+            self.s11p_unc_deg = self.s11_unc[1][self.freq>=self.start_freq]
         self.s21m_unc = self.s21_unc[0][self.freq>=self.start_freq]
         self.s21p_unc = np.radians(self.s21_unc[1][self.freq>=self.start_freq])
+        self.s21p_unc_deg = self.s21_unc[1][self.freq>=self.start_freq]
         self.s22m_unc = self.s22_unc[0][self.freq>=self.start_freq]
         self.s22p_unc = np.radians(self.s22_unc[1][self.freq>=self.start_freq])
+        self.s22p_unc_deg = self.s22_unc[1][self.freq>=self.start_freq]
         self.s12m_unc = self.s12_unc[0][self.freq>=self.start_freq]
         self.s12p_unc = np.radians(self.s12_unc[1][self.freq>=self.start_freq])
+        self.s12p_unc_deg = self.s12_unc[1][self.freq>=self.start_freq]
         
         if self.trial:
             self._permittivity_iterate()
@@ -274,6 +295,8 @@ class AirlineIter():
             self.epsilon_iter, self.mu_iter, self.param_results, self.lmfit_results = self._permittivity_iterate()
         else:
             self.epsilon_iter, self.param_results, self.lmfit_results = self._permittivity_iterate()
+        if not self.trial:
+            print('Reduced Chi Squared: ' + str(self.red_chi_sq))
             
     def _colecole(self,number_of_poles,freq,v,mu=False):
         """
@@ -462,7 +485,7 @@ class AirlineIter():
                     params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=0)#,min=1)
                 else:
                     params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=0)#,min=1)
-                    params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0)
+                    params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0,max=0.001)
                     params.add('alpha_{}'.format(n),value=initial_values['alpha_{}'.format(n)],min=0,max=1)
             
         return params
@@ -627,17 +650,38 @@ class AirlineIter():
         s11_predicted, s21_predicted, s12_predicted = \
             self._iterate_model(params,L,freq_0)
         # create s-parameter row matrix
-        large_x = np.array([\
-                  np.abs(np.absolute(s11c) - np.absolute(s11_predicted)),\
-                  np.abs(np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted))),\
-                  np.abs(np.absolute(s21c) - np.absolute(s21_predicted)),\
-                  np.abs(np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted))),
-                  np.abs(np.absolute(s12c) - np.absolute(s12_predicted)),\
-                  np.abs(np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))])
+#        large_x = np.array([\
+#                  np.abs(np.absolute(s11c) - np.absolute(s11_predicted)),\
+#                  np.abs(np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted))),\
+#                  np.abs(np.absolute(s21c) - np.absolute(s21_predicted)),\
+#                  np.abs(np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted))),
+#                  np.abs(np.absolute(s12c) - np.absolute(s12_predicted)),\
+#                  np.abs(np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))])
+#        large_x = np.concatenate([\
+#                  np.abs(np.absolute(s11c) - np.absolute(s11_predicted)),\
+#                  np.abs(np.unwrap(np.angle(s11c)) - np.unwrap(np.angle(s11_predicted))),\
+#                  np.abs(np.absolute(s21c) - np.absolute(s21_predicted)),\
+#                  np.abs(np.unwrap(np.angle(s21c)) - np.unwrap(np.angle(s21_predicted))),
+#                  np.abs(np.absolute(s12c) - np.absolute(s12_predicted)),\
+#                  np.abs(np.unwrap(np.angle(s12c)) - np.unwrap(np.angle(s12_predicted)))])
+        large_x = np.concatenate([\
+                  np.abs(s11c.real - s11_predicted.real),\
+                  np.abs(s11c.imag - s11_predicted.imag),\
+                  np.abs(s21c.real - s21_predicted.real),\
+                  np.abs(s21c.imag - s21_predicted.imag),
+                  np.abs(s12c.real - s12_predicted.real),\
+                  np.abs(s12c.imag - s12_predicted.imag)])
         # create s_parameter arrays with uncertainty
-        s_mat = np.array([np.absolute(s11c),np.unwrap(np.angle(s11c)),np.absolute(s21c),np.unwrap(np.angle(s21c)),np.absolute(s12c),np.unwrap(np.angle(s12c))])
-        c = np.cov(s_mat)
-        loglik = np.sum(-3*np.log(2*np.pi) - 0.5*np.log(np.linalg.det(c)) -0.5*np.dot(np.dot(large_x.T,np.linalg.inv(c)),large_x))
+#        s_mat = np.array([np.absolute(s11c),np.unwrap(np.angle(s11c)),np.absolute(s21c),np.unwrap(np.angle(s21c)),np.absolute(s12c),np.unwrap(np.angle(s12c))])
+#        c = np.cov(s_mat)
+#        loglik = np.sum(-3*np.log(2*np.pi) - 0.5*np.log(np.linalg.det(c)) -0.5*np.dot(np.dot(large_x.T,np.linalg.inv(c)),large_x))
+        global s_mat
+#        s_mat = np.concatenate([self.s11m_unc,self.s11p_unc_deg,self.s21m_unc,self.s21p_unc_deg,self.s12m_unc,self.s12p_unc_deg])
+        s_mat = np.concatenate([self.s11r_unc,self.s11i_unc,self.s21r_unc,self.s21i_unc,self.s12r_unc,self.s12i_unc])
+        #loglik = -0.5*len(s_mat)*np.log(2*np.pi) - 0.5*np.log(1/np.prod(s_mat)) -0.5*np.sum(large_x**2 / s_mat**2)
+        loglik = -0.5*np.sum(large_x**2 / s_mat**2)
+        global red_chi_sq
+        self.red_chi_sq = np.sum(large_x**2 / s_mat**2) / len(s_mat)
         return loglik
     
     def _sparam_iterator(self,params,L,freq_0,s11,s21,s12,s22):
@@ -789,8 +833,8 @@ class AirlineIter():
             # Find values at 8.5 GHz by finding index where freq is closest to 8.5 GHz
             ep_real = epsilon_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
             ep_imag = epsilon_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
-            print(ep_real)
-            print(ep_imag)
+#            print(ep_real)
+#            print(ep_imag)
         if self.fit_mu:
             for m in range(len(number_of_mu_poles)):
                 mu_iter = self._colecole(number_of_mu_poles[m],freq,values_mu[m],mu=True)
@@ -800,8 +844,8 @@ class AirlineIter():
                 pc.pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu ({} poles)'.format(str(number_of_mu_poles[m]))])
                 mu_real = mu_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
                 mu_imag = mu_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
-                print(mu_real)
-                print(mu_imag)
+#                print(mu_real)
+#                print(mu_imag)
         
         # If not in trial mode (no iterative fitting of sparams), perform iteration
         if not self.trial:
@@ -872,6 +916,7 @@ class AirlineIter():
                     pc.pplot.make_plot([freq,freq],[mu_plot_real,mu_iter_sp.real],plot_type='ur',legend_label=['Analytical mu','Iterative mu'],publish=self.publish,name=self.name)
                     pc.pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter_sp.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu'],publish=self.publish,name=self.name)
             except:
+                print('Plot(s) failed')
                 pass
         
             # Plot s-params
@@ -942,11 +987,11 @@ class AirlineIter():
                         datapath = pc.pplot.save_path_for_plots
                     except:
                         print('Save path is not in globals')
-                    savename = self.name.replace(' ','-') + '_traces_ ' + DATE + '.eps'
+                    savename = self.name.replace(' ','-') + '_traces_ ' + DATE + '.pdf'
                     filepath = os.path.join(datapath,savename)
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
-                        fig.savefig(filepath,dpi=300,format='eps',pad_inches=0)
+                        fig.savefig(filepath,dpi=300,format='pdf',pad_inches=0)
                 matplotlib.rcParams["font.size"] = default_font
             except:
                 pass

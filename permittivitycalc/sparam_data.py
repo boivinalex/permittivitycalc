@@ -162,7 +162,7 @@ class AirlineData:
                  freq_cutoff=1e8,nrw=False,shorted=False,corr=False,\
                  normalize_density=False,norm_eqn='LI',bulk_density=None,\
                  solid_dielec=None,solid_losstan=None,particle_diameter=None,\
-                 particle_density=None,temperature=None):
+                 particle_density=None,temperature=None,typeA_unc=True):
         # Required Attributes
         self.L = L
         self.airline_name = airline
@@ -183,6 +183,7 @@ class AirlineData:
         self.particle_diameter = particle_diameter
         self.particle_density = particle_density
         self.temperature = temperature
+        self.typeA_unc = typeA_unc
         
         # Get the airline dimnetions
         self.airline_dimensions = self._dims()
@@ -292,8 +293,9 @@ class AirlineData:
             'tanδ: {:.2%} \n'.format(self.med_tand_diff)
         print(diff_results)
         
-        # Combine Type A and Type B Uncertainty (if it exists)
-        if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw:
+        # Combine Type A and Type B Uncertainty (if it exists) and typeA_unc is True
+        #does not work if using NRW
+        if isinstance(self.s11[0][0], uncertainties.UFloat) and self.typeA_unc and not self.nrw:
             self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
                 self._calcTotalUncertainty(self.avg_dielec,self.avg_lossfac,\
                 self.avg_losstan)

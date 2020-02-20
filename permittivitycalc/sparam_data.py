@@ -295,7 +295,8 @@ class AirlineData:
         
         # Combine Type A and Type B Uncertainty (if it exists) and typeA_unc is True
         #does not work if using NRW
-        if isinstance(self.s11[0][0], uncertainties.UFloat) and self.typeA_unc and not self.nrw:
+#        if isinstance(self.s11[0][0], uncertainties.UFloat) and self.typeA_unc and not self.nrw:
+        if isinstance(self.s11[0][0], uncertainties.UFloat) and not self.nrw:
             self.avg_dielec, self.avg_lossfac, self.avg_losstan = \
                 self._calcTotalUncertainty(self.avg_dielec,self.avg_lossfac,\
                 self.avg_losstan)
@@ -998,22 +999,28 @@ class AirlineData:
     
     def _calcTotalUncertainty(self,dielec,lossfac,losstan):
         # Type A Uncertainty. Note 2 regions for lossfac and losstan
-        dielec_TypeA = np.where(self.real_part_diff_array > 0.008,\
-                                self.real_part_diff_array,0.008)
-        lossfac_TypeA_high = np.where(\
-                self.imag_part_diff_array[np.where(self.freq<10**8)] > 0.009, \
-                self.imag_part_diff_array[np.where(self.freq<10**8)], 0.009)
-        lossfac_TypeA_low = np.where(\
-                self.imag_part_diff_array[np.where(self.freq>=10**8)] > 0.002, \
-                self.imag_part_diff_array[np.where(self.freq>=10**8)], 0.002)
-        lossfac_TypeA = np.concatenate((lossfac_TypeA_high,lossfac_TypeA_low))
-        losstan_TypeA_high = np.where(\
-                self.tand_part_diff_array[np.where(self.freq<10**8)] > 0.009, \
-                self.tand_part_diff_array[np.where(self.freq<10**8)], 0.009)
-        losstan_TypeA_low = np.where(\
-                self.tand_part_diff_array[np.where(self.freq>=10**8)] > 0.002, \
-                self.tand_part_diff_array[np.where(self.freq>=10**8)], 0.002)
-        losstan_TypeA = np.concatenate((losstan_TypeA_high,losstan_TypeA_low))
+        if self.typeA_unc:
+            dielec_TypeA = np.where(self.real_part_diff_array > 0.008,\
+                                    self.real_part_diff_array,0.008)
+            lossfac_TypeA_high = np.where(\
+                    self.imag_part_diff_array[np.where(self.freq<10**8)] > 0.009, \
+                    self.imag_part_diff_array[np.where(self.freq<10**8)], 0.009)
+            lossfac_TypeA_low = np.where(\
+                    self.imag_part_diff_array[np.where(self.freq>=10**8)] > 0.002, \
+                    self.imag_part_diff_array[np.where(self.freq>=10**8)], 0.002)
+            lossfac_TypeA = np.concatenate((lossfac_TypeA_high,lossfac_TypeA_low))
+            losstan_TypeA_high = np.where(\
+                    self.tand_part_diff_array[np.where(self.freq<10**8)] > 0.009, \
+                    self.tand_part_diff_array[np.where(self.freq<10**8)], 0.009)
+            losstan_TypeA_low = np.where(\
+                    self.tand_part_diff_array[np.where(self.freq>=10**8)] > 0.002, \
+                    self.tand_part_diff_array[np.where(self.freq>=10**8)], 0.002)
+            losstan_TypeA = np.concatenate((losstan_TypeA_high,losstan_TypeA_low))
+        else:
+            dielec_TypeA = self.real_part_diff_array
+            lossfac_TypeA = self.imag_part_diff_array
+            losstan_TypeA = self.tand_part_diff_array
+            
         
         # Type B Uncertainty
         delta_dielec = unp.std_devs(dielec)

@@ -2,6 +2,8 @@ environment:
   matrix:
     - PYTHON_VERSION: 3.6
       MINICONDA: C:\Miniconda3
+    - PYTHON_VERSION: 3.7
+      MINICONDA: C:\Miniconda3
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
@@ -18,6 +20,8 @@ install:
   - conda install --yes pytest
   - conda list
   - python setup.py install
+  - "git clone --depth 1 git://github.com/vtkiorg/ci-helpers.git"
+  - "powershell ci-helpers/appveyor/install_opengl.ps1"
 
 build: off
 

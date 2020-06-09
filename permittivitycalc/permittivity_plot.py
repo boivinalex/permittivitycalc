@@ -220,7 +220,7 @@ def make_plot(xval, yval, plot_type='d', y_axis_type='normal', \
     # Colours
     if number_to_compare > 6: # cycle through cubehelix palette if plotting more than 6 things
         ax.set_prop_cycle(cycler('color',\
-                            sns.cubehelix_palette(number_to_compare)))
+                            sns.cubehelix_palette(n_colors=number_to_compare,dark=0.05,light=0.75)))
     else: # otherise use Dark2 palette (should be colour blind safe)
         ax.set_prop_cycle(cycler('color',\
                             sns.color_palette("Dark2",number_to_compare)))
@@ -289,7 +289,7 @@ def make_plot(xval, yval, plot_type='d', y_axis_type='normal', \
                 label=legend_label[0])
         ax.fill_between(unp.nominal_values(x[0]), unp.nominal_values(y[0]) - \
                         unp.std_devs(y[0]), unp.nominal_values(y[0]) + \
-                        unp.std_devs(y[0]), color="#3F5D7D",label='Uncertainty')
+                        unp.std_devs(y[0]), color="#3F5D7D",alpha=0.3,label='Uncertainty')
     else:
         for n in range(0,number_to_compare):
             ax.errorbar(unp.nominal_values(x[n]), unp.nominal_values(y[n]), \
@@ -304,10 +304,10 @@ def make_plot(xval, yval, plot_type='d', y_axis_type='normal', \
         else:
             datapath = _dirprompt()     # prompt for save dir
         savename = name.replace(' ','-') + '_' + plot_title.replace(' ','-') \
-            + '_' + DATE + '.eps'
+            + '_' + DATE + '.pdf'
         filepath = os.path.join(datapath,savename)
-        # Save figure to .eps file
-        plt.savefig(filepath,dpi=300,format='eps',pad_inches=0)
+        # Save figure to .pdf file
+        plt.savefig(filepath,dpi=300,format='pdf',pad_inches=0)
     plt.show()
     
 def make_sparam_plot(freq,s11,s22,s21,s12,label=None,shorted=False,s11_short=None):

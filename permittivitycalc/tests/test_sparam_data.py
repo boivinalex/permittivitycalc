@@ -8,9 +8,9 @@ Created on Thu May 24 18:39:15 2018
 
 import os
 if os.environ.get('DISPLAY','') == '':
-    print('No display found. Using non-interactive Agg backend')
+    print('No display found. Using interactive Qt5Agg backend')
     import matplotlib
-    matplotlib.use('TkAgg')
+    matplotlib.use('Qt5Agg')
 import unittest
 from unittest.mock import patch
 import permittivitycalc as pc

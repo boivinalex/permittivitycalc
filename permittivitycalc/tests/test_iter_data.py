@@ -6,7 +6,7 @@ Created on Mon Oct  7 16:10:37 2019
 """
 import os
 if os.environ.get('DISPLAY','') == '':
-    print('No display found. Using non-interactive Agg backend')
+    print('No display found. Using non-interactive TkAgg backend')
     import matplotlib
     matplotlib.use('TkAgg')
 import sys

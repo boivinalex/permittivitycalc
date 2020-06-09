@@ -48,7 +48,8 @@ install:
   - rm -r dist
   - rm -r permittivitycalc.egg-info
 script:
-  - conda install --yes pytest-cov codecov
+  - conda install --yes pytest-cov #codecov
+  - pip install codecov
   - py.test --cov=./
 after_success:
   - codecov
@@ -61,7 +62,6 @@ deploy:
     on:
       tags: true
   - provider: releases
-    skip_cleanup: true
     api_key:
       secure: RuL7Lu11w6OejJsRZthbG7jzx1uXGnIEUrQ9GBtpVfUAKduq0DKbn+nRECYw0EBAek7FBRCNL5bdfcRuMHM9dQORHV6I3lfwAHQkLs98FmvRDm4By3nJuSsYwJ1fW1NbBaMgWsy7MWnpPvevL/MQYC2ShscQqZJ0aiH5mgWAV/fV1vzWVd0E+sx9IKQoIbY3g4yD5Doc7jjnFeFfDbGrm4ZzXqOCkfeYqtNTmNCVppmSEVWNjdayloiVklrH6gp+nJUpCWQM0N/NzLJf98LNew8mU72q7MoJCgzBhhYNbTb+0tMI2XEB5qIB+H8ii7wHBEABuKbkDrSN3nT2Xmt1RhsmJgcbFcqylWKFMyMCTy4Z5P89zbtn0TBPnAPVnHyti0oRaDlzwaNDSg04m1RslnBJdt12jo7LAaxU0GISJgMqsfqXCHKAUsPUy02nhLcB1vpQxaqeajZJaBZx/CqNRKP+sJbyj85XE/diIAGrnesk3mhCmLyyjuBw8oxgqsGBqx20O0WMsVN6KnS+P4aEVIjC6xK4PcJkmqtNNmM/iiucOYmK64YSlM6Qyc0+OTc/cFAeaSR7TmsfiJuuMzgymdwT7Bir69Wm/pDGgNircZkrTKILyjmyOLetGNWs73TEI6ACN8cdbzLnO7Ww97d+eNzl0k17BYhsaa73s1nyUS8=
     on:

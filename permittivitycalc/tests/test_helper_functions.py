@@ -10,7 +10,7 @@ import os
 if os.environ.get('DISPLAY','') == '':
     print('No display found. Using non-interactive Agg backend')
     import matplotlib
-    matplotlib.use('Agg')
+    matplotlib.use('Qt5Agg')
 import sys
 import unittest
 from unittest.mock import patch

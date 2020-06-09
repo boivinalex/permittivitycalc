@@ -9,7 +9,7 @@ import os
 if os.environ.get('DISPLAY','') == '':
     print('No display found. Using non-interactive Agg backend')
     import matplotlib
-    matplotlib.use('Agg')
+    matplotlib.use('TkAgg')
 import sys
 import numpy as np
 import unittest

@@ -226,18 +226,50 @@ class AirlineIter():
             self.freq = self.freq[self.freq<=self.end_freq]
         
         # Calc real and imag unc
+        #calc real and imag s-params
+        self.s11r = (self.s11[0]*unp.cos(unp.radians(self.s11[1])))[self.freq>=self.start_freq]
+        self.s11i = (self.s11[0]*unp.sin(unp.radians(self.s11[1])))[self.freq>=self.start_freq]
+        self.s22r = (self.s22[0]*unp.cos(unp.radians(self.s22[1])))[self.freq>=self.start_freq]
+        self.s22i = (self.s22[0]*unp.sin(unp.radians(self.s22[1])))[self.freq>=self.start_freq]
+        self.s21r = (self.s21[0]*unp.cos(unp.radians(self.s21[1])))[self.freq>=self.start_freq]
+        self.s21i = (self.s21[0]*unp.sin(unp.radians(self.s21[1])))[self.freq>=self.start_freq]
+        self.s12r = (self.s12[0]*unp.cos(unp.radians(self.s12[1])))[self.freq>=self.start_freq]
+        self.s12i = (self.s12[0]*unp.sin(unp.radians(self.s12[1])))[self.freq>=self.start_freq]
+        #calc diff
+        self.diff_sRr = np.abs(unp.nominal_values(self.s11r) - unp.nominal_values(self.s22r))
+        self.diff_sRi = np.abs(unp.nominal_values(self.s11i) - unp.nominal_values(self.s22i))
+        self.diff_sTr = np.abs(unp.nominal_values(self.s21r) - unp.nominal_values(self.s12r))
+        self.diff_sTi = np.abs(unp.nominal_values(self.s21i) - unp.nominal_values(self.s12i))
         if self.shorted:
             self.s11r_unc = unp.std_devs(self.s11_short[0]*unp.cos(unp.radians(self.s11_short[1])))[self.freq>=self.start_freq]
             self.s11i_unc = unp.std_devs(self.s11_short[0]*unp.sin(unp.radians(self.s11_short[1])))[self.freq>=self.start_freq]
         else:
-            self.s11r_unc = unp.std_devs(self.s11[0]*unp.cos(unp.radians(self.s11[1])))[self.freq>=self.start_freq]
-            self.s11i_unc = unp.std_devs(self.s11[0]*unp.sin(unp.radians(self.s11[1])))[self.freq>=self.start_freq]
-        self.s21r_unc = unp.std_devs(self.s21[0]*unp.cos(unp.radians(self.s21[1])))[self.freq>=self.start_freq]
-        self.s21i_unc = unp.std_devs(self.s21[0]*unp.sin(unp.radians(self.s21[1])))[self.freq>=self.start_freq]
-        self.s22r_unc = unp.std_devs(self.s22[0]*unp.cos(unp.radians(self.s22[1])))[self.freq>=self.start_freq]
-        self.s22i_unc = unp.std_devs(self.s22[0]*unp.sin(unp.radians(self.s22[1])))[self.freq>=self.start_freq]
-        self.s12r_unc = unp.std_devs(self.s12[0]*unp.cos(unp.radians(self.s12[1])))[self.freq>=self.start_freq]
-        self.s12i_unc = unp.std_devs(self.s12[0]*unp.sin(unp.radians(self.s12[1])))[self.freq>=self.start_freq]
+            self.s11r_unc = unp.std_devs(self.s11r)
+            self.s11i_unc = unp.std_devs(self.s11i)
+        self.s21r_unc = unp.std_devs(self.s21r)
+        self.s21i_unc = unp.std_devs(self.s21i)
+        self.s22r_unc = unp.std_devs(self.s22r)
+        self.s22i_unc = unp.std_devs(self.s22i)
+        self.s12r_unc = unp.std_devs(self.s12r)
+        self.s12i_unc = unp.std_devs(self.s12i)
+        #calc total unc
+        self.s11r_unc = np.sqrt(self.s11r_unc**2 + self.diff_sRr**2)
+        self.s11i_unc = np.sqrt(self.s11i_unc**2 + self.diff_sRi**2)
+        self.s22r_unc = np.sqrt(self.s22r_unc**2 + self.diff_sRr**2)
+        self.s22i_unc = np.sqrt(self.s22i_unc**2 + self.diff_sRi**2)
+        self.s21r_unc = np.sqrt(self.s21r_unc**2 + self.diff_sTr**2)
+        self.s21i_unc = np.sqrt(self.s21i_unc**2 + self.diff_sTi**2)
+        self.s12r_unc = np.sqrt(self.s12r_unc**2 + self.diff_sTr**2)
+        self.s12i_unc = np.sqrt(self.s12i_unc**2 + self.diff_sTi**2)
+        
+#        self.s11r_unc = 0.2*np.ones(len(self.freq[self.freq>=self.start_freq]))
+#        self.s11i_unc = 0.2*np.ones(len(self.freq[self.freq>=self.start_freq]))
+#        self.s22r_unc = 0.2*np.ones(len(self.freq[self.freq>=self.start_freq]))
+#        self.s22i_unc = 0.2*np.ones(len(self.freq[self.freq>=self.start_freq]))
+#        self.s21r_unc = 0.2*np.ones(len(self.freq[self.freq>=self.start_freq]))
+#        self.s21i_unc = 0.2*np.ones(len(self.freq[self.freq>=self.start_freq]))
+#        self.s12r_unc = 0.2*np.ones(len(self.freq[self.freq>=self.start_freq]))
+#        self.s12i_unc = 0.2*np.ones(len(self.freq[self.freq>=self.start_freq]))
         # Seperate uncertainty
         #unc
         self.s11_unc = unp.std_devs(self.s11)
@@ -297,6 +329,7 @@ class AirlineIter():
             self.epsilon_iter, self.param_results, self.lmfit_results = self._permittivity_iterate()
         if not self.trial:
             print('Reduced Chi Squared: ' + str(self.red_chi_sq))
+            print('Bayesian Information Criterion: ' + str(self.bic))
             
     def _colecole(self,number_of_poles,freq,v,mu=False):
         """
@@ -452,6 +485,12 @@ class AirlineIter():
         
         # Create parameters
         params = Parameters()
+#        params.add('ST_deg_err',value=0.1)
+#        params.add('ST_db_err',value=0.01)
+#        params.add('ST_del_err',value=1e-12,min=0)
+#        params.add('SR_deg_err',value=-0.2)
+#        params.add('SR_db_err',value=0.05,min=0)
+#        params.add('SR_del_err',value=1e-12,min=0)
         if mu:
             if mu_flag:
                 params.add('mu_real',value=initial_values['mu_real'],min=1)
@@ -605,6 +644,21 @@ class AirlineIter():
         
         s11_predicted, s21_predicted, s12_predicted = self._model_sparams(freq,L,epsilon,mu)
         
+#        degree_omegas = 360*freq
+#        S12_magnitude = np.abs(s12_predicted)*10**(v['ST_db_err']/20)
+#        S12_phase = np.angle(s12_predicted,deg=True) + v['ST_deg_err'] #+ degree_omegas*v['ST_del_err']  
+#        S11_magnitude = np.abs(s11_predicted)#*10**(v['SR_db_err']/20)
+#        S11_phase = np.angle(s11_predicted,deg=True)# + v['SR_deg_err'] #+ degree_omegas*v['SR_del_err']
+#        S21_magnitude = np.abs(s21_predicted)*10**(v['ST_db_err']/20)
+#        S21_phase = np.angle(s21_predicted,deg=True) + v['ST_deg_err'] #+ degree_omegas*v['ST_del_err']
+#        
+#        s21_predicted = 1j*S21_magnitude*np.sin(np.radians(S21_phase));
+#        s21_predicted += S21_magnitude*np.cos(np.radians(S21_phase))
+#        s11_predicted = 1j*S11_magnitude*np.sin(np.radians(S11_phase));
+#        s11_predicted += S11_magnitude*np.cos(np.radians(S11_phase))
+#        s12_predicted = 1j*S12_magnitude*np.sin(np.radians(S12_phase));
+#        s12_predicted += S12_magnitude*np.cos(np.radians(S12_phase))
+
 #        # Get uncertainty (weights)
 #        if self.shorted:
 #            s11m_unc = unp.std_devs(self.s11_short[0][self.freq>=freq[0]])
@@ -675,13 +729,16 @@ class AirlineIter():
 #        s_mat = np.array([np.absolute(s11c),np.unwrap(np.angle(s11c)),np.absolute(s21c),np.unwrap(np.angle(s21c)),np.absolute(s12c),np.unwrap(np.angle(s12c))])
 #        c = np.cov(s_mat)
 #        loglik = np.sum(-3*np.log(2*np.pi) - 0.5*np.log(np.linalg.det(c)) -0.5*np.dot(np.dot(large_x.T,np.linalg.inv(c)),large_x))
-        global s_mat
+        # global s_mat
 #        s_mat = np.concatenate([self.s11m_unc,self.s11p_unc_deg,self.s21m_unc,self.s21p_unc_deg,self.s12m_unc,self.s12p_unc_deg])
         s_mat = np.concatenate([self.s11r_unc,self.s11i_unc,self.s21r_unc,self.s21i_unc,self.s12r_unc,self.s12i_unc])
         #loglik = -0.5*len(s_mat)*np.log(2*np.pi) - 0.5*np.log(1/np.prod(s_mat)) -0.5*np.sum(large_x**2 / s_mat**2)
         loglik = -0.5*np.sum(large_x**2 / s_mat**2)
-        global red_chi_sq
+        # loglik = -np.sum(large_x**2 / s_mat**2)
+        # global red_chi_sq
         self.red_chi_sq = np.sum(large_x**2 / s_mat**2) / len(s_mat)
+        # global bic
+        self.bic = np.log(len(s_mat))*2 - 2*loglik
         return loglik
     
     def _sparam_iterator(self,params,L,freq_0,s11,s21,s12,s22):
@@ -704,6 +761,21 @@ class AirlineIter():
         print(time_str)
         
         report_fit(result)
+        
+        highest_prob = np.argmax(result.lnprob)
+        hp_loc = np.unravel_index(highest_prob, result.lnprob.shape)
+        mle_soln = result.chain[hp_loc]
+        for i, par in enumerate(params):
+            params[par].value = mle_soln[i]
+
+
+        # print('\nMaximum Likelihood Estimation from emcee       ')
+        # print('-------------------------------------------------')
+        # print('Parameter  MLE Value   Median Value   Uncertainty')
+        # fmt = '  {:5s}  {:11.5f} {:11.5f}   {:11.5f}'.format
+        # for name, param in params.items():
+        #     print(fmt(name, param.value, result.params[name].value,
+        #       result.params[name].stderr))
         
         return result, time_str
     
@@ -831,8 +903,8 @@ class AirlineIter():
             pc.pplot.make_plot([freq,freq],[epsilon_plot_real,epsilon_iter.real],legend_label=['Analytical','Iterative ({} poles)'.format(str(number_of_poles[n]))])
             pc.pplot.make_plot([freq,freq],[epsilon_plot_imag,-epsilon_iter.imag],plot_type='lf',legend_label=['Analytical','Iterative ({} poles)'.format(str(number_of_poles[n]))])
             # Find values at 8.5 GHz by finding index where freq is closest to 8.5 GHz
-            ep_real = epsilon_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
-            ep_imag = epsilon_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
+#            ep_real = epsilon_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
+#            ep_imag = epsilon_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
 #            print(ep_real)
 #            print(ep_imag)
         if self.fit_mu:
@@ -842,8 +914,8 @@ class AirlineIter():
                     mu_iter =  mu_iter*np.ones(len(freq))
                 pc.pplot.make_plot([freq,freq],[mu_plot_real,mu_iter.real],plot_type='ur',legend_label=['Analytical mu','Iterative mu ({} poles)'.format(str(number_of_mu_poles[m]))])
                 pc.pplot.make_plot([freq,freq],[mu_plot_imag,-mu_iter.imag],plot_type='ui',legend_label=['Analytical mu','Iterative mu ({} poles)'.format(str(number_of_mu_poles[m]))])
-                mu_real = mu_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
-                mu_imag = mu_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
+#                mu_real = mu_iter.real[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
+#                mu_imag = mu_iter.imag[np.where(freq == freq[np.abs(freq - 8.5e9).argmin()])][0]
 #                print(mu_real)
 #                print(mu_imag)
         

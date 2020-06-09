@@ -15,6 +15,7 @@ matrix:
         - xvfb
     - name: "Python 3.8 on Linux"
       python: 3.8
+      dist: bionic
       services:
         - xvfb
 #    - name: "Python 3.7 on macOS"

@@ -95,19 +95,19 @@ class iter_data_TestCase(unittest.TestCase):
             raise
         plt.close('all')
         
-    def test_waterpole(self):
-        print(sys._getframe().f_code.co_name)
-        try:
-            test_iter = pc.piter(self.dataset2,trial_run=False,nsteps=5,nwalkers=25,number_of_poles=2,nburn=1,nthin=1,fit_conductivity=True,water_pole=True)
-            return test_iter
-        except Exception as e:
-            raise
-        plt.close('all')
+    # def test_waterpole(self):
+    #     print(sys._getframe().f_code.co_name)
+    #     try:
+    #         test_iter = pc.piter(self.dataset2,trial_run=False,nsteps=5,nwalkers=25,number_of_poles=2,nburn=1,nthin=1,fit_conductivity=True,water_pole=True)
+    #         return test_iter
+    #     except Exception as e:
+    #         raise
+    #     plt.close('all')
         
-    def test_waterpole_fail(self):
-        print(sys._getframe().f_code.co_name)
-        self.assertRaises(Exception,pc.piter,self.dataset1,trial_run=False,nsteps=5,nwalkers=5,number_of_poles=0,nburn=1,nthin=1,water_pole=True,msg='AirlineData class instance must be given a temperature if using a Debye water pole')
-        plt.close('all')
+    # def test_waterpole_fail(self):
+    #     print(sys._getframe().f_code.co_name)
+    #     self.assertRaises(Exception,pc.piter,self.dataset1,trial_run=False,nsteps=5,nwalkers=5,number_of_poles=0,nburn=1,nthin=1,water_pole=True,msg='AirlineData class instance must be given a temperature if using a Debye water pole')
+    #     plt.close('all')
         
 if __name__ == '__main__':
     unittest.main()

@@ -58,12 +58,6 @@ class AirlineIter():
         results. Useful for determining the number of poles to be used
         in the Cole-Cole model before perfoming the more time consuming
         final fit to the S-parameters (Default: True).
-        
-    water_pole : bool
-        If True, make the first pole in the permittivity model be a Debye type
-        pole with tau initialized near temperature-dependant water relaxation.
-        The temperature parameter of the data instance must be set to use a 
-        water pole (Default: False).
             
     number_of_poles : int
         Number of poles to be used in the Cole-Cole model for epsilon. When
@@ -145,7 +139,7 @@ class AirlineIter():
         Required when publish=True. Used in file name of saved figure. 
         
     """
-    def __init__(self,data_instance,trial_run=True,water_pole=False,number_of_poles=1,\
+    def __init__(self,data_instance,trial_run=True,number_of_poles=1,\
                  fit_mu=False,number_of_poles_mu=1,fit_conductivity=False,\
                  number_of_fits=1,start_freq=None,end_freq=None,\
                  initial_parameters=None,nsteps=1000,nwalkers=100,nburn=500,\
@@ -189,7 +183,7 @@ class AirlineIter():
                 self.avg_mu_real = self.meas.avg_mu_real
                 self.avg_mu_imag = self.meas.avg_mu_imag
         self.trial = trial_run
-        self.water_pole = water_pole
+        # self.water_pole = water_pole
         self.fit_mu = fit_mu
         self.fit_sigma = fit_conductivity
         self.poles = number_of_poles
@@ -392,8 +386,8 @@ class AirlineIter():
                 n+=1    # Start names at 1 intead of 0
                 if mu and self.poles_mu != 0:
                     k += (v['mu_dc_{}'.format(n)])/(1 + (1j*2*np.pi*freq*v['mutau_{}'.format(n)])**v['mualpha_{}'.format(n)])
-                elif self.water_pole and n == 1:
-                    k += (v['k_dc_{}'.format(n)])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)]))
+                # elif self.water_pole and n == 1:
+                #     k += (v['k_dc_{}'.format(n)])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)]))
                 else:
                     k += (v['k_dc_{}'.format(n)])/(1 + (1j*2*np.pi*freq*v['tau_{}'.format(n)])**v['alpha_{}'.format(n)])
         
@@ -502,9 +496,9 @@ class AirlineIter():
             params.add('k_imag',value=initial_values['k_imag'],min=0)
         else:
             params.add('k_inf',value=initial_values['k_inf'],min=1)
-#        if self.water_pole:
-#            params.add('k_w_inf',value=4.9,vary=False) # k_inf for water
-#            params.add('c_w',value=0.9,min=0,max=1) # water pole strength factor
+        # if self.water_pole:
+        #     params.add('k_w_inf',value=4.9,vary=False) # k_inf for water
+        #     params.add('c_w',value=0.9,min=0,max=1) # water pole strength factor
         if self.fit_sigma:
             params.add('sigma',value=initial_values['sigma'],min=0)
         
@@ -518,27 +512,30 @@ class AirlineIter():
         if not eps_flag:
             for n in range(pole_num[0]):
                 n+=1 # start variable names at 1 instead of 0
-                if self.water_pole and n == 1:
-                    tau_w = self._calc_water_pole_params()
-                    params.add('tau_{}'.format(n),value=tau_w,vary=False)
-                    params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=0)#,min=1)
-                else:
-                    params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=0)#,min=1)
-                    params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0,max=0.001)
-                    params.add('alpha_{}'.format(n),value=initial_values['alpha_{}'.format(n)],min=0,max=1)
+                params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=0)#,min=1)
+                params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0,max=0.001)
+                params.add('alpha_{}'.format(n),value=initial_values['alpha_{}'.format(n)],min=0,max=1)
+                # if self.water_pole and n == 1:
+                #     tau_w = self._calc_water_pole_params()
+                #     params.add('tau_{}'.format(n),value=tau_w,vary=False)
+                #     params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=0)#,min=1)
+                # else:
+                #     params.add('k_dc_{}'.format(n),value=initial_values['k_dc_{}'.format(n)],min=0)#,min=1)
+                #     params.add('tau_{}'.format(n),value=initial_values['tau_{}'.format(n)],min=0,max=0.001)
+                #     params.add('alpha_{}'.format(n),value=initial_values['alpha_{}'.format(n)],min=0,max=1)
             
         return params
     
-    def _calc_water_pole_params(self):
-        if not self.meas.temperature:
-            raise Exception('AirlineData class instance must be given a temperature if using a Debye water pole')
-        else:
-            temp = self.meas.temperature
+    # def _calc_water_pole_params(self):
+    #     if not self.meas.temperature:
+    #         raise Exception('AirlineData class instance must be given a temperature if using a Debye water pole')
+    #     else:
+    #         temp = self.meas.temperature
         
-        tau_w = (1.1109e-10 - 3.824e-12*temp + 6.938e-14*temp**2 - \
-               5.096e-16*temp**3)/(2*np.pi)
+    #     tau_w = (1.1109e-10 - 3.824e-12*temp + 6.938e-14*temp**2 - \
+    #            5.096e-16*temp**3)/(2*np.pi)
         
-        return tau_w
+    #     return tau_w
     
     def _fix_parameters(self,params,pole_num,unfix=False,mu=False):
         # Check if fixing or unfixing parameters

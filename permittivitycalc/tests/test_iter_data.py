@@ -6,9 +6,9 @@ Created on Mon Oct  7 16:10:37 2019
 """
 import os
 if os.environ.get('DISPLAY','') == '':
-    print('No display found. Using non-interactive Agg backend')
+    print('No display found. Using interactive Qt5Agg backend')
     import matplotlib
-    matplotlib.use('TKAgg')
+    matplotlib.use('Qt5Agg')
 import sys
 import numpy as np
 import unittest
@@ -58,21 +58,21 @@ class iter_data_TestCase(unittest.TestCase):
         
     def test_mcmc_run(self):
         print(sys._getframe().f_code.co_name)
-        test_iter = pc.piter(self.dataset1,trial_run=False,nsteps=5,nwalkers=5,number_of_poles=0,nburn=1,nthin=1)
+        test_iter = pc.piter(self.dataset1,trial_run=False,nsteps=2,nwalkers=5,number_of_poles=0,nburn=1,nthin=1)
         self.assertIsNotNone(test_iter.epsilon_iter)
         plt.close('all')
         return test_iter
         
     def test_mcmc_run_1pole(self):
         print(sys._getframe().f_code.co_name)
-        test_iter = pc.piter(self.dataset1,trial_run=False,nsteps=5,nwalkers=10,number_of_poles=1,nburn=1,nthin=1)
+        test_iter = pc.piter(self.dataset1,trial_run=False,nsteps=2,nwalkers=10,number_of_poles=1,nburn=1,nthin=1)
         self.assertIsNotNone(test_iter.epsilon_iter)
         plt.close('all')
         return test_iter
         
     def test_mcmc_run_1pole_cond(self):
         print(sys._getframe().f_code.co_name)
-        test_iter = pc.piter(self.dataset1,trial_run=False,nsteps=5,nwalkers=10,number_of_poles=1,nburn=1,nthin=1)
+        test_iter = pc.piter(self.dataset1,trial_run=False,nsteps=2,nwalkers=10,number_of_poles=1,nburn=1,nthin=1)
         self.assertIsNotNone(test_iter.epsilon_iter)
         plt.close('all')
         return test_iter
@@ -80,7 +80,7 @@ class iter_data_TestCase(unittest.TestCase):
     def test_mcmc_nrw_corr_run(self):
         print(sys._getframe().f_code.co_name)
         try:
-            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=15,number_of_poles=0,nburn=0,nthin=1,fit_mu=True,number_of_poles_mu=0)
+            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=2,nwalkers=15,number_of_poles=0,nburn=0,nthin=1,fit_mu=True,number_of_poles_mu=0)
             return test_iter
         except Exception as e:
             raise
@@ -89,25 +89,25 @@ class iter_data_TestCase(unittest.TestCase):
     def test_mcmc_nrw_corr_1pole_run(self):
         print(sys._getframe().f_code.co_name)
         try:
-            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=5,nwalkers=20,number_of_poles=1,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=1,fit_conductivity=True)
+            test_iter = pc.piter(self.dataset3,trial_run=False,nsteps=2,nwalkers=20,number_of_poles=1,nburn=1,nthin=1,fit_mu=True,number_of_poles_mu=1,fit_conductivity=True)
             return test_iter
         except Exception as e:
             raise
         plt.close('all')
         
-    def test_waterpole(self):
-        print(sys._getframe().f_code.co_name)
-        try:
-            test_iter = pc.piter(self.dataset2,trial_run=False,nsteps=5,nwalkers=25,number_of_poles=2,nburn=1,nthin=1,fit_conductivity=True,water_pole=True)
-            return test_iter
-        except Exception as e:
-            raise
-        plt.close('all')
+    # def test_waterpole(self):
+    #     print(sys._getframe().f_code.co_name)
+    #     try:
+    #         test_iter = pc.piter(self.dataset2,trial_run=False,nsteps=5,nwalkers=25,number_of_poles=2,nburn=1,nthin=1,fit_conductivity=True,water_pole=True)
+    #         return test_iter
+    #     except Exception as e:
+    #         raise
+    #     plt.close('all')
         
-    def test_waterpole_fail(self):
-        print(sys._getframe().f_code.co_name)
-        self.assertRaises(Exception,pc.piter,self.dataset1,trial_run=False,nsteps=5,nwalkers=5,number_of_poles=0,nburn=1,nthin=1,water_pole=True,msg='AirlineData class instance must be given a temperature if using a Debye water pole')
-        plt.close('all')
+    # def test_waterpole_fail(self):
+    #     print(sys._getframe().f_code.co_name)
+    #     self.assertRaises(Exception,pc.piter,self.dataset1,trial_run=False,nsteps=5,nwalkers=5,number_of_poles=0,nburn=1,nthin=1,water_pole=True,msg='AirlineData class instance must be given a temperature if using a Debye water pole')
+    #     plt.close('all')
         
 if __name__ == '__main__':
     unittest.main()

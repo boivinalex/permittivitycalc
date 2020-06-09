@@ -13,11 +13,12 @@ import os
 import datetime
 # Plotting
 import matplotlib
-try:
-    from matplotlib import pyplot as plt
-except:
-    matplotlib.use('TKAgg',warn=False, force=True)
-    import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
+# try:
+#     from matplotlib import pyplot as plt
+# except:
+#     matplotlib.use('TKAgg',warn=False, force=True)
+#     import matplotlib.pyplot as plt
 from matplotlib.ticker import FixedLocator, LogLocator, EngFormatter, NullFormatter, LogFormatter
 import seaborn as sns
 from cycler import cycler

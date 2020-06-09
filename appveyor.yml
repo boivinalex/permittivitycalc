@@ -1,9 +1,9 @@
 environment:
   matrix:
     - PYTHON_VERSION: 3.6
-      MINICONDA: C:\Miniconda3
+      MINICONDA: C:\Miniconda36-x64
     - PYTHON_VERSION: 3.7
-      MINICONDA: C:\Miniconda3
+      MINICONDA: C:\Miniconda38-x64
 
 init:
   - "ECHO %PYTHON_VERSION% %MINICONDA%"
@@ -18,6 +18,8 @@ install:
   - activate test-environment
   - pip install -r requirements.txt
   - conda install --yes pytest
+  - conda install -c anaconda pyqt
+  - conda install -c anaconda qt
   - conda list
   - python setup.py install
   - "git clone --depth 1 git://github.com/vtkiorg/ci-helpers.git"

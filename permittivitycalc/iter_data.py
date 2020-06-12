@@ -77,11 +77,6 @@ class AirlineIter():
         model for epsilon. Can be ignored for materials with very low 
         conductivity (Default: False).
         
-    optimization_fit : bool
-        If True, perform a typical non-linear least squares optimization fit 
-        using Levenberg–Marquardt instead of a Bayesian fit with MCMC 
-        (Default: False).
-        
     number_of_fits : int
         Number of default emcee fits to perform beofre final fit. Subsequent 
         fits will use the results from the pervious iteration as initial 
@@ -146,10 +141,9 @@ class AirlineIter():
     """
     def __init__(self,data_instance,trial_run=True,number_of_poles=1,\
                  fit_mu=False,number_of_poles_mu=1,fit_conductivity=False,\
-                 optimization_fit=False,number_of_fits=1,start_freq=None,\
-                 end_freq=None,initial_parameters=None,nsteps=1000,\
-                 nwalkers=100,nburn=500,nthin=1,nworkers=1,publish=False,\
-                 name=None):
+                 number_of_fits=1,start_freq=None,end_freq=None,\
+                 initial_parameters=None,nsteps=1000,nwalkers=100,nburn=500,\
+                 nthin=1,nworkers=1,publish=False,name=None):
         self.meas = data_instance
         # Get s params (corrected if they exist)
         if self.meas.corr:
@@ -194,7 +188,6 @@ class AirlineIter():
         self.fit_sigma = fit_conductivity
         self.poles = number_of_poles
         self.poles_mu = number_of_poles_mu
-        self.optimization_fit = optimization_fit
         self.fits = number_of_fits
         if start_freq:
             self.start_freq = start_freq
@@ -328,7 +321,7 @@ class AirlineIter():
             self.epsilon_iter, self.mu_iter, self.param_results, self.lmfit_results = self._permittivity_iterate()
         else:
             self.epsilon_iter, self.param_results, self.lmfit_results = self._permittivity_iterate()
-        if not self.trial and not self.optimization_fit:
+        if not self.trial:
             print('Reduced Chi Squared: ' + str(self.red_chi_sq))
             print('Bayesian Information Criterion: ' + str(self.bic))
             
@@ -751,38 +744,36 @@ class AirlineIter():
             report.
         """
         # Fit data
-        if self.optimization_fit:
-            minner = Minimizer(self._iterate_objective_function,\
-                  params,fcn_args=(L,freq_0,s11,s21,s12,s22),\
-                  nan_policy='omit')
-        else:
-            minner = Minimizer(self._log_likelihood,\
+        minner = Minimizer(self._log_likelihood,\
                    params,fcn_args=(L,freq_0,s11,s21,s12),\
                    nan_policy='omit')
         
         from timeit import default_timer as timer
         start = timer()
-        if self.optimization_fit:
-            result = minner.minimize()
-        else:
-            result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin,workers=self.nworkers)
+        result = minner.emcee(steps=self.nsteps,nwalkers=self.nwalkers,burn=self.nburn,thin=self.nthin,workers=self.nworkers)
         end = timer()
         m, s = divmod(end - start, 60)
         h, m = divmod(m, 60)
-        if self.optimization_fit:
-            time_str = "L-M optimization took: %02d:%02d:%02d" % (h, m, s)
-        else:
-            time_str = "emcee took: %02d:%02d:%02d" % (h, m, s)
+        time_str = "emcee took: %02d:%02d:%02d" % (h, m, s)
         print(time_str)
+        
         report_fit(result)
         
-        if not self.optimization_fit:   
-            highest_prob = np.argmax(result.lnprob)
-            hp_loc = np.unravel_index(highest_prob, result.lnprob.shape)
-            mle_soln = result.chain[hp_loc]
-            for i, par in enumerate(params):
-                params[par].value = mle_soln[i]
+        highest_prob = np.argmax(result.lnprob)
+        hp_loc = np.unravel_index(highest_prob, result.lnprob.shape)
+        mle_soln = result.chain[hp_loc]
+        for i, par in enumerate(params):
+            params[par].value = mle_soln[i]
 
+
+        # print('\nMaximum Likelihood Estimation from emcee       ')
+        # print('-------------------------------------------------')
+        # print('Parameter  MLE Value   Median Value   Uncertainty')
+        # fmt = '  {:5s}  {:11.5f} {:11.5f}   {:11.5f}'.format
+        # for name, param in params.items():
+        #     print(fmt(name, param.value, result.params[name].value,
+        #       result.params[name].stderr))
+        
         return result, time_str
     
     def _permittivity_iterate(self,corr=False):
@@ -850,7 +841,7 @@ class AirlineIter():
             for n in range(len(number_of_poles)):
                 params.append(self._iteration_parameters(number_of_poles[n],initial_values=self.initial_parameters))
             
-        # Iterate to find initial parameters
+        # Iterate to find parameters
         result = []
         for n in range(len(number_of_poles)):
             # if fit_mu, fix mu parameters
@@ -858,7 +849,7 @@ class AirlineIter():
                 params[n] = self._fix_parameters(params[n],number_of_mu_poles[n],mu=True)
             miner = Minimizer(self._colecole_residuals,params[n],\
                               fcn_args=(number_of_poles[n],freq,epsilon))
-            result.append(miner.minimize())
+            result.append(miner.minimize(method='least_squares'))
         if self.fit_mu:
             result_mu = []
             for m in range(len(number_of_mu_poles)):
@@ -868,7 +859,7 @@ class AirlineIter():
                 # iterate
                 miner_mu = Minimizer(self._colecole_residuals,params[m],\
                               fcn_args=(number_of_mu_poles[m],freq,mu,True))
-                result_mu.append(miner_mu.minimize())
+                result_mu.append(miner_mu.minimize(method='least_squares'))
     
         # Write fit report
         for n in range(len(number_of_poles)):
@@ -879,7 +870,7 @@ class AirlineIter():
                 print('Results for mu with {} poles:'.format(str(number_of_mu_poles[m])))
                 report_fit(result_mu[m])
         
-        # Get initial parameter values
+        # Get parameter values
         values = []
         for n in range(len(number_of_poles)):
             values_temp = result[n].params
@@ -902,7 +893,7 @@ class AirlineIter():
                         values[0]['mutau_{}'.format(m)] = values_mu[0]['mutau_{}'.format(m)]
                         values[0]['mualpha_{}'.format(m)] = values_mu[0]['mualpha_{}'.format(m)]
             
-        # Calculate model using initial EM parameters
+        # Calculate model EM parameters
         for n in range(len(number_of_poles)):
             epsilon_iter = self._colecole(number_of_poles[n],freq,values[n])
             # Plot                    
@@ -1027,53 +1018,52 @@ class AirlineIter():
             except:
                 pass
             
-            if not self.optimization_fit:
-                #Corner plot
-                try:
-                    default_font = matplotlib.rcParams["font.size"]
-                    matplotlib.rcParams["font.size"] = 16
-                    figure = corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
-                                  truths=list(result_sp.params.valuesdict().values()))
-                    figure.subplots_adjust(right=1.5,top=1.5)
-                    if self.publish:
-                        DATE = str(datetime.date.today())
-                        try:
-                            datapath = pc.pplot.save_path_for_plots
-                        except:
-                            print('Save path is not in globals')
-                        savename = self.name.replace(' ','-') + '_corner_ ' + DATE + '.pdf'
-                        filepath = os.path.join(datapath,savename)
-                        with warnings.catch_warnings():
-                            warnings.simplefilter("ignore")
-                            figure.savefig(filepath,dpi=300,format='pdf',pad_inches=0.3,bbox_inches='tight')
-                except:
-                    pass
-                
-                #Plot traces
-                try:
-                    nplots = len(result_sp.var_names)
-                    fig, axes = plt.subplots(nplots, 1, sharex=True, figsize=(8,nplots*1.6))
-                    for n in range(nplots):
-                        axes[n].plot(result_sp.chain[:, :, n].T, color="k", alpha=0.4)
-                        axes[n].yaxis.set_major_locator(MaxNLocator(4))
-                        axes[n].set_ylabel(result_sp.var_names[n])
-                    axes[nplots-1].set_xlabel("step number")
-                    fig.tight_layout(h_pad=0.1)
-                    plt.show()
-                    if self.publish:
-                        DATE = str(datetime.date.today())
-                        try:
-                            datapath = pc.pplot.save_path_for_plots
-                        except:
-                            print('Save path is not in globals')
-                        savename = self.name.replace(' ','-') + '_traces_ ' + DATE + '.pdf'
-                        filepath = os.path.join(datapath,savename)
-                        with warnings.catch_warnings():
-                            warnings.simplefilter("ignore")
-                            fig.savefig(filepath,dpi=300,format='pdf',pad_inches=0)
-                    matplotlib.rcParams["font.size"] = default_font
-                except:
-                    pass
+            #Corner plot
+            try:
+                default_font = matplotlib.rcParams["font.size"]
+                matplotlib.rcParams["font.size"] = 16
+                figure = corner.corner(result_sp.flatchain, labels=result_sp.var_names, \
+                              truths=list(result_sp.params.valuesdict().values()))
+                figure.subplots_adjust(right=1.5,top=1.5)
+                if self.publish:
+                    DATE = str(datetime.date.today())
+                    try:
+                        datapath = pc.pplot.save_path_for_plots
+                    except:
+                        print('Save path is not in globals')
+                    savename = self.name.replace(' ','-') + '_corner_ ' + DATE + '.pdf'
+                    filepath = os.path.join(datapath,savename)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        figure.savefig(filepath,dpi=300,format='pdf',pad_inches=0.3,bbox_inches='tight')
+            except:
+                pass
+            
+            #Plot traces
+            try:
+                nplots = len(result_sp.var_names)
+                fig, axes = plt.subplots(nplots, 1, sharex=True, figsize=(8,nplots*1.6))
+                for n in range(nplots):
+                    axes[n].plot(result_sp.chain[:, :, n].T, color="k", alpha=0.4)
+                    axes[n].yaxis.set_major_locator(MaxNLocator(4))
+                    axes[n].set_ylabel(result_sp.var_names[n])
+                axes[nplots-1].set_xlabel("step number")
+                fig.tight_layout(h_pad=0.1)
+                plt.show()
+                if self.publish:
+                    DATE = str(datetime.date.today())
+                    try:
+                        datapath = pc.pplot.save_path_for_plots
+                    except:
+                        print('Save path is not in globals')
+                    savename = self.name.replace(' ','-') + '_traces_ ' + DATE + '.pdf'
+                    filepath = os.path.join(datapath,savename)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        fig.savefig(filepath,dpi=300,format='pdf',pad_inches=0)
+                matplotlib.rcParams["font.size"] = default_font
+            except:
+                pass
             
             
             print(time_str)

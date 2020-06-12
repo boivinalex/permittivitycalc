@@ -2,9 +2,6 @@ language: python
 python:
   - "3.6"
   - "3.7"
-os:
-  - linux
-  - osx
 
 services:
   - xvfb
@@ -43,6 +40,10 @@ after_success:
 
 jobs:
   include:
+    - stage: test
+      os: osx
+      osx_image: xcode11.2
+      language: shell
     - stage: deploy
       python: "3.7"
       deploy:

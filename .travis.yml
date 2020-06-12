@@ -2,9 +2,18 @@ language: python
 python:
   - "3.6"
   - "3.7"
+# os:
+#   - linux
+#   - osx
 
 services:
   - xvfb
+
+stages:
+  - test
+  - name: deploy
+    if: branch = master
+    if: tag IS present
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh ; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ; fi ;

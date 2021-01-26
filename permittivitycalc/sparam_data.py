@@ -311,8 +311,12 @@ class AirlineData:
         
         # Calculate an average real permittivity and loss tan value from 
         #   midpoint frequency values between resonant frequencies.
-        self.freq_avg_dielec, self.freq_avg_losstan, self.freq_avg_dielec_std, \
-            self.freq_avg_losstan_std = self._freq_avg()
+        try:
+            self.freq_avg_dielec, self.freq_avg_losstan, self.freq_avg_dielec_std, \
+                self.freq_avg_losstan_std = self._freq_avg()
+        except ValueError as err:
+            print('Unable to calculate average real permittivity and loss tan value from midpoint frequency values between resonant frequencies. Frequency range too short?')
+            pass
             
         # If normalize_density is not False and bulk_density exists, normalize
         if self.normalize_density and self.bulk_density:
